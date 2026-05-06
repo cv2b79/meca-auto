@@ -8,7 +8,11 @@
         <p><strong>Statut:</strong> <span class="badge {{ or_obj.statut }}">{{ or_obj.statut }}</span></p>
         <p><strong>Enseignant responsable:</strong> {% if or_obj.created_by_user %}{{ or_obj.created_by_user.prenom }} {{ or_obj.created_by_user.nom }}{% else %}-{% endif %}</p>
         <p><strong>Véhicule:</strong> {{ or_obj.vehicule.immatriculation }} - {{ or_obj.vehicule.marque }} {{ or_obj.vehicule.modele }}</p>
+        {% if current_user.role != 'eleve' %}
         <p><strong>Client:</strong> {% if client %}{{ client.prenom }} {{ client.nom }} - {{ client.telephone }}{% else %}Inconnu{% endif %}</p>
+        {% else %}
+        <p><strong>Client:</strong> - (masqué pour les élèves)</p>
+        {% endif %}
         <p><strong>Description:</strong> {{ or_obj.description or '-' }}</p>
         {% if or_obj.classe_nom or or_obj.eleve_nom %}
         <p><strong>Classe/Élève:</strong> {% if or_obj.classe_nom %}{{ or_obj.classe_nom }}{% endif %}{% if or_obj.classe_nom and or_obj.eleve_nom %} - {% endif %}{% if or_obj.eleve_nom %}{{ or_obj.eleve_nom }}{% endif %}</p>
@@ -168,6 +172,10 @@
     <h4>Ajouter une intervention</h4>
     <form method="POST" action="{{ url_for('ordres.add_intervention', id=or_obj.id) }}">
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            {% if current_user.role == 'eleve' %}
+            <input type="hidden" name="eleve_id" value="{{ current_user.id }}">
+            <p style="font-weight: bold; color: #1976d2;">{{ current_user.prenom }} {{ current_user.nom }}</p>
+        {% else %}
             <div class="form-group">
                 <label>Élève</label>
                 <select name="eleve_id" required>
@@ -175,6 +183,7 @@
                     {% for e in eleves %}<option value="{{ e.id }}">{{ e.prenom }} {{ e.nom }}</option>{% endfor %}
                 </select>
             </div>
+        {% endif %}
             <div class="form-group">
                 <label>Heures</label>
                 <input type="number" step="0.5" name="heures" value="0" min="0">

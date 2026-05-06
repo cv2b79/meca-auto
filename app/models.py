@@ -19,6 +19,9 @@ class User(UserMixin, db.Model):
     security_answer = db.Column(db.String(200))
     failed_attempts = db.Column(db.Integer, default=0)
     locked_until = db.Column(db.DateTime)
+    must_change_password = db.Column(db.Boolean, default=False)
+    classe_id = db.Column(db.Integer, db.ForeignKey('classes.id'))
+    classe = db.relationship('Classe', backref='eleves', lazy='joined')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -35,10 +38,10 @@ class User(UserMixin, db.Model):
 
     def has_permission(self, perm):
         perms = {
-            'ddfpt': ['create_or', 'edit_or', 'delete_or', 'facturer', 'see_stats', 'manage_settings', 'manage_users', 'manage_clients', 'manage_vehicules', 'edit_intervention'],
-            'magasinier': ['facturer', 'manage_settings'],
-            'enseignant': ['create_or', 'edit_or', 'manage_clients', 'manage_vehicules', 'edit_intervention'],
-            'eleve': ['edit_intervention']
+            'ddfpt': ['create_or', 'edit_or', 'delete_or', 'facturer', 'see_stats', 'manage_settings', 'manage_users', 'manage_clients', 'manage_vehicules', 'edit_intervention', 'edit_etat_lieu', 'controle_visuel'],
+            'magasinier': ['facturer', 'manage_settings', 'edit_etat_lieu', 'controle_visuel'],
+            'enseignant': ['create_or', 'edit_or', 'manage_clients', 'manage_vehicules', 'edit_intervention', 'edit_etat_lieu', 'controle_visuel'],
+            'eleve': ['edit_intervention', 'edit_etat_lieu', 'controle_visuel']
         }
         return perm in perms.get(self.role, [])
 
@@ -68,6 +71,12 @@ class User(UserMixin, db.Model):
     
     def can_manage_vehicules(self):
         return self.has_permission('manage_vehicules')
+    
+    def can_edit_etat_lieu(self):
+        return self.has_permission('edit_etat_lieu')
+    
+    def can_controle_visuel(self):
+        return self.has_permission('controle_visuel')
     
     def can_delete(self):
         return self.role == 'ddfpt'
@@ -152,6 +161,8 @@ class OrdreReparation(db.Model):
     # Classe et élève (optionnels)
     classe_nom = db.Column(db.String(50))
     eleve_nom = db.Column(db.String(100))
+    eleve_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    eleve = db.relationship('User', foreign_keys=[eleve_id], lazy='joined')
     
     # Pas de facturation
     pas_de_facturation = db.Column(db.Boolean, default=False)
@@ -249,6 +260,19 @@ class etat_lieu(db.Model):
 
     def __repr__(self):
         return f'{self.type} - {self.or_id}'
+
+
+class ControleVisuel(db.Model):
+    __tablename__ = 'controles_visuels'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    or_id = db.Column(db.Integer, db.ForeignKey('ordres_reparation.id'), nullable=False)
+    controle_data = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    ordre = db.relationship('OrdreReparation', backref='controle_visuel')
+    creator = db.relationship('User', backref='controles')
 
 
 class Forfait(db.Model):
@@ -383,6 +407,8 @@ class Log(db.Model):
 
     @staticmethod
     def log(user, action, details=None, target_type=None, target_id=None):
+        if user is None:
+            return
         log_entry = Log(
             user_id=user.id,
             action=action,

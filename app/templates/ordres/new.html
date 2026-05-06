@@ -1,69 +1,168 @@
 {% extends "base.html" %}
 {% block title %}Nouvel OR{% endblock %}
 {% block content %}
-<h2 style="margin-bottom: 0.5rem;">Nouvel Ordre de réparation</h2>
+<h2>📝 Nouvel Ordre de réparation</h2>
 
 <form method="POST">
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 1rem;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
         
-        <div class="card" style="padding: 0.75rem; margin: 0;">
-            <h4 style="margin: 0 0 0.5rem 0;">🔍 Véhicule</h4>
-            <div class="form-group" style="margin-bottom: 0.4rem;">
-                <label style="font-size: 0.85rem;">Immatriculation *</label>
-                <div style="display: flex; gap: 0.3rem;">
-                    <input type="text" id="immat" name="immatriculation" required style="text-transform: uppercase; flex: 1; padding: 0.4rem;">
-                    <button type="button" onclick="searchVehicle()" style="padding: 0.4rem;">🔍</button>
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="margin: 0 0 1rem 0; color: #1976d2;">🔍 Véhicule</h3>
+            
+            <div class="form-group">
+                <label style="font-weight: 500;">Immatriculation <span style="color: red;">*</span></label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="immat" name="immatriculation" required 
+                           placeholder="Ex: AB-123-CD" 
+                           style="text-transform: uppercase; flex: 1; padding: 0.6rem; font-size: 1rem;">
+                    <button type="button" onclick="searchVehicle()" 
+                            style="padding: 0.6rem 1rem; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        🔍
+                    </button>
                 </div>
             </div>
+            
             <input type="hidden" name="vehicule_id" id="vehicule_id">
-            <div id="result" style="font-size: 0.8rem; padding: 0.3rem; margin-bottom: 0.5rem;"></div>
-            <div id="new_vehicle" style="display: none;">
-                <input type="text" name="marque" placeholder="Marque" style="width: 100%; padding: 0.3rem; margin-bottom: 0.3rem;">
-                <input type="text" name="modele" placeholder="Modèle" style="width: 100%; padding: 0.3rem; margin-bottom: 0.3rem;">
-                <input type="number" name="annee" placeholder="Année" style="width: 100%; padding: 0.3rem;">
+            <div id="result" style="min-height: 2rem; padding: 0.5rem; margin: 0.5rem 0; background: #f5f5f5; border-radius: 4px;"></div>
+            
+            <div id="new_vehicle" style="display: none; padding: 1rem; background: #fff3e0; border-radius: 4px; margin-top: 0.5rem;">
+                <p style="margin: 0 0 0.5rem 0; font-weight: 500; color: #e65100;">➕ Nouveau véhicule</p>
+                <input type="text" name="marque" placeholder="Marque *" required style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;">
+                <input type="text" name="modele" placeholder="Modèle *" required style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;">
+                <input type="number" name="annee" placeholder="Année" style="width: 100%; padding: 0.5rem;">
             </div>
             
-            <hr style="margin: 0.5rem 0;">
-            <h4 style="margin: 0.5rem 0 0.3rem 0;">👤 Client</h4>
-            <input type="text" name="client_nom" id="client_nom" placeholder="Nom" required style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem;">
-            <input type="text" name="client_prenom" id="client_prenom" placeholder="Prénom" required style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem;">
-            <input type="tel" name="client_tel" id="client_tel" placeholder="Téléphone" style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem;">
-            <input type="email" name="client_email" id="client_email" placeholder="Email" style="width: 100%; padding: 0.4rem;">
+            <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #eee;">
+            
+            <h4 style="margin: 0 0 1rem 0; color: #1976d2;">👤 Client</h4>
+            <div class="form-group">
+                <label style="font-weight: 500;">Nom <span style="color: red;">*</span></label>
+                <input type="text" name="client_nom" id="client_nom" required placeholder="Nom du client" style="width: 100%; padding: 0.6rem;">
+            </div>
+            <div class="form-group">
+                <label style="font-weight: 500;">Prénom <span style="color: red;">*</span></label>
+                <input type="text" name="client_prenom" id="client_prenom" required placeholder="Prénom du client" style="width: 100%; padding: 0.6rem;">
+            </div>
+            <div class="form-group">
+                <label style="font-weight: 500;">Téléphone</label>
+                <input type="tel" name="client_tel" id="client_tel" placeholder="06 XX XX XX XX" style="width: 100%; padding: 0.6rem;">
+            </div>
+            <div class="form-group">
+                <label style="font-weight: 500;">Email</label>
+                <input type="email" name="client_email" id="client_email" placeholder="email@exemple.fr" style="width: 100%; padding: 0.6rem;">
+            </div>
         </div>
 
-        <div class="card" style="padding: 0.75rem; margin: 0;">
-            <h4 style="margin: 0 0 0.5rem 0;">📋 Description</h4>
-            <textarea name="description" id="description" rows="4" placeholder="Travaux demandés..." style="width: 100%; padding: 0.4rem;"></textarea>
-            <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">La tarification sera définie à la clôture de l'OR</p>
-        </div>
-
-        <div class="card" style="padding: 0.75rem; margin: 0;">
-            <h4 style="margin: 0 0 0.5rem 0;">👨‍🎓 Classe & Options</h4>
-            <select name="classe_nom" style="width: 100%; padding: 0.4rem; margin-bottom: 0.5rem;">
-                <option value="">-- Classe --</option>
-                {% for c in classes %}
-                <option value="{{ c.nom }}">{{ c.nom }}</option>
-                {% endfor %}
-            </select>
-            <input type="text" name="eleve_nom" placeholder="Élève" style="width: 100%; padding: 0.4rem; margin-bottom: 0.5rem;">
-            <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: #856404;">
-                
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="margin: 0 0 1rem 0; color: #388e3c;">📋 Description des travaux</h3>
+            
+            <div class="form-group">
+                <label style="font-weight: 500;">Catégorie principale</label>
+                <select name="categorie" id="categorie" onchange="showCategories()" style="width: 100%; padding: 0.6rem; font-size: 1rem;">
+                    <option value="">-- Sélectionner une catégorie --</option>
+                    <option value="moteur">🔧 Compartiment moteur</option>
+                    <option value="interieur">🚗 Interior</option>
+                    <option value="exterieur">🚙 Extérieur</option>
+                    <option value="freinage">🛑 Freinage</option>
+                    <option value=" Suspension">🔩 Suspension</option>
+                    <option value="electrique">⚡ Électricité</option>
+                    <option value="climatisation">❄️ Climatisation</option>
+                    <option value="diagnostic">🔍 Diagnostic</option>
+                    <option value="autre">📝 Autre</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label style="font-weight: 500;">Travaux demandés</label>
+                <textarea name="description" id="description" rows="5" 
+                          placeholder="Décrivez les travaux à effectuer..." 
+                          style="width: 100%; padding: 0.6rem; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 0.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.3rem; padding: 0.5rem; background: #f5f5f5; border-radius: 4px; cursor: pointer;">
+                    <input type="checkbox" name="pieces"> Pièces
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.3rem; padding: 0.5rem; background: #f5f5f5; border-radius: 4px; cursor: pointer;">
+                    <input type="checkbox" name="main_oeuvre"> Main d'œuvre
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.3rem; padding: 0.5rem; background: #f5f5f5; border-radius: 4px; cursor: pointer;">
+                    <input type="checkbox" name="diagnostic_check"> Diagnostic
+                </label>
+            </div>
+            
+            <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; padding: 0.75rem; background: #fff3e0; border-radius: 4px; cursor: pointer;">
+                <input type="checkbox" name="faire_etat_lieux" style="width: 18px; height: 18px;">
+                <strong>🚗 Faire l'état des lieux d'entrée après création</strong>
             </label>
             
-            <hr style="margin: 0.5rem 0;">
-            <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem;">
-                <input type="checkbox" id="plan_rdv_check" onchange="if(this.checked){document.getElementById('rdv_fields').style.display='block';}else{document.getElementById('rdv_fields').style.display='none';}"> 📅 avec prise de rendez-vous
-            </label>
-            <div id="rdv_fields" style="display: none; margin-top: 0.5rem;">
-                <input type="date" name="rdv_date" style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem;">
-                <input type="time" name="rdv_time" value="09:00" style="width: 100%; padding: 0.4rem;">
+            <div style="background: #e3f2fd; padding: 0.75rem; border-radius: 4px; margin-top: 1rem;">
+                <p style="margin: 0; font-size: 0.9rem; color: #1565c0;">
+                    ℹ️ La tarification sera définie à la clôture de l'OR
+                </p>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="margin: 0 0 1rem 0; color: #7b1fa2;">👨‍🎓 Classe & Options</h3>
+            
+            <div class="form-group">
+                <label style="font-weight: 500;">Classe</label>
+                <select name="classe_nom" style="width: 100%; padding: 0.6rem; font-size: 1rem;">
+                    <option value="">-- Sélectionner --</option>
+                    {% for c in classes %}
+                    <option value="{{ c.nom }}">{{ c.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label style="font-weight: 500;">Élève responsable</label>
+                <select name="eleve_id" style="width: 100%; padding: 0.6rem; font-size: 1rem;">
+                    <option value="">-- Sélectionner un élève --</option>
+                    {% for e in eleves %}
+                    <option value="{{ e.id }}">{{ e.prenom }} {{ e.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <input type="hidden" name="eleve_nom" id="eleve_nom">
+            
+            <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #eee;">
+            
+            <div style="background: #fce4ec; padding: 1rem; border-radius: 4px;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
+                    <input type="checkbox" id="plan_rdv_check" 
+                           onchange="if(this.checked){document.getElementById('rdv_fields').style.display='block';}else{document.getElementById('rdv_fields').style.display='none';}"
+                           style="width: 1.2rem; height: 1.2rem;">
+                    📅 Prise de rendez-vous
+                </label>
+                <div id="rdv_fields" style="display: none; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label style="font-weight: 500;">Date</label>
+                        <input type="date" name="rdv_date" style="width: 100%; padding: 0.6rem;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: 500;">Heure</label>
+                        <input type="time" name="rdv_time" value="09:00" style="width: 100%; padding: 0.6rem;">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div style="display: flex; gap: 1rem; justify-content: center;">
-        <button type="submit" class="btn">✅ Créer l'OR</button>
-        <a href="{{ url_for('ordres.list') }}" class="btn btn-secondary">Annuler</a>
+    <div style="display: flex; gap: 1rem; justify-content: center; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
+        <button type="submit" class="btn" style="padding: 0.8rem 2rem; font-size: 1.1rem; background: #2e7d32;">
+            ✅ Créer l'OR
+        </button>
+        <a href="{{ url_for('ordres.list') }}" class="btn btn-secondary" style="padding: 0.8rem 2rem;">
+            Annuler
+        </a>
+    </div>
+    
+    <div style="margin-top: 1.5rem; padding: 1rem; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #4caf50;">
+        <p style="margin: 0; font-size: 0.9rem;">
+            💡 <strong>Conseil:</strong> Après la création de l'OR, vous pourrez faire l'état des lieux d'entrée du véhicule
+        </p>
     </div>
 </form>
 
@@ -87,8 +186,8 @@ function searchVehicle() {
     var resultDiv = document.getElementById('result');
     var vehiculeIdInput = document.getElementById('vehicule_id');
     var newVehicleDiv = document.getElementById('new_vehicle');
-    if (immat.length < 2) { resultDiv.innerHTML = '<span style="color:red;">Trop court</span>'; return; }
-    resultDiv.innerHTML = '<span>Recherche...</span>';
+    if (immat.length < 2) { resultDiv.innerHTML = '<span style="color:red;">✖ Trop court</span>'; return; }
+    resultDiv.innerHTML = '<span>⏳ Recherche...</span>';
     var xhr = new XMLHttpRequest();
     xhr.open('GET', '/vehicules/search?q=' + immat, true);
     xhr.onload = function() {
@@ -98,7 +197,7 @@ function searchVehicle() {
                 if (data.found && data.vehicule) {
                     var v = data.vehicule;
                     vehiculeIdInput.value = v.id;
-                    resultDiv.innerHTML = '<span style="color:green;">✓ ' + v.immatriculation + '</span>';
+                    resultDiv.innerHTML = '<span style="color:green;">✓ Véhicule trouvé: ' + v.marque + ' ' + v.modele + '</span>';
                     newVehicleDiv.style.display = 'none';
                     if (v.proprietaire) {
                         document.getElementById('client_nom').value = v.proprietaire.nom || '';
@@ -108,17 +207,28 @@ function searchVehicle() {
                     }
                 } else {
                     vehiculeIdInput.value = '';
-                    resultDiv.innerHTML = '<span style="color:orange;">Nouveau véhicule</span>';
+                    resultDiv.innerHTML = '<span style="color:orange;">⚠ Nouveau véhicule - à créer</span>';
                     newVehicleDiv.style.display = 'block';
                     document.getElementById('client_nom').value = '';
                     document.getElementById('client_prenom').value = '';
                     document.getElementById('client_tel').value = '';
                     document.getElementById('client_email').value = '';
                 }
-            } catch(e) { resultDiv.innerHTML = '<span style="color:red;">Erreur</span>'; }
+            } catch(e) { resultDiv.innerHTML = '<span style="color:red;">✖ Erreur</span>'; }
         }
     };
     xhr.send();
 }
+
+// Auto-fill eleve_nom from selected eleve
+document.querySelector('select[name="eleve_id"]').addEventListener('change', function() {
+    var selectedOption = this.options[this.selectedIndex];
+    var eleve_nom = document.getElementById('eleve_nom');
+    if (this.value) {
+        eleve_nom.value = selectedOption.text;
+    } else {
+        eleve_nom.value = '';
+    }
+});
 </script>
 {% endblock %}

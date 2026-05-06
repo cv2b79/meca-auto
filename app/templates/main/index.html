@@ -25,9 +25,12 @@
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
     <h2 style="margin: 0;">Tableau de bord</h2>
+    {% if current_user.can_create_or() %}
     <a href="{{ url_for('ordres.new') }}" class="btn-new-or">➕ NOUVEL OR</a>
+    {% endif %}
 </div>
 
+{% if current_user.role != 'eleve' %}
 <!-- RDV À VENIR - EN HAUT -->
 <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #4a90d9;">
     <h3 style="color: #4a90d9;">📅 Rendez-vous à venir</h3>
@@ -51,6 +54,7 @@
     <p style="color: #999;">Aucun rendez-vous prévu</p>
     {% endif %}
 </div>
+{% endif %}
 
 {% if stats.alertes %}
 <div class="card" style="margin-bottom: 1rem; border-left: 4px solid #f59e0b;">
@@ -85,6 +89,7 @@
     </div>
 </div>
 
+{% if current_user.role != 'eleve' %}
 <div class="stats-grid" style="margin-top: 1rem;">
     <div class="stat-box" style="background: #e8f5e9;">
         <div class="number">{{ stats.or_mois }}</div>
@@ -95,6 +100,14 @@
         <div class="label">RDV aujourd'hui</div>
     </div>
 </div>
+{% else %}
+<div class="stats-grid" style="margin-top: 1rem;">
+    <div class="stat-box" style="background: #e8f5e9; grid-column: span 2;">
+        <div class="number">{{ stats.or_mois }}</div>
+        <div class="label">OR ce mois</div>
+    </div>
+</div>
+{% endif %}
 
 <div style="margin-top: 1.5rem;">
     <div class="card">

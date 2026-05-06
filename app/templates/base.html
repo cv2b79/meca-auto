@@ -117,6 +117,9 @@
         {% if current_user.role != 'eleve' %}
         <a href="{{ url_for('agenda.index') }}" {% if request.endpoint and 'agenda' in request.endpoint %}class="active"{% endif %}>📅 Agenda</a>
         {% endif %}
+        {% if current_user.role == 'eleve' %}
+        <a href="{{ url_for('main.mes_interventions') }}" {% if request.endpoint and 'mes_interventions' in request.endpoint %}class="active"{% endif %}>📋 Mes interventions</a>
+        {% endif %}
         {% if current_user.can_facturer() %}
         <a href="{{ url_for('factures.list') }}" {% if request.endpoint and 'factures' in request.endpoint %}class="active"{% endif %}>Factures</a>
         {% endif %}

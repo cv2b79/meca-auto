@@ -26,7 +26,16 @@ def list():
         date_to = None
 
     query = OrdreReparation.query.join(Vehicule).join(Client)
-
+    
+    if current_user.role == 'eleve':
+        from app.models import EleveIntervention
+        query = query.filter(
+            (OrdreReparation.created_by == current_user.id) |
+            (OrdreReparation.id.in_(
+                db.session.query(EleveIntervention.or_id).filter_by(eleve_id=current_user.id)
+            ))
+        )
+    
     if statut:
         query = query.filter(OrdreReparation.statut == statut)
     if date_from:
@@ -93,7 +102,11 @@ def new():
             vehicule = Vehicule.query.get(vehicule_id)
         
         if not vehicule:
-            # Créer nouveau véhicule et client
+            existing_vehicule = Vehicule.query.filter_by(immatriculation=request.form.get('immatriculation').upper()).first()
+            if existing_vehicule:
+                flash('Un véhicule avec cette immatriculation existe déjà', 'error')
+                return redirect(url_for('ordres.new'))
+            
             client = Client(
                 nom=request.form.get('client_nom'),
                 prenom=request.form.get('client_prenom'),
@@ -153,6 +166,7 @@ def new():
             created_by=current_user.id,
             classe_nom = request.form.get('classe_nom') or None,
             eleve_nom = request.form.get('eleve_nom') or None,
+            eleve_id = request.form.get('eleve_id') or None,
             rdv_titre = request.form.get('rdv_titre') or None,
             rdv_date_heure = None
         )
@@ -202,13 +216,18 @@ def new():
         db.session.commit()
 
         flash(f'OR {or_numero} créé', 'success')
+        
+        if request.form.get('faire_etat_lieux'):
+            return redirect(url_for('ordres.etat_lieu_form', or_id=or_obj.id, type='entree'))
+        
         return redirect(url_for('ordres.view', id=or_obj.id))
 
     forfaits = Forfait.query.filter_by(actif=True).all()
     surcharges = RecupSurcharge.query.filter_by(actif=True).all()
     surcharges_list = [{'id': s.id, 'nom': s.nom, 'montant': float(s.montant)} for s in surcharges]
     classes = Classe.query.filter_by(actif=True).order_by(Classe.nom).all()
-    return render_template('ordres/new.html', forfaits=forfaits, surcharges=surcharges, surcharges_list=surcharges_list, classes=classes)
+    eleves = User.query.filter_by(role='eleve', actif=True).order_by(User.nom).all()
+    return render_template('ordres/new.html', forfaits=forfaits, surcharges=surcharges, surcharges_list=surcharges_list, classes=classes, eleves=eleves)
 
 @ordres_bp.route('/<int:id>')
 @login_required
@@ -217,6 +236,8 @@ def view(id):
     client = Client.query.get(or_obj.client_id) if or_obj.client_id else None
     interventions = or_obj.interventions_eleves.all()
     etats = or_obj.etats_lieux.all()
+    etat_entree = or_obj.etats_lieux.filter_by(type='entree').first()
+    etat_sortie = or_obj.etats_lieux.filter_by(type='sortie').first()
     
     # Get related appointments
     rdv_list = RendezVous.query.filter_by(client_id=or_obj.client_id).order_by(RendezVous.date_heure.desc()).all()
@@ -224,7 +245,7 @@ def view(id):
     eleves = User.query.filter_by(role='eleve', actif=True).order_by(User.nom).all()
     fournitures = Fourniture.query.filter_by(actif=True).order_by(Fourniture.nom).all()
     
-    return render_template('ordres/view.html', or_obj=or_obj, client=client, interventions=interventions, etats=etats, rdv_list=rdv_list, eleves=eleves, fournitures=fournitures)
+    return render_template('ordres/view.html', or_obj=or_obj, client=client, interventions=interventions, etats=etats, etat_entree=etat_entree, etat_sortie=etat_sortie, rdv_list=rdv_list, eleves=eleves, fournitures=fournitures)
 
 @ordres_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -292,12 +313,12 @@ def set_statut(id):
     etat_sortie = or_obj.etats_lieux.filter_by(type='sortie').first()
 
     if new_statut == 'termine' and not etat_sortie:
-        flash('État des lieux de SORTIE requis avant de terminer', 'error')
-        return redirect(url_for('ordres.view', id=id))
+        flash('État des lieux de SORTIE requis avant de terminer', 'warning')
+        return redirect(url_for('ordres.etat_lieu_form', or_id=id, type='sortie'))
 
     if new_statut == 'cloture' and not etat_sortie:
-        flash('État des lieux de SORTIE requis avant de cloturer', 'error')
-        return redirect(url_for('ordres.view', id=id))
+        flash('État des lieux de SORTIE requis avant de cloturer', 'warning')
+        return redirect(url_for('ordres.etat_lieu_form', or_id=id, type='sortie'))
     
     # Vérifier la checklist pour termine/cloture
     if new_statut in ['termine', 'cloture']:
@@ -335,10 +356,13 @@ def add_intervention(id):
         flash('OR cloturé', 'error')
         return redirect(url_for('ordres.view', id=id))
 
-    eleve_id = request.form.get('eleve_id')
-    if not eleve_id:
-        flash('Élève requis', 'error')
-        return redirect(url_for('ordres.view', id=id))
+    if current_user.role == 'eleve':
+        eleve_id = current_user.id
+    else:
+        eleve_id = request.form.get('eleve_id')
+        if not eleve_id:
+            flash('Élève requis', 'error')
+            return redirect(url_for('ordres.view', id=id))
 
     intervention = EleveIntervention(
         or_id=id,
@@ -539,42 +563,52 @@ def etat_lieu_print():
 @ordres_bp.route('/controle/<int:id>', methods=['GET', 'POST'])
 @login_required
 def controle(id):
+    from app.models import ControleVisuel
+    import json
+    
     or_obj = OrdreReparation.query.get_or_404(id)
+    
     if request.method == 'POST':
-        controle_data = {
-            'instruments_voyant_defaut': 'instruments_voyant_defaut' in request.form,
-            'instruments_ventilateur': 'instruments_ventilateur' in request.form,
-            'instruments_avertisseur': 'instruments_avertisseur' in request.form,
-            'instruments_essuie_glace': 'instruments_essuie_glace' in request.form,
-            'eclairage_veilleuses': 'eclairage_veilleuses' in request.form,
-            'eclairage_croisement': 'eclairage_croisement' in request.form,
-            'eclairage_clignotants': 'eclipse_clignotants' in request.form,
-            'eclairage_stop': 'eclairage_stop' in request.form,
-            'eclairage_recul': 'eclairage_recul' in request.form,
-            'eclairage Brouillard': 'eclairage_brouillard' in request.form,
-            'eclairage_interieur': 'eclairage_interieur' in request.form,
-            'ouvrants_porte': 'ouvrants_porte' in request.form,
-            'ouvrants_centralise': 'ouvrants_centralise' in request.form,
-            'capot_huile': 'capot_huile' in request.form,
-            'capot_frein': 'capot_frein' in request.form,
-            'capot_refroidissement': 'capot_refroidissement' in request.form,
-            'capot_direction': 'capot_direction' in request.form,
-            'capot_batterie': 'capot_batterie' in request.form,
-            'capot_lave_glace': 'capot_lave_glace' in request.form,
-            'capot_courroie': 'capot_courroie' in request.form,
-            'dessous_soufflets': 'dessous_soufflets' in request.form,
-            'dessous_rotules': 'dessous_rotules' in request.form,
-            'dessous_transmission': 'dessous_transmission' in request.form,
-            'dessous_echappement': 'dessous_echappement' in request.form,
-            'etancheite_moteur': 'etancheite_moteur' in request.form,
-            'etancheite_boite': 'etancheite_boite' in request.form,
-            'etancheite_freinage': 'etancheite_freinage' in request.form,
-            'observations': request.form.get('observations')
-        }
-        flash('Contrôle enregistré', 'success')
+        controle_data = {}
+        
+        for key in request.form:
+            if key != 'observations':
+                controle_data[key] = request.form.get(key)
+        
+        controle_data['observations'] = request.form.get('observations', '')
+        
+        existing = ControleVisuel.query.filter_by(or_id=id).first()
+        
+        try:
+            if existing:
+                existing.controle_data = json.dumps(controle_data)
+                existing.created_by = current_user.id
+            else:
+                controle = ControleVisuel(
+                    or_id=id,
+                    controle_data=json.dumps(controle_data),
+                    created_by=current_user.id
+                )
+                db.session.add(controle)
+            
+            db.session.commit()
+            print("Enregistré:", controle_data)
+        except Exception as e:
+            print("Erreur:", e)
+            db.session.rollback()
+        Log.log(current_user, 'controle_visuel', f'Contrôle visuel enregistré - OR {or_obj.numero}', 'OrdreReparation', id)
+        flash('Contrôle visuel enregistré', 'success')
         return redirect(url_for('ordres.view', id=id))
     
-    return render_template('ordres/controle.html', or_obj=or_obj)
+    existing = ControleVisuel.query.filter_by(or_id=id).first()
+    controle_data = {}
+    if existing and existing.controle_data:
+        try:
+            controle_data = json.loads(existing.controle_data)
+        except:
+            pass
+    
+    return render_template('ordres/controle.html', or_obj=or_obj, controle_data=controle_data)
 
 @ordres_bp.route('/controle/<int:id>/print')
 @login_required

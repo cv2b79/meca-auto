@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Mes interventions - MEC AUTO{% endblock %}
+{% block content %}
+<h2>📋 Mes interventions</h2>
+
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="card" style="text-align: center; background: #e3f2fd;">
+        <div style="font-size: 2rem; font-weight: bold; color: #1565c0;">{{ interventions|length }}</div>
+        <div style="color: #666;">Interventions</div>
+    </div>
+    <div class="card" style="text-align: center; background: #e8f5e9;">
+        <div style="font-size: 2rem; font-weight: bold; color: #2e7d32;">{{ total_heures }}</div>
+        <div style="color: #666;">Heures</div>
+    </div>
+</div>
+
+<table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+    <thead>
+        <tr style="background: #1976d2; color: white;">
+            <th style="padding: 0.75rem; text-align: left;">Date</th>
+            <th style="padding: 0.75rem; text-align: left;">OR</th>
+            <th style="padding: 0.75rem; text-align: left;">Véhicule</th>
+            <th style="padding: 0.75rem; text-align: left;">Description</th>
+            <th style="padding: 0.75rem; text-align: center;">Heures</th>
+            <th style="padding: 0.75rem; text-align: center;">Fourniture</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for i in interventions %}
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 0.75rem;">{{ i.created_at.strftime('%d/%m/%Y') }}</td>
+        <td style="padding: 0.75rem;"><a href="{{ url_for('ordres.view', id=i.or_id) }}" style="color: #1976d2; font-weight: 600;">{{ i.ordre.numero }}</a></td>
+        <td style="padding: 0.75rem;">{{ i.ordre.vehicule.immatriculation }} {{ i.ordre.vehicule.marque }}</td>
+        <td style="padding: 0.75rem; color: #666;">{{ i.description or '-' }}</td>
+        <td style="padding: 0.75rem; text-align: center;"><span style="background: #e3f2fd; padding: 0.2rem 0.5rem; border-radius: 12px;">{{ i.heures }}h</span></td>
+        <td style="padding: 0.75rem; text-align: center;">
+            {% if i.fourniture %}
+            <span style="background: #fff3e0; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.85rem;">{{ i.fourniture.nom }} x{{ i.quantite }}</span>
+            {% else %}-{% endif %}
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" style="text-align: center; color: #999; padding: 2rem;">Aucune intervention</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

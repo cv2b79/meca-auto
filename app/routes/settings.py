@@ -36,6 +36,9 @@ def index():
                 else:
                     user = User(nom=nom, prenom=prenom, login=login, role=role)
                     user.set_password(password)
+                    classe_id = request.form.get('classe_id')
+                    if classe_id:
+                        user.classe_id = int(classe_id)
                     db.session.add(user)
                     db.session.commit()
                     print(f"User created: {user.login}")  # Debug
@@ -172,7 +175,11 @@ def mon_compte():
                 flash('Le mot de passe doit contenir au moins 4 caractères', 'error')
             else:
                 current_user.set_password(new_password)
+                current_user.must_change_password = False
                 if security_question:
+                    if security_answer and security_question.lower() in security_answer.lower():
+                        flash('La réponse ne peut pas contenir la question', 'error')
+                        return redirect(url_for('settings.mon_compte'))
                     current_user.security_question = security_question
                     current_user.security_answer = security_answer
                 db.session.commit()
@@ -314,13 +321,15 @@ def import_eleves():
                 errors.append(f"Ligne {i}: Nom ou Prénom manquant")
                 continue
             
-            # Create class if it doesn't exist
+            # Create class if it doesn't exist and get its ID
+            classe_id = None
             if classe_nom:
                 classe = Classe.query.filter_by(nom=classe_nom).first()
                 if not classe:
                     classe = Classe(nom=classe_nom, actif=True)
                     db.session.add(classe)
                     db.session.flush()
+                classe_id = classe.id
             
             # Generate login from first name + first letter of last name
             login = (prenom.split()[0][:3] + nom[:3]).lower().replace(' ', '')
@@ -348,7 +357,8 @@ def import_eleves():
                 prenom=prenom,
                 login=login,
                 role='eleve',
-                actif=True
+                actif=True,
+                classe_id=classe_id
             )
             user.set_password(password)
             db.session.add(user)
@@ -523,6 +533,9 @@ def admin():
             else:
                 current_user.set_password(new_password)
                 if security_question:
+                    if security_answer and security_question.lower() in security_answer.lower():
+                        flash('La réponse ne peut pas contenir la question', 'error')
+                        return redirect(url_for('settings.admin'))
                     current_user.security_question = security_question
                     current_user.security_answer = security_answer
                 db.session.commit()
@@ -868,3 +881,22 @@ def checklist_delete(id):
     db.session.commit()
     flash('Point supprimé', 'success')
     return redirect(url_for('settings.checklist'))
+
+@settings_bp.route('/checklist/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def checklist_edit(id):
+    if current_user.role not in ['ddfpt', 'enseignant']:
+        flash('Accès refusé', 'error')
+        return redirect(url_for('main.index'))
+    
+    from app.models import ChecklistItem
+    item = ChecklistItem.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        item.nom = request.form.get('nom')
+        item.description = request.form.get('description')
+        db.session.commit()
+        flash('Point modifié', 'success')
+        return redirect(url_for('settings.checklist'))
+    
+    return render_template('settings/checklist_edit.html', item=item)

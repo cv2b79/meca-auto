@@ -56,6 +56,11 @@ def login():
             login_user(user)
             Log.log(user, 'login', f'Connexion depuis {request.remote_addr}')
             flash('Connexion réussie', 'success')
+            
+            if user.must_change_password:
+                flash('Vous devez changer votre mot de passe', 'warning')
+                return redirect(url_for('settings.mon_compte'))
+            
             next_page = request.args.get('next')
             return redirect(next_page or url_for('main.index'))
         else:

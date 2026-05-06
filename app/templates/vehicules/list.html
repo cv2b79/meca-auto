@@ -18,17 +18,26 @@
     {% endif %}
 </form>
 
-<table>
-    <thead><tr><th>Immatriculation</th><th>Marque</th><th>Modèle</th><th>Année</th><th>Propriétaire</th><th>Dernière venue</th></tr></thead>
+<table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+    <thead>
+        <tr style="background: #388e3c; color: white;">
+            <th style="padding: 0.75rem; text-align: left;">Immat</th>
+            <th style="padding: 0.75rem; text-align: left;">Marque</th>
+            <th style="padding: 0.75rem; text-align: left;">Modèle</th>
+            <th style="padding: 0.75rem; text-align: center;">Année</th>
+            <th style="padding: 0.75rem; text-align: left;">Propriétaire</th>
+            <th style="padding: 0.75rem; text-align: left;">Dernière venue</th>
+        </tr>
+    </thead>
     <tbody>
     {% for v in vehicules %}
-    <tr>
-        <td><a href="{{ url_for('vehicules.view', id=v.id) }}"><strong>{{ v.immatriculation }}</strong></a></td>
-        <td>{{ v.marque }}</td>
-        <td>{{ v.modele }}</td>
-        <td>{{ v.annee or '-' }}</td>
-        <td>{{ v.proprietaire.prenom if v.proprietaire }} {{ v.proprietaire.nom if v.proprietaire else '-' }}</td>
-        <td>
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 0.75rem;"><a href="{{ url_for('vehicules.view', id=v.id) }}" style="color: #388e3c; font-weight: 600;">{{ v.immatriculation }}</a></td>
+        <td style="padding: 0.75rem;">{{ v.marque }}</td>
+        <td style="padding: 0.75rem;">{{ v.modele }}</td>
+        <td style="padding: 0.75rem; text-align: center;">{{ v.annee or '-' }}</td>
+        <td style="padding: 0.75rem; color: #666;">{{ v.proprietaire.prenom if v.proprietaire }} {{ v.proprietaire.nom if v.proprietaire else '-' }}</td>
+        <td style="padding: 0.75rem; color: #666;">
             {% set last_or = v.ordres|sort(attribute='created_at')|last %}
             {% if last_or %}{{ last_or.created_at.strftime('%d/%m/%Y') }}{% else %}-{% endif %}
         </td>

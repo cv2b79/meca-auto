@@ -1,83 +1,241 @@
 {% extends "base.html" %}
 {% block title %}Contrôle visuel - {{ or_obj.numero }}{% endblock %}
 {% block content %}
-<h2>Contrôle visuel du véhicule - {{ or_obj.numero }}</h2>
+<h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">🔍 Contrôle visuel du véhicule</h2>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 5px solid #1976d2;">
+    <strong style="font-size: 1.3rem; color: #1565c0;">{{ or_obj.vehicule.immatriculation }}</strong>
+    <span style="color: #666; font-size: 1.1rem;"> - {{ or_obj.vehicule.marque }} {{ or_obj.vehicule.modele }}</span>
+</div>
+
+{% set cd = controle_data or {} %}
 
 <form method="POST">
-    <div class="info-box" style="margin-bottom: 1rem;">
-        <strong>Véhicule :</strong> {{ or_obj.vehicule.immatriculation }} - {{ or_obj.vehicule.marque }} {{ or_obj.vehicule.modele }}
-    </div>
-
-    <p style="background: #eee; padding: 0.5rem; margin-bottom: 1rem;">
-        <strong>Légende:</strong> ☑ = Contrôlé | ✓ = Bon | ✗ = Mauvais
-    </p>
-
     <style>
-        .controle-item { display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-        .controle-item label { flex: 0 0 auto; min-width: 250px; }
-        .controle-item input[type="checkbox"] { width: 16px; height: 16px; }
-        .controle-item input[type="radio"] { width: 14px; height: 14px; margin-left: 0.3rem; }
-        .etat-bon { color: green; font-weight: bold; font-size: 0.8rem; }
-        .etat-mauvais { color: red; font-weight: bold; font-size: 0.8rem; margin-right: 0.3rem; }
+        .cat-header { background: #1976d2; color: white; padding: 0.8rem 1rem; border-radius: 8px 8px 0 0; font-weight: bold; font-size: 1.1rem; margin-top: 1.5rem; }
+        .cat-content { border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; padding: 1rem; background: #fafafa; }
+        .cat-content.collapsed { display: none; }
+        .controle-row { display: flex; align-items: center; gap: 1rem; padding: 0.6rem; border-bottom: 1px solid #eee; background: white; margin-bottom: 0.3rem; border-radius: 4px; }
+        .controle-row:hover { background: #f5f5f5; }
+        .controle-row label { flex: 1; font-weight: 500; }
+        .controle-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .controle-row input[type="radio"] { width: 16px; height: 16px; cursor: pointer; }
+        .etat-bon { background: #4caf50; color: white; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; }
+        .etat-mauvais { background: #f44336; color: white; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; }
+        .toggle-btn { background: #1565c0; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-left: auto; }
+        .toggle-btn:hover { background: #0d47a1; }
     </style>
 
-    <div class="section">
-        <h3>Instruments</h3>
-        <div class="controle-item"><label><input type="checkbox" name="instruments_voyant_defaut"> Voyant défaut allumé</label><span class="etat-bon">✓</span><span class="etat-mauvais">✗</span><input type="radio" name="etat_instruments_voyant_defaut" value="bon"><input type="radio" name="etat_instruments_voyant_defaut" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="instruments_ventilateur"> Ventilateur, chauffage, clim</label><input type="radio" name="etat_instruments_ventilateur" value="bon"><input type="radio" name="etat_instruments_ventilateur" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="instruments_avertisseur"> Avertisseur sonore</label><input type="radio" name="etat_instruments_avertisseur" value="bon"><input type="radio" name="etat_instruments_avertisseur" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="instruments_essuie_glace"> Essuie-glace / Lave-glace</label><input type="radio" name="etat_instruments_essuie_glace" value="bon"><input type="radio" name="etat_instruments_essuie_glace" value="mauvais"></div>
+    <p style="background: #fff3e0; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.85rem;">
+        ℹ️ Cochez les éléments à contrôler, puis indiquez l'état (✓ Bon ou ✗ Mauvais)
+    </p>
+
+    <!-- INTÉRIEUR -->
+    <div class="cat-header">🏠 INTÉRIEUR</div>
+    <div class="cat-content">
+        <div class="controle-row">
+            <input type="checkbox" name="int_cockpit" {% if cd.get('int_cockpit') %}checked{% endif %}>
+            <label>Tableau de bord / Voyants</label>
+            <span class="etat-bon"><input type="radio" name="etat_int_cockpit" value="bon" {% if cd.get('etat_int_cockpit') != 'mauvais' %}checked{% endif %}> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_int_cockpit" value="mauvais" {% if cd.get('etat_int_cockpit') == 'mauvais' %}checked{% endif %}> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="int_chauffage" {% if cd.get('int_chauffage') %}checked{% endif %}>
+            <label>Chauffage / Ventilation / Clim</label>
+            <span class="etat-bon"><input type="radio" name="etat_int_chauffage" value="bon" {% if cd.get('etat_int_chauffage') != 'mauvais' %}checked{% endif %}> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_int_chauffage" value="mauvais" {% if cd.get('etat_int_chauffage') == 'mauvais' %}checked{% endif %}> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="int_essuie_glace" {% if cd.get('int_essuie_glace') %}checked{% endif %}>
+            <label>Essuie-glace AV / AR</label>
+            <span class="etat-bon"><input type="radio" name="etat_int_essuie_glace" value="bon" {% if cd.get('etat_int_essuie_glace') != 'mauvais' %}checked{% endif %}> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_int_essuie_glace" value="mauvais" {% if cd.get('etat_int_essuie_glace') == 'mauvais' %}checked{% endif %}> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="int_avertisseur" {% if cd.get('int_avertisseur') %}checked{% endif %}>
+            <label>Avertisseur sonore</label>
+            <span class="etat-bon"><input type="radio" name="etat_int_avertisseur" value="bon" {% if cd.get('etat_int_avertisseur') != 'mauvais' %}checked{% endif %}> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_int_avertisseur" value="mauvais" {% if cd.get('etat_int_avertisseur') == 'mauvais' %}checked{% endif %}> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="int_plafonnier" {% if cd.get('int_plafonnier') %}checked{% endif %}>
+            <label>Plafonnier / Éclairage intérieur</label>
+            <span class="etat-bon"><input type="radio" name="etat_int_plafonnier" value="bon" {% if cd.get('etat_int_plafonnier') != 'mauvais' %}checked{% endif %}> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_int_plafonnier" value="mauvais" {% if cd.get('etat_int_plafonnier') == 'mauvais' %}checked{% endif %}> ✗ Mauvais</span>
+        </div>
     </div>
 
-    <div class="section">
-        <h3>Éclairage</h3>
-        <div class="controle-item"><label><input type="checkbox" name="eclairage_veilleuses"> Veilleuses - Éclairage plaque</label><input type="radio" name="etat_eclairage_veilleuses" value="bon"><input type="radio" name="etat_eclairage_veilleuses" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="eclairage_croisement"> Feux de croisement / route</label><input type="radio" name="etat_eclairage_croisement" value="bon"><input type="radio" name="etat_eclairage_croisement" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="eclairage_clignotants"> Clignotants - Répétiteurs</label><input type="radio" name="etat_eclairage_clignotants" value="bon"><input type="radio" name="etat_eclairage_clignotants" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="eclairage_stop"> Feux de stop</label><input type="radio" name="etat_eclairage_stop" value="bon"><input type="radio" name="etat_eclairage_stop" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="eclairage_recul"> Feux de recul</label><input type="radio" name="etat_eclairage_recul" value="bon"><input type="radio" name="etat_eclairage_recul" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="eclairage_brouillard"> Antibrouillard AV/AR</label><input type="radio" name="etat_eclairage_brouillard" value="bon"><input type="radio" name="etat_eclairage_brouillard" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="eclairage_interieur"> Vide-poches - Plafonnier - Coffre</label><input type="radio" name="etat_eclairage_interieur" value="bon"><input type="radio" name="etat_eclairage_interieur" value="mauvais"></div>
+    <!-- EXTÉRIEUR -->
+    <div class="cat-header" style="background: #388e3c;">🚗 EXTÉRIEUR</div>
+    <div class="cat-content">
+        <div class="controle-row">
+            <input type="checkbox" name="ext_phares">
+            <label>Feux de croisement / Route</label>
+            <span class="etat-bon"><input type="radio" name="etat_ext_phares" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_ext_phares" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="ext_veilleuses">
+            <label>Veilleuses / Plaque</label>
+            <span class="etat-bon"><input type="radio" name="etat_ext_veilleuses" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_ext_veilleuses" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="ext_clignotants">
+            <label>Clignotants / Warning</label>
+            <span class="etat-bon"><input type="radio" name="etat_ext_clignotants" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_ext_clignotants" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="ext_stop">
+            <label>Feux de stop</label>
+            <span class="etat-bon"><input type="radio" name="etat_ext_stop" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_ext_stop" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="ext_recul">
+            <label>Feux de recul</label>
+            <span class="etat-bon"><input type="radio" name="etat_ext_recul" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_ext_recul" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="ext_pneus">
+            <label>Pneumatiques (usure / pression)</label>
+            <span class="etat-bon"><input type="radio" name="etat_ext_pneus" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_ext_pneus" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="ext_carosserie">
+            <label>État carrosserie / Dégâts</label>
+            <span class="etat-bon"><input type="radio" name="etat_ext_carosserie" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_ext_carosserie" value="mauvais"> ✗ Mauvais</span>
+        </div>
     </div>
 
-    <div class="section">
-        <h3>Ouvrants</h3>
-        <div class="controle-item"><label><input type="checkbox" name="ouvrants_porte"> Contrôle des ouvrants</label><input type="radio" name="etat_ouvrants_porte" value="bon"><input type="radio" name="etat_ouvrants_porte" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="ouvrants_centralise"> Fermeture centralisée</label><input type="radio" name="etat_ouvrants_centralise" value="bon"><input type="radio" name="etat_ouvrants_centralise" value="mauvais"></div>
+    <!-- COMPARTIMENT MOTEUR -->
+    <div class="cat-header" style="background: #d32f2f;">🔧 COMPARTIMENT MOTEUR</div>
+    <div class="cat-content">
+        <div class="controle-row">
+            <input type="checkbox" name="moteur_huile">
+            <label>Niveau huile moteur</label>
+            <span class="etat-bon"><input type="radio" name="etat_moteur_huile" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_moteur_huile" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="moteur_liquide_frein">
+            <label>Liquide de frein</label>
+            <span class="etat-bon"><input type="radio" name="etat_moteur_liquide_frein" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_moteur_liquide_frein" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="moteur_cooling">
+            <label>Circuit refroidissement</label>
+            <span class="etat-bon"><input type="radio" name="etat_moteur_cooling" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_moteur_cooling" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="moteur_direction">
+            <label>Direction assistée</label>
+            <span class="etat-bon"><input type="radio" name="etat_moteur_direction" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_moteur_direction" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="moteur_batterie">
+            <label>Batterie (état / serrage)</label>
+            <span class="etat-bon"><input type="radio" name="etat_moteur_batterie" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_moteur_batterie" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="moteur_courroie">
+            <label>Courroie (état / tension)</label>
+            <span class="etat-bon"><input type="radio" name="etat_moteur_courroie" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_moteur_courroie" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="moteur_lave_glace">
+            <label>Lave-glace</label>
+            <span class="etat-bon"><input type="radio" name="etat_moteur_lave_glace" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_moteur_lave_glace" value="mauvais"> ✗ Mauvais</span>
+        </div>
     </div>
 
-    <div class="section">
-        <h3>Contrôles sous capot</h3>
-        <div class="controle-item"><label><input type="checkbox" name="capot_huile"> Huile moteur</label><input type="radio" name="etat_capot_huile" value="bon"><input type="radio" name="etat_capot_huile" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="capot_frein"> Liquide de frein</label><input type="radio" name="etat_capot_frein" value="bon"><input type="radio" name="etat_capot_frein" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="capot_refroidissement"> Circuit de refroidissement</label><input type="radio" name="etat_capot_refroidissement" value="bon"><input type="radio" name="etat_capot_refroidissement" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="capot_direction"> Direction assistée</label><input type="radio" name="etat_capot_direction" value="bon"><input type="radio" name="etat_capot_direction" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="capot_batterie"> Batterie (serrage)</label><input type="radio" name="etat_capot_batterie" value="bon"><input type="radio" name="etat_capot_batterie" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="capot_lave_glace"> Lave-glace AV/AR</label><input type="radio" name="etat_capot_lave_glace" value="bon"><input type="radio" name="etat_capot_lave_glace" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="capot_courroie"> État - Tension courroie</label><input type="radio" name="etat_capot_courroie" value="bon"><input type="radio" name="etat_capot_courroie" value="mauvais"></div>
+    <!-- SOUS CAISSE -->
+    <div class="cat-header" style="background: #7b1fa2;">⚙️ SOUS CAISSE</div>
+    <div class="cat-content">
+        <div class="controle-row">
+            <input type="checkbox" name="sous_soufflets">
+            <label>Soufflets de direction</label>
+            <span class="etat-bon"><input type="radio" name="etat_sous_soufflets" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_sous_soufflets" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="sous_rotules">
+            <label>Soufflets de rotule</label>
+            <span class="etat-bon"><input type="radio" name="etat_sous_rotules" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_sous_rotules" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="sous_transmission">
+            <label>Soufflets de transmission</label>
+            <span class="etat-bon"><input type="radio" name="etat_sous_transmission" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_sous_transmission" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="sous_echappement">
+            <label>Échappement</label>
+            <span class="etat-bon"><input type="radio" name="etat_sous_echappement" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_sous_echappement" value="mauvais"> ✗ Mauvais</span>
+        </div>
     </div>
 
-    <div class="section">
-        <h3>Dessous de caisse</h3>
-        <div class="controle-item"><label><input type="checkbox" name="dessous_soufflets"> État soufflets direction</label><input type="radio" name="etat_dessous_soufflets" value="bon"><input type="radio" name="etat_dessous_soufflets" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="dessous_rotules"> État soufflets de rotule</label><input type="radio" name="etat_dessous_rotules" value="bon"><input type="radio" name="etat_dessous_rotules" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="dessous_transmission"> État soufflets de transmission</label><input type="radio" name="etat_dessous_transmission" value="bon"><input type="radio" name="etat_dessous_transmission" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="dessous_echappement"> Échappement</label><input type="radio" name="etat_dessous_echappement" value="bon"><input type="radio" name="etat_dessous_echappement" value="mauvais"></div>
+    <!-- OUVRANTS -->
+    <div class="cat-header" style="background: #0097a7;">🚪 OUVRANTS</div>
+    <div class="cat-content">
+        <div class="controle-row">
+            <input type="checkbox" name="ouvrants_porte">
+            <label>Portes (ouv/ferm)</label>
+            <span class="etat-bon"><input type="radio" name="etat_ouvrants_porte" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_ouvrants_porte" value="mauvais"> ✗ Mauvais</span>
+        </div>
+        <div class="controle-row">
+            <input type="checkbox" name="ouvrants_centralise">
+            <label>Fermeture centralisée</label>
+            <span class="etat-bon"><input type="radio" name="etat_ouvrants_centralise" value="bon" checked> ✓ Bon</span>
+            <span class="etat-mauvais"><input type="radio" name="etat_ouvrants_centralise" value="mauvais"> ✗ Mauvais</span>
+        </div>
     </div>
 
-    <div class="section">
-        <h3>Étanchéité</h3>
-        <div class="controle-item"><label><input type="checkbox" name="etancheite_moteur"> Moteur</label><input type="radio" name="etat_etancheite_moteur" value="bon"><input type="radio" name="etat_etancheite_moteur" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="etancheite_boite"> Boîte de vitesses</label><input type="radio" name="etat_etancheite_boite" value="bon"><input type="radio" name="etat_etancheite_boite" value="mauvais"></div>
-        <div class="controle-item"><label><input type="checkbox" name="etancheite_freinage"> Circuit de freinage</label><input type="radio" name="etat_etancheite_freinage" value="bon"><input type="radio" name="etat_etancheite_freinage" value="mauvais"></div>
+    <!-- OBSERVATIONS -->
+    <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+        <h3 style="margin: 0 0 1rem 0; color: #333;">📝 Observations</h3>
+        <textarea name="observations" rows="5" placeholder="Notes, anomalies, recommandations..." style="width: 100%; padding: 0.8rem; font-family: inherit;">{% if controle_data.get('observations') %}{{ controle_data.get('observations') }}{% endif %}</textarea>
     </div>
 
-    <div class="section">
-        <label><strong>Observations :</strong></label><br>
-        <textarea name="observations" rows="4" style="width: 100%;"></textarea>
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
+        <button type="submit" class="btn" style="padding: 0.8rem 2rem; font-size: 1.1rem;">💾 Enregistrer le contrôle</button>
+        <a href="{{ url_for('ordres.view', id=or_obj.id) }}" class="btn btn-secondary" style="padding: 0.8rem 2rem;">Annuler</a>
     </div>
-
-    <button type="submit" class="btn">💾 Enregistrer</button>
-    <a href="{{ url_for('ordres.view', id=or_obj.id) }}" class="btn btn-secondary">Annuler</a>
 </form>
+
+<script>
+var controleData = {{ controle_data|tojson if controle_data else '{}' }};
+
+function loadControle() {
+    for (var key in controleData) {
+        if (key === 'observations') continue;
+        var val = controleData[key];
+        var el = document.querySelector('[name="' + key + '"]');
+        if (el) {
+            if (el.type === 'checkbox') {
+                el.checked = true;
+            } else if (el.type === 'radio') {
+                var radios = document.querySelectorAll('[name="' + key + '"]');
+                radios.forEach(function(r) {
+                    r.checked = (r.value === val);
+                });
+            }
+        }
+    }
+}
+loadControle();
+</script>
 {% endblock %}

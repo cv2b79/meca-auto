@@ -12,7 +12,7 @@ if __name__ == '__main__':
         db.create_all()
 
         if User.query.count() == 0:
-            admin = User(nom='Admin', prenom='DDFPT', login='admin', role='ddfpt')
+            admin = User(nom='Admin', prenom='DDFPT', login='admin', role='ddfpt', must_change_password=True)
             admin.set_password('admin123')
             db.session.add(admin)
 

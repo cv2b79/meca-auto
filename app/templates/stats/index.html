@@ -3,6 +3,11 @@
 {% block content %}
 <h2>Statistiques</h2>
 
+<div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+    <a href="{{ url_for('stats.export_ors') }}" class="btn btn-secondary">📥 Exporter OR (CSV)</a>
+    <a href="{{ url_for('stats.export_interventions') }}" class="btn btn-secondary">📥 Exporter interventions (CSV)</a>
+</div>
+
 <form method="GET" style="margin: 1rem 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
     <label>Année: 
         <select name="year" onchange="this.form.submit()" style="padding: 0.5rem;">

@@ -67,20 +67,31 @@
             <div><label style="font-size: 0.8rem;">Login</label><input type="text" name="login" required style="width: 100%;"></div>
             <div><label style="font-size: 0.8rem;">Mot de passe</label><input type="password" name="password" required style="width: 100%;"></div>
         </div>
-        <div style="margin-top: 0.5rem;">
-            <label style="font-size: 0.8rem;">Rôle</label>
-            <select name="role">
-                <option value="eleve">Élève</option>
-                <option value="enseignant">Enseignant</option>
-                <option value="magasinier">Magasinier</option>
-                <option value="ddfpt">DDFPT</option>
-            </select>
-            <button type="submit" class="btn">➕ Ajouter</button>
+        <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
+            <div>
+                <label style="font-size: 0.8rem;">Rôle</label>
+                <select name="role" onchange="toggleClasseField(this.value)">
+                    <option value="eleve">Élève</option>
+                    <option value="enseignant">Enseignant</option>
+                    <option value="magasinier">Magasinier</option>
+                    <option value="ddfpt">DDFPT</option>
+                </select>
+            </div>
+            <div id="classe_field" style="display: none;">
+                <label style="font-size: 0.8rem;">Classe</label>
+                <select name="classe_id">
+                    <option value="">-- Aucune --</option>
+                    {% for c in classes %}
+                    <option value="{{ c.id }}">{{ c.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn" style="margin-top: 1rem;">➕ Ajouter</button>
         </div>
     </form>
     
     <table>
-        <thead><tr><th>Nom</th><th>Prénom</th><th>Login</th><th>Rôle</th><th>Actif</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Nom</th><th>Prénom</th><th>Login</th><th>Rôle</th><th>Classe</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody>
         {% for u in users %}
         <tr>
@@ -88,6 +99,7 @@
             <td>{{ u.prenom }}</td>
             <td>{{ u.login }}</td>
             <td><span class="badge {% if u.role=='ddfpt' %}cloture{% elif u.role=='magasinier' %}termine{% elif u.role=='enseignant' %}en_cours{% else %}ouvert{% endif %}">{{ u.role }}</span></td>
+            <td>{% if u.classe %}{{ u.classe.nom }}{% else %}—{% endif %}</td>
             <td>{% if u.actif %}✓{% else %}✗{% endif %}</td>
             <td>
                 {% if current_user.id != u.id %}
@@ -289,4 +301,11 @@
     </form>
     <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">Le login: 3 premières lettres du prénom + 3 premières lettres du nom. Le mot de passe provisoire: date de naissance au format DDMMYYYY (ex: 15032006). Si pas de DDN, mot de passe = login.</p>
 </div>
+
+<script>
+function toggleClasseField(role) {
+    var champClasse = document.getElementById('classe_field');
+    champClasse.style.display = (role === 'eleve') ? 'block' : 'none';
+}
+</script>
 {% endblock %}
