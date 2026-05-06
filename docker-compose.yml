@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mecaauto
+      POSTGRES_USER: mecauser
+      POSTGRES_PASSWORD: mecapass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mecauser"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://mecauser:mecapass@db:5432/mecaauto
+      - SECRET_KEY=change-this-in-production
+      - FLASK_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: gunicorn --bind 0.0.0.0:5000 "app:create_app()" --workers 2
+
+volumes:
+  postgres_data:

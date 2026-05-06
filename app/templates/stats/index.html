@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Statistiques - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Statistiques</h2>
+
+<form method="GET" style="margin: 1rem 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+    <label>Année: 
+        <select name="year" onchange="this.form.submit()" style="padding: 0.5rem;">
+            {% for y in range(2023, 2031) %}
+            <option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Mois: 
+        <select name="month" onchange="this.form.submit()" style="padding: 0.5rem;">
+            <option value="">Toute l'année</option>
+            {% for m in range(1, 13) %}
+            <option value="{{ m }}" {% if month==m %}selected{% endif %}>{{ ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'][m-1] }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <a href="{{ url_for('stats.index', year=datetime.now().year) }}" class="btn btn-secondary">Reset</a>
+</form>
+
+<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="stat-box">
+        <div class="number">{{ total_ors }}</div>
+        <div class="label">Total OR</div>
+    </div>
+    <div class="stat-box">
+        <div class="number">{{ "%.2f"|format(total_ca) }}€</div>
+        <div class="label">Chiffre d'affaires</div>
+    </div>
+    <div class="stat-box">
+        <div class="number">{{ "%.1f"|format(taux_cloture) }}%</div>
+        <div class="label">Taux clôture</div>
+    </div>
+    <div class="stat-box">
+        <div class="number">{{ "%.2f"|format(ca_moyen) }}€</div>
+        <div class="label">CA moyen/OR</div>
+    </div>
+</div>
+
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 0.5rem;">
+    <div class="stat-box" style="background: #fce7f3;">
+        <div class="number">{{ or_without_invoice }}</div>
+        <div class="label">OR sans facturation</div>
+    </div>
+    <div class="stat-box" style="background: {% if evolution_or >= 0 %}#d1fae5{% else %}#fee2e2{% endif %};">
+        <div class="number">{% if evolution_or >= 0 %}+{% endif %}{{ "%.1f"|format(evolution_or) }}%</div>
+        <div class="label">Évolution OR vs {{ prev_year }}</div>
+    </div>
+    <div class="stat-box" style="background: {% if evolution_ca >= 0 %}#d1fae5{% else %}#fee2e2{% endif %};">
+        <div class="number">{% if evolution_ca >= 0 %}+{% endif %}{{ "%.1f"|format(evolution_ca) }}%</div>
+        <div class="label">Évolution CA vs {{ prev_year }}</div>
+    </div>
+</div>
+
+<div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 0.5rem;">
+    <div class="stat-box">
+        <div class="number">{{ clients_count }}</div>
+        <div class="label">Clients</div>
+    </div>
+    <div class="stat-box">
+        <div class="number">{{ vehicules_count }}</div>
+        <div class="label">Véhicules</div>
+    </div>
+</div>
+
+<h3 style="margin-top: 1.5rem; border-bottom: 2px solid #ddd; padding-bottom: 0.5rem;">Répartition</h3>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+    <div class="card">
+        <h4>OR par statut</h4>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; text-align: center; padding: 0.75rem; background: #fff3cd; border-radius: 8px;"><strong>{{ or_by_status.ouvert }}</strong><br><small>Ouverts</small></div>
+            <div style="flex: 1; text-align: center; padding: 0.75rem; background: #cfe2ff; border-radius: 8px;"><strong>{{ or_by_status.en_cours }}</strong><br><small>En cours</small></div>
+            <div style="flex: 1; text-align: center; padding: 0.75rem; background: #d1ecf1; border-radius: 8px;"><strong>{{ or_by_status.termine }}</strong><br><small>Terminés</small></div>
+            <div style="flex: 1; text-align: center; padding: 0.75rem; background: #d4edda; border-radius: 8px;"><strong>{{ or_by_status.cloture }}</strong><br><small>Clôturés</small></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h4>Mode tarification</h4>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; text-align: center; padding: 0.75rem; background: #e0e7ff; border-radius: 8px;"><strong>{{ forfaits }}</strong><br><small>Forfaits</small></div>
+            <div style="flex: 1; text-align: center; padding: 0.75rem; background: #fce7f3; border-radius: 8px;"><strong>{{ horaire }}</strong><br><small>Horaire</small></div>
+        </div>
+    </div>
+</div>
+
+<h3 style="margin-top: 1.5rem; border-bottom: 2px solid #ddd; padding-bottom: 0.5rem;">Par période</h3>
+
+<div class="card" style="margin-top: 1rem;">
+    <h4>OR par mois ({{ year }})</h4>
+    <div style="display: flex; gap: 0.25rem; align-items: flex-end; height: 150px; padding: 1rem 0;">
+        {% for m in range(1, 13) %}
+        <div style="flex: 1; text-align: center;">
+            <div style="background: #4a90d9; color: white; padding: 0.25rem; border-radius: 4px 4px 0 0;{% if or_by_month.get(m, 0) == 0 %} background: #ccc;{% endif %}" 
+                 title="{{ ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'][m-1] }}: {{ or_by_month.get(m, 0) }} OR">
+                {{ or_by_month.get(m, 0) }}
+            </div>
+            <small style="font-size: 0.7em;">{{ ['J','F','M','A','M','J','J','A','S','O','N','D'][m-1] }}</small>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<h3 style="margin-top: 1.5rem; border-bottom: 2px solid #ddd; padding-bottom: 0.5rem;">Classements</h3>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+    <div class="card">
+        <h4>🏫 Par classe</h4>
+        {% if or_by_class %}
+        <table>
+            <thead><tr><th>Classe</th><th>OR</th><th>CA</th></tr></thead>
+            <tbody>
+            {% for cls, data in or_by_class.items() %}
+            <tr>
+                <td>{{ cls }}</td>
+                <td><strong>{{ data.count }}</strong></td>
+                <td>{{ "%.2f"|format(data.ca) }}€</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #999;">Aucune donnée</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h4>👨‍🏫 Par enseignant</h4>
+        {% if or_by_teacher %}
+        <table>
+            <thead><tr><th>Enseignant</th><th>OR</th><th>CA</th></tr></thead>
+            <tbody>
+            {% for ens, data in or_by_teacher.items() %}
+            <tr>
+                <td>{{ ens }}</td>
+                <td><strong>{{ data.count }}</strong></td>
+                <td>{{ "%.2f"|format(data.ca) }}€</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #999;">Aucune donnée</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h4>🏆 Top clients</h4>
+        {% if top_clients %}
+        <table>
+            <thead><tr><th>#</th><th>Client</th><th>OR</th></tr></thead>
+            <tbody>
+            {% for c in top_clients[:5] %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ c.nom }}</td>
+                <td><strong>{{ c.count }}</strong></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #999;">Aucune donnée</p>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+    <div class="card">
+        <h4>🚗 Top véhicules</h4>
+        {% if top_vehicules %}
+        <table>
+            <thead><tr><th>#</th><th>Immatriculation</th><th>OR</th></tr></thead>
+            <tbody>
+            {% for v in top_vehicules[:5] %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ v.immatriculation }}</td>
+                <td><strong>{{ v.count }}</strong></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #999;">Aucune donnée</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h4>📊 Interventions élèves</h4>
+        {% if eleve_stats %}
+        <table>
+            <thead><tr><th>Élève</th><th>Interventions</th><th>Heures</th></tr></thead>
+            <tbody>
+            {% for eleve, data in eleve_stats.items() %}
+            <tr>
+                <td>{{ eleve }}</td>
+                <td><strong>{{ data.count }}</strong></td>
+                <td>{{ "%.1f"|format(data.heures) }}h</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #999;">Aucune donnée</p>
+        {% endif %}
+    </div>
+</div>
+
+<div style="margin-top: 2rem;">
+    <a href="{{ url_for('stats.export') }}" class="btn">Exporter CSV</a>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Facture {{ facture.numero }}{% endblock %}
+{% block content %}
+<h2>Facture {{ facture.numero }}</h2>
+<div class="card">
+    <p><strong>Date:</strong> {{ facture.emitted_at.strftime('%d/%m/%Y') if facture.emitted_at else '-' }}</p>
+    <p><strong>Montant:</strong> {{ facture.montant }}€</p>
+    <p><strong>Mode:</strong> {{ facture.mode_tarif }}</p>
+    <p><strong>Envoyée par mail:</strong> {% if facture.send_by_email %}Oui{% else %}Non{% endif %}</p>
+    <div class="actions" style="margin-top: 1rem;">
+        <a href="{{ url_for('factures.view_html', id=facture.id) }}" class="btn" target="_blank">🖨️ Imprimer</a>
+        <a href="{{ url_for('factures.pdf', id=facture.id) }}" class="btn btn-secondary" target="_blank">📄 PDF</a>
+        {% if not facture.send_by_email and facture.ordre.client.email %}
+        <form method="POST" action="{{ url_for('factures.send', id=facture.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-success">Envoyer par mail</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+<h3>Détails</h3>
+<pre style="background: #f5f5f5; padding: 1rem; white-space: pre-wrap;">{{ facture.details }}</pre>
+{% endblock %}

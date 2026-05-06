@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Journal d'activité - MEC AUTO{% endblock %}
+{% block content %}
+<h2>📋 Journal d'activité</h2>
+
+<div class="card">
+    <form method="GET" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+        <select name="action" style="padding: 0.5rem;">
+            <option value="">Toutes les actions</option>
+            <option value="create_or" {% if action_filter=='create_or' %}selected{% endif %}>Créer OR</option>
+            <option value="edit_or" {% if action_filter=='edit_or' %}selected{% endif %}>Modifier OR</option>
+            <option value="change_statut" {% if action_filter=='change_statut' %}selected{% endif %}>Changer statut</option>
+            <option value="create_client" {% if action_filter=='create_client' %}selected{% endif %}>Créer client</option>
+            <option value="create_vehicule" {% if action_filter=='create_vehicule' %}selected{% endif %}>Créer véhicule</option>
+            <option value="etat_lieu" {% if action_filter=='etat_lieu' %}selected{% endif %}>État des lieux</option>
+            <option value="create_user" {% if action_filter=='create_user' %}selected{% endif %}>Créer utilisateur</option>
+            <option value="toggle_user" {% if action_filter=='toggle_user' %}selected{% endif %}>Activer/Désactiver utilisateur</option>
+            <option value="delete_user" {% if action_filter=='delete_user' %}selected{% endif %}>Supprimer utilisateur</option>
+            <option value="update_permissions" {% if action_filter=='update_permissions' %}selected{% endif %}>Modifier permissions</option>
+            <option value="create_facture" {% if action_filter=='create_facture' %}selected{% endif %}>Créer facture</option>
+            <option value="login" {% if action_filter=='login' %}selected{% endif %}>Connexion</option>
+        </select>
+        <select name="user_id" style="padding: 0.5rem;">
+            <option value="">Tous les utilisateurs</option>
+            {% for u in users %}
+            <option value="{{ u.id }}" {% if user_id == u.id|string %}selected{% endif %}>{{ u.prenom }} {{ u.nom }}</option>
+            {% endfor %}
+        </select>
+        <input type="date" name="date_from" style="padding: 0.5rem;">
+        <input type="date" name="date_to" style="padding: 0.5rem;">
+        <button type="submit" class="btn">Filtrer</button>
+        <a href="{{ url_for('settings.logs') }}" class="btn btn-secondary">Reset</a>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 1rem;">
+    <table style="font-size: 0.85rem;">
+        <thead>
+            <tr>
+                <th style="text-align: left;"><a href="?sort={% if sort=='date_desc' %}date_asc{% else %}date_desc{% endif %}&action={{ action_filter }}&user_id={{ user_id }}&date_from={{ date_from }}&date_to={{ date_to }}">Date/Heure {% if sort=='date_desc' %}↓{% elif sort=='date_asc' %}↑{% endif %}</a></th>
+                <th style="text-align: left;"><a href="?sort=user&action={{ action_filter }}&user_id={{ user_id }}&date_from={{ date_from }}&date_to={{ date_to }}">Utilisateur {% if sort=='user' %}✓{% endif %}</a></th>
+                <th style="text-align: left;"><a href="?sort=action&action={{ action_filter }}&user_id={{ user_id }}&date_from={{ date_from }}&date_to={{ date_to }}">Action {% if sort=='action' %}✓{% endif %}</a></th>
+                <th style="text-align: left;">Détails</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for l in logs %}
+        <tr>
+            <td>{{ l.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>
+                {% if l.user %}
+                <strong>{{ l.user.prenom }} {{ l.user.nom }}</strong>
+                <small>({{ l.user.role }})</small>
+                {% else %}?{% endif %}
+            </td>
+            <td>
+                {% if l.action == 'create_or' %}➕ Créer OR
+                {% elif l.action == 'edit_or' %}✏️ Modifier OR
+                {% elif l.action == 'change_statut' %}🔄 Statut
+                {% elif l.action == 'delete_or' %}🗑️ Supprimer OR
+                {% elif l.action == 'create_client' %}👤 Créer client
+                {% elif l.action == 'create_vehicule' %}🚗 Créer véhicule
+                {% elif l.action == 'etat_lieu' %}📝 État des lieux
+                {% elif l.action == 'create_user' %}👤 Créer utilisateur
+                {% elif l.action == 'toggle_user' %}🔄 Utilisateur
+                {% elif l.action == 'delete_user' %}🗑️ Supprimer utilisateur
+                {% elif l.action == 'update_permissions' %}🔐 Permissions
+                {% elif l.action == 'create_facture' %}📄 Créer facture
+                {% elif l.action == 'login' %}🔑 Connexion
+                {% elif l.action == 'logout' %}🚪 Déconnexion
+                {% else %}{{ l.action }}{% endif %}
+            </td>
+            <td>{{ l.details or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align: center; color: #999;">Aucune activité</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<p style="color: #666; margin-top: 1rem;">Affichage des 200 dernières activités</p>
+{% endblock %}

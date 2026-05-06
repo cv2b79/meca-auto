@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Administration - MEC AUTO{% endblock %}
+{% block content %}
+<h2>⚙️ Administration</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <!-- SAUVEGARDES & LOGS -->
+    <div>
+        <div class="card" style="margin-bottom: 1rem;">
+            <h3>💾 Sauvegardes</h3>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ url_for('data.backups') }}" class="btn">Voir les sauvegardes</a>
+                <a href="{{ url_for('data.backup_create') }}" class="btn btn-secondary" onclick="return confirm('Créer une sauvegarde?')">➕ Nouvelle</a>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-bottom: 1rem;">
+            <h3>📋 Logs</h3>
+            <p style="color: #666;">Historique des actions</p>
+            <a href="{{ url_for('data.logs') }}" class="btn">Voir les logs</a>
+        </div>
+
+        <div class="card">
+            <h3>📊 Statistiques</h3>
+            <a href="{{ url_for('data.stats') }}" class="btn">Voir les statistiques</a>
+        </div>
+    </div>
+
+    <!-- EXPORT/IMPORT -->
+    <div>
+        <div class="card" style="margin-bottom: 1rem;">
+            <h3>📤 Export CSV</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <a href="{{ url_for('data.export_csv', type='clients') }}" class="btn btn-secondary">Clients</a>
+                <a href="{{ url_for('data.export_csv', type='vehicules') }}" class="btn btn-secondary">Véhicules</a>
+                <a href="{{ url_for('data.export_csv', type='ordres') }}" class="btn btn-secondary">Ordres</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>📥 Import CSV</h3>
+            <form method="POST" action="{{ url_for('data.import_csv') }}" enctype="multipart/form-data">
+                <div class="form-group">
+                    <select name="type" required style="width: 100%;">
+                        <option value="">-- Type --</option>
+                        <option value="clients">Clients</option>
+                        <option value="vehicules">Véhicules</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="file" name="file" accept=".csv" required>
+                </div>
+                <button type="submit" class="btn">Importer</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- UTILISATEURS -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3>👥 Gestion des utilisateurs ({{ users|length }})</h3>
+    <form method="POST" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
+        <input type="hidden" name="action" value="add_user">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+            <div><label style="font-size: 0.8rem;">Nom</label><input type="text" name="nom" required style="width: 100%;"></div>
+            <div><label style="font-size: 0.8rem;">Prénom</label><input type="text" name="prenom" required style="width: 100%;"></div>
+            <div><label style="font-size: 0.8rem;">Login</label><input type="text" name="login" required style="width: 100%;"></div>
+            <div><label style="font-size: 0.8rem;">Mot de passe</label><input type="password" name="password" required style="width: 100%;"></div>
+        </div>
+        <div style="margin-top: 0.5rem;">
+            <label style="font-size: 0.8rem;">Rôle</label>
+            <select name="role">
+                <option value="eleve">Élève</option>
+                <option value="enseignant">Enseignant</option>
+                <option value="magasinier">Magasinier</option>
+                <option value="ddfpt">DDFPT</option>
+            </select>
+            <button type="submit" class="btn">➕ Ajouter</button>
+        </div>
+    </form>
+    
+    <table>
+        <thead><tr><th>Nom</th><th>Prénom</th><th>Login</th><th>Rôle</th><th>Actif</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.nom }}</td>
+            <td>{{ u.prenom }}</td>
+            <td>{{ u.login }}</td>
+            <td><span class="badge {% if u.role=='ddfpt' %}cloture{% elif u.role=='magasinier' %}termine{% elif u.role=='enseignant' %}en_cours{% else %}ouvert{% endif %}">{{ u.role }}</span></td>
+            <td>{% if u.actif %}✓{% else %}✗{% endif %}</td>
+            <td>
+                {% if current_user.id != u.id %}
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="toggle_user">
+                    <input type="hidden" name="id" value="{{ u.id }}">
+                    <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem;">{% if u.actif %}Désactiver{% else %}Activer{% endif %}</button>
+                </form>
+                {% if current_user.can_delete() %}
+                <form method="POST" style="display: inline;" onsubmit="return confirm('Supprimer?')">
+                    <input type="hidden" name="action" value="delete_user">
+                    <input type="hidden" name="id" value="{{ u.id }}">
+                    <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.5rem;">🗑️</button>
+                </form>
+                {% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- CLASSES & ENSEIGNANTS -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3>🏫 Classes et Enseignants</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div>
+            <h4>Enseignants</h4>
+            <form method="POST" style="margin-bottom: 1rem;">
+                <input type="hidden" name="action" value="add_enseignant">
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" name="nom" placeholder="Nom" required>
+                    <input type="text" name="prenom" placeholder="Prénom" required>
+                    <button type="submit" class="btn">➕</button>
+                </div>
+            </form>
+            <ul>
+            {% for e in enseignants %}
+                <li>{{ e.prenom }} {{ e.nom }} {% if not e.actif %}(inactif){% endif %}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        <div>
+            <h4>Classes</h4>
+            <form method="POST" style="margin-bottom: 1rem;">
+                <input type="hidden" name="action" value="add_classe">
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" name="nom" placeholder="Nom classe" required>
+                    <button type="submit" class="btn">➕</button>
+                </div>
+            </form>
+            <ul>
+            {% for c in classes %}
+                <li>{{ c.nom }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- EMAIL SMTP -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3>📧 Configuration Email (SMTP)</h3>
+    <form method="POST">
+        <input type="hidden" name="action" value="save_smtp">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label>Serveur SMTP</label>
+                <input type="text" name="smtp_host" value="{{ smtp_config.smtp_host or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Port</label>
+                <input type="number" name="smtp_port" value="{{ smtp_config.smtp_port or '587' }}">
+            </div>
+            <div class="form-group">
+                <label>Utilisateur</label>
+                <input type="text" name="smtp_user" value="{{ smtp_config.smtp_user or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" name="smtp_password" value="{{ smtp_config.smtp_password or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Email expéditeur</label>
+                <input type="email" name="smtp_from" value="{{ smtp_config.smtp_from or '' }}">
+            </div>
+        </div>
+        <button type="submit" class="btn">Enregistrer</button>
+    </form>
+</div>
+
+<!-- ÉTABLISSEMENT -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3>🏫 Établissement</h3>
+    <form method="POST">
+        <input type="hidden" name="action" value="save_etablissement">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div class="form-group">
+                <label>Nom de l'établissement</label>
+                <input type="text" name="etab_nom" value="{{ etab_nom or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Téléphone</label>
+                <input type="text" name="etab_tel" value="{{ etab_tel or '' }}">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Adresse</label>
+                <input type="text" name="etab_adresse" value="{{ etab_adresse or '' }}">
+            </div>
+        </div>
+        <button type="submit" class="btn">Enregistrer</button>
+    </form>
+</div>
+
+<!-- ARCHIVAGE -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3>📦 Archivage</h3>
+    <form method="POST" action="{{ url_for('data.archiver') }}">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <label>Archiver les OR clôturés avant le:</label>
+            <input type="date" name="date_limit" required>
+            <button type="submit" class="btn" onclick="return confirm('Confirmer l\'archivage?')">Archiver</button>
+        </div>
+    </form>
+</div>
+
+<!-- FOURNITURES -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3>🧴 Fournitures</h3>
+    <form method="POST" action="{{ url_for('settings.fourniture_new') }}" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+        <input type="text" name="nom" placeholder="Nom de la fourniture" required style="flex: 1;">
+        <input type="number" step="0.01" name="prix_unitaire" placeholder="Prix unitaire (€)" style="width: 150px;">
+        <button type="submit" class="btn">➕ Ajouter</button>
+    </form>
+    <table>
+        <thead><tr><th>Nom</th><th>Prix unitaire</th><th></th></tr></thead>
+        <tbody>
+        {% for f in fournitures %}
+        <tr>
+            <td>{{ f.nom }}</td>
+            <td>{{ f.prix_unitaire }}€</td>
+            <td>
+                <form method="POST" action="{{ url_for('settings.fourniture_delete', id=f.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.5rem;" onclick="return confirm('Supprimer?')">✕</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" style="text-align: center; color: #666;">Aucune fourniture</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- IMPORT ÉLÈVES -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3>📥 Import d'élèves</h3>
+    <p style="color: #666; font-size: 0.9rem;">Importer une liste d'élèves depuis un fichier CSV. Colonnes attendues: <strong>Nom, Prénom, Classe, DDN</strong></p>
+    <form method="POST" action="{{ url_for('settings.import_eleves') }}" enctype="multipart/form-data" style="display: flex; gap: 0.5rem; align-items: center;">
+        <input type="file" name="file" accept=".csv" required style="flex: 1;">
+        <button type="submit" class="btn">Importer</button>
+    </form>
+    <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">Le login: 3 premières lettres du prénom + 3 premières lettres du nom. Le mot de passe provisoire: date de naissance au format DDMMYYYY (ex: 15032006). Si pas de DDN, mot de passe = login.</p>
+</div>
+{% endblock %}

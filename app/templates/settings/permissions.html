@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Permissions - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Gestion des permissions par rôle</h2>
+
+<div class="card">
+    <p style="color: #666;">Cochez les permissions accordées à chaque rôle d'utilisateur.</p>
+    
+    <form method="POST">
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; padding: 0.5rem; background: #eee;">Permission</th>
+                    <th style="padding: 0.5rem; background: #e3d5f3; width: 80px;">DDFPT</th>
+                    <th style="padding: 0.5rem; background: #d4edda; width: 80px;">Magasinier</th>
+                    <th style="padding: 0.5rem; background: #cfe2ff; width: 80px;">Enseignant</th>
+                    <th style="padding: 0.5rem; background: #fff3cd; width: 80px;">Élève</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for perm_id, perm_name in all_perms %}
+            <tr>
+                <td style="padding: 0.5rem;">{{ perm_name }}</td>
+                <td style="text-align: center;">
+                    <input type="checkbox" name="perms_ddfpt" value="{{ perm_id }}" 
+                           {% if perm_id in permissions.get('ddfpt', []) %}checked{% endif %}>
+                </td>
+                <td style="text-align: center;">
+                    <input type="checkbox" name="perms_magasinier" value="{{ perm_id }}" 
+                           {% if perm_id in permissions.get('magasinier', []) %}checked{% endif %}>
+                </td>
+                <td style="text-align: center;">
+                    <input type="checkbox" name="perms_enseignant" value="{{ perm_id }}" 
+                           {% if perm_id in permissions.get('enseignant', []) %}checked{% endif %}>
+                </td>
+                <td style="text-align: center;">
+                    <input type="checkbox" name="perms_eleve" value="{{ perm_id }}" 
+                           {% if perm_id in permissions.get('eleve', []) %}checked{% endif %}>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 1rem;">
+            <button type="submit" class="btn">Enregistrer les permissions</button>
+            <a href="{{ url_for('settings.index') }}" class="btn btn-secondary">Retour</a>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 1rem; background: #f8f9fa;">
+    <h3>Légende des permissions</h3>
+    <ul style="columns: 2; column-gap: 2rem;">
+        <li><strong>Créer des OR</strong> - Créer de nouveaux ordres de réparation</li>
+        <li><strong>Modifier les OR</strong> - Modifier les orders existants</li>
+        <li><strong>Supprimer des OR</strong> - Supprimer des orders de réparation</li>
+        <li><strong>Créer des factures</strong> - Générer des factures</li>
+        <li><strong>Voir les statistiques</strong> - Accéder aux statistiques</li>
+        <li><strong>Gérer les paramètres</strong> - Modifier les paramètres de l'application</li>
+        <li><strong>Gérer les utilisateurs</strong> - Créer/modifier/supprimer des utilisateurs</li>
+        <li><strong>Gérer les clients</strong> - CRUD clients</li>
+        <li><strong>Gérer les véhicules</strong> - CRUD véhicules</li>
+        <li><strong>Saisir des interventions</strong> - Ajouter des interventions élèves</li>
+    </ul>
+</div>
+{% endblock %}

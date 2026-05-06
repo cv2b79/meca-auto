@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ client.prenom }} {{ client.nom }}{% endblock %}
+{% block content %}
+<h2>{{ client.prenom }} {{ client.nom }}</h2>
+<div class="card">
+    <p><strong>Adresse:</strong> {{ client.adresse or '-' }}</p>
+    <p><strong>Téléphone:</strong> {{ client.telephone or '-' }}</p>
+    <p><strong>Email:</strong> {{ client.email or '-' }}</p>
+    <div class="actions" style="margin-top: 1rem;">
+        {% if current_user.can_manage_clients() %}
+        <a href="{{ url_for('clients.edit', id=client.id) }}" class="btn">Modifier</a>
+        <a href="{{ url_for('clients.delete', id=client.id) }}" class="btn btn-danger" onclick="return confirm('Supprimer?')">Supprimer</a>
+        {% endif %}
+    </div>
+</div>
+<h3>Véhicules</h3>
+<table>
+    <thead><tr><th>Immatriculation</th><th>Marque</th><th>Modèle</th><th>Année</th></tr></thead>
+    <tbody>
+    {% for v in vehicules %}
+    <tr>
+        <td><a href="{{ url_for('vehicules.view', id=v.id) }}">{{ v.immatriculation }}</a></td>
+        <td>{{ v.marque }}</td>
+        <td>{{ v.modele }}</td>
+        <td>{{ v.annee }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

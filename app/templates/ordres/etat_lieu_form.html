@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>État des lieux - {{ 'Entrée' if type_etat == 'entree' else 'Sortie' }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 1.5rem; max-width: 600px; margin: 0 auto; }
+        h1 { color: #1E3A5F; text-align: center; border-bottom: 2px solid #2E6DA4; padding-bottom: 0.5rem; }
+        .info-box { background: #f5f8fc; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 0.25rem; }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; 
+        }
+        .form-group textarea { height: 100px; resize: vertical; }
+        .btn { display: inline-block; padding: 0.75rem 1.5rem; background: #2E6DA4; color: white; text-decoration: none; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        .btn:hover { background: #1E3A5F; }
+        .btn-secondary { background: #666; }
+        .btn-print { background: #28a745; }
+        .buttons { display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem; }
+    </style>
+</head>
+<body>
+    <h1>ÉTAT DES LIEUX - {{ 'ENTRÉE' if type_etat == 'entree' else 'SORTIE' }}</h1>
+    
+    <form method="POST" action="{{ url_for('ordres.etat_lieu_save') }}">
+        <input type="hidden" name="or_id" value="{{ or_obj.id if or_obj else '' }}">
+        <input type="hidden" name="vehicule_id" value="{{ vehicule.id if vehicule else '' }}">
+        <input type="hidden" name="type_etat" value="{{ type_etat }}">
+        
+        <div class="info-box">
+            {% if vehicule %}
+            <strong>{{ vehicule.immatriculation }}</strong><br>
+            {{ vehicule.marque }} {{ vehicule.modele }}<br>
+            {% if or_obj %}
+            <strong>OR:</strong> {{ or_obj.numero }}
+            {% endif %}
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>Kilométrage *</label>
+            <input type="number" name="kilometrage" required placeholder="Ex: 50000">
+        </div>
+
+        <div class="form-group">
+            <label>Niveau carburant</label>
+            <select name="niveau_carburant">
+                <option value="">Sélectionner...</option>
+                <option value="vide">Vide</option>
+                <option value="1/4">1/4</option>
+                <option value="1/2">1/2</option>
+                <option value="3/4">3/4</option>
+                <option value="plein">Plein</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Dommages existants (carrosserie, vitres, intérieur...)</label>
+            <textarea name="dommages" placeholder="Décrire les dommages constatés..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Observations</label>
+            <textarea name="observations" placeholder="Observations diverses..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Responsable *</label>
+            <input type="text" name="responsable" required placeholder="Nom du responsable">
+        </div>
+
+        {% if type_etat == 'sortie' and checklist_items %}
+        <div style="background: #f0f8ff; padding: 1rem; border-radius: 4px; margin: 1rem 0; border: 2px solid #2E6DA4;">
+            <h3 style="margin-top: 0;">✅ Checklist contrôle qualité</h3>
+            <p style="color: #666; font-size: 0.9rem;">Cocher tous les points avant de clore l'OR</p>
+            {% for item in checklist_items %}
+            <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="checklist_{{ item.id }}" name="checklist_{{ item.id }}" {% if existing_verifs.get(item.id) %}checked{% endif %}>
+                <label for="checklist_{{ item.id }}" style="font-weight: normal; cursor: pointer;">
+                    <strong>{{ item.nom }}</strong>{% if item.description %}: {{ item.description }}{% endif %}
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="buttons">
+            <button type="submit" class="btn">💾 Enregistrer</button>
+            <button type="button" class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
+            <a href="javascript:window.close()" class="btn btn-secondary">Fermer</a>
+        </div>
+    </form>
+</body>
+</html>

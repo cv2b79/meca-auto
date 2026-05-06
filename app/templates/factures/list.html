@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Factures - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Factures</h2>
+<form method="GET" style="margin: 1rem 0;">
+    <label>Année: </label>
+    <select name="year" onchange="this.form.submit()">
+        <option value="">Toutes</option>
+        {% for y in range(2023, 2030) %}
+        <option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+    </select>
+</form>
+<table>
+    <thead><tr><th>N°</th><th>Date</th><th>Montant</th><th>Envoyée</th></tr></thead>
+    <tbody>
+    {% for f in factures %}
+    <tr>
+        <td><a href="{{ url_for('factures.view', id=f.id) }}">{{ f.numero }}</a></td>
+        <td>{{ f.emitted_at.strftime('%d/%m/%Y') if f.emitted_at else '-' }}</td>
+        <td>{{ f.montant }}€</td>
+        <td>{% if f.send_by_email %}Oui{% else %}Non{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

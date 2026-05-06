@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MEC AUTO{% endblock %}</title>
+    <style>
+        :root {
+            --bg: #f5f5f5; --bg-card: white; --text: #333; --text-muted: #666;
+            --primary: #2E6DA4; --primary-dark: #1E3A5F; --header-bg: #1E3A5F;
+            --border: #eee; --border-dark: #ddd; --hover: #f9f9f9;
+            --success: #d4edda; --success-text: #155724; --error: #f8d7da; --error-text: #721c24;
+            --info: #d1ecf1; --info-text: #0c5460; --stat-box: #f5f8fc;
+        }
+        .dark {
+            --bg: #1a1a1a; --bg-card: #2d2d2d; --text: #e0e0e0; --text-muted: #aaa;
+            --primary: #4a9eda; --primary-dark: #3a7ab8; --header-bg: #0d1b2a;
+            --border: #444; --border-dark: #555; --hover: #3a3a3a;
+            --success: #1e4620; --success-text: #8fd98f; --error: #4a1e1e; --error-text: #f88;
+            --info: #1e3a4a; --info-text: #8fd9ea; --stat-box: #333;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; transition: background 0.3s, color 0.3s; }
+        .header { background: var(--header-bg); color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 1.5rem; }
+        .header a { color: white; text-decoration: none; margin-left: 1rem; }
+        .header .user { color: #ccc; }
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+        .theme-toggle { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.3rem 0.6rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+        .theme-toggle:hover { background: rgba(255,255,255,0.1); }
+        .nav { background: var(--primary); padding: 0.5rem 2rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .nav a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px; white-space: nowrap; }
+        .nav a:hover { background: var(--primary-dark); }
+        .nav a.active { background: white; color: var(--primary); font-weight: bold; }
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: var(--bg-card); border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; margin-left: auto; margin-right: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 1000px; }
+        .card h2, .card h3, .card h4 { color: var(--primary-dark); margin-bottom: 1rem; }
+        .card h2 { font-size: 1.5rem; }
+        .btn { display: inline-block; padding: 0.5rem 1rem; background: var(--primary); color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; }
+        .btn:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #666; }
+        .btn-danger { background: #c00; }
+        .btn-success { background: #280; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--stat-box); font-weight: bold; }
+        tr:hover { background: var(--hover); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.25rem; font-weight: bold; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.5rem; border: 1px solid var(--border-dark); border-radius: 4px; background: var(--bg-card); color: var(--text); }
+        .flash { padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
+        .flash.success { background: var(--success); color: var(--success-text); }
+        .flash.error { background: var(--error); color: var(--error-text); }
+        .flash.info { background: var(--info); color: var(--info-text); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .stat-box { background: var(--stat-box); padding: 1rem; border-radius: 8px; text-align: center; }
+        .stat-box .number { font-size: 2rem; font-weight: bold; color: var(--primary-dark); }
+        .stat-box .label { color: var(--text-muted); }
+        .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+        .badge.ouvert { background: #17a2b8; color: white; }
+        .badge.en_cours { background: #ffc107; color: black; }
+        .badge.termine { background: #28a745; color: white; }
+        .badge.cloture { background: #6c757d; color: white; }
+        .actions { display: flex; gap: 0.5rem; }
+        .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+        .badge.ouvert { background: #17a2b8; color: white; }
+        .badge.en_cours { background: #ffc107; color: black; }
+        .badge.termine { background: #28a745; color: white; }
+        .badge.cloture { background: #6c757d; color: white; }
+        .badge.actif { background: #28a745; color: white; }
+        .badge.inactif { background: #dc3545; color: white; }
+        /* Dark mode badges */
+        .dark .badge.ouvert { background: #17a2b8; }
+        .dark .badge.en_cours { background: #ffc107; }
+        .dark .badge.termine { background: #28a745; }
+        .dark .badge.cloture { background: #6c757d; }
+    </style>
+    <script>
+        function toggleTheme() {
+            localStorage.setItem('scrollPos', window.scrollY);
+            document.body.classList.toggle('dark');
+            localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        }
+        window.onload = function() {
+            if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+            var sp = localStorage.getItem('scrollPos');
+            if (sp) { window.scrollTo(0, parseInt(sp)); localStorage.removeItem('scrollPos'); }
+        };
+        // Save scroll on clicks
+        document.addEventListener('click', function(e) {
+            var tag = e.target.tagName;
+            if (tag === 'A' || tag === 'BUTTON' || e.target.closest('form')) {
+                localStorage.setItem('scrollPos', window.scrollY);
+            }
+        }, true);
+    </script>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <div class="header">
+        <h1>MEC AUTO - Gestion Atelier</h1>
+        <div class="header-right">
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 Mode sombre</button>
+            <span class="user">{{ current_user.prenom }} {{ current_user.nom }}{% if current_user.role == 'ddfpt' %}, DDFPT{% elif current_user.role == 'magasinier' %}, Magasinier{% elif current_user.role == 'enseignant' %}, Enseignant{% elif current_user.role == 'eleve' %}, Élève{% endif %}</span>
+            <a href="{{ url_for('auth.logout') }}">Déconnexion</a>
+        </div>
+    </div>
+    <div class="nav">
+        <a href="{{ url_for('main.index') }}" {% if request.endpoint=='main.index' %}class="active"{% endif %}>Tableau de bord</a>
+        <a href="{{ url_for('ordres.list') }}" {% if request.endpoint and 'ordres' in request.endpoint %}class="active"{% endif %}>Ordres de réparation</a>
+        {% if current_user.can_manage_clients() %}
+        <a href="{{ url_for('clients.list') }}" {% if request.endpoint and 'clients' in request.endpoint %}class="active"{% endif %}>Clients</a>
+        {% endif %}
+        {% if current_user.can_manage_vehicules() %}
+        <a href="{{ url_for('vehicules.list') }}" {% if request.endpoint and 'vehicules' in request.endpoint %}class="active"{% endif %}>Véhicules</a>
+        {% endif %}
+        {% if current_user.role != 'eleve' %}
+        <a href="{{ url_for('agenda.index') }}" {% if request.endpoint and 'agenda' in request.endpoint %}class="active"{% endif %}>📅 Agenda</a>
+        {% endif %}
+        {% if current_user.can_facturer() %}
+        <a href="{{ url_for('factures.list') }}" {% if request.endpoint and 'factures' in request.endpoint %}class="active"{% endif %}>Factures</a>
+        {% endif %}
+        {% if current_user.can_see_stats() %}
+        <a href="{{ url_for('stats.index') }}" {% if request.endpoint and 'stats' in request.endpoint %}class="active"{% endif %}>Statistiques</a>
+        {% endif %}
+        {% if current_user.role == 'ddfpt' %}
+        <a href="{{ url_for('settings.admin', tab='users') }}" {% if request.endpoint == 'settings.admin' %}class="active"{% endif %}>Admin</a>
+        {% endif %}
+        {% if current_user.role == 'enseignant' %}
+        <a href="{{ url_for('settings.checklist') }}" {% if request.endpoint == 'settings.checklist' %}class="active"{% endif %}>Checklist</a>
+        {% endif %}
+        {% if current_user.role not in ['eleve'] %}
+        <a href="{{ url_for('settings.mon_compte') }}" {% if request.endpoint == 'settings.mon_compte' %}class="active"{% endif %}>Mon compte</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+    
+    <footer style="background: #f5f5f5; padding: 1rem; text-align: center; margin-top: 2rem; border-top: 1px solid #ddd; font-size: 0.85rem; color: #666;">
+        {% if g.etab_nom %}<strong>{{ g.etab_nom }}</strong><br>{% endif %}
+        {% if g.etab_adresse %}{{ g.etab_adresse }}<br>{% endif %}
+        {% if g.etab_tel %}Tel: {{ g.etab_tel }}{% endif %}
+        {% if g.etab_email %} | Email: {{ g.etab_email }}{% endif %}
+    </footer>
+</body>
+</html>

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Statistiques - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Statistiques</h2>
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+    <div class="stat-box">
+        <div class="number">{{ stats.total_clients }}</div>
+        <div class="label">Clients</div>
+    </div>
+    <div class="stat-box">
+        <div class="number">{{ stats.total_vehicules }}</div>
+        <div class="label">Véhicules</div>
+    </div>
+    <div class="stat-box">
+        <div class="number">{{ stats.total_ordres }}</div>
+        <div class="label">Ordres</div>
+    </div>
+    <div class="stat-box">
+        <div class="number">{{ stats.total_factures }}€</div>
+        <div class="label">Total factures</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <div class="card">
+        <h3>ORDRE PAR STATUT</h3>
+        <table>
+            <thead><tr><th>Statut</th><th>Nombre</th></tr></thead>
+            <tbody>
+            {% for statut, count in stats.or_par_statut %}
+            <tr>
+                <td><span class="badge {{ statut }}">{{ statut }}</span></td>
+                <td>{{ count }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>FACTURES PAR MOIS</h3>
+        <table>
+            <thead><tr><th>Mois</th><th>Nombre</th><th>Montant</th></tr></thead>
+            <tbody>
+            {% for mois, count, montant in stats.factures_par_mois %}
+            <tr>
+                <td>{{ mois }}</td>
+                <td>{{ count }}</td>
+                <td>{{ montant }}€</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3">Aucune facture</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top: 2rem;">
+    <a href="{{ url_for('data.stats_export') }}" class="btn">📊 Exporter CSV</a>
+    <a href="{{ url_for('data.index') }}" class="btn btn-secondary">← Retour</a>
+</div>
+{% endblock %}

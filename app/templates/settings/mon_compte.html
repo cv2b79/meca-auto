@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Mon compte - MEC AUTO{% endblock %}
+{% block content %}
+<h2>👤 Mon compte</h2>
+
+<div class="card" style="margin-bottom: 1rem;">
+    <h3>🔐 Modifier mon mot de passe</h3>
+    <form method="POST" style="max-width: 400px;">
+        <input type="hidden" name="action" value="change_password">
+        <div style="margin-bottom: 0.5rem;">
+            <label style="display: block; font-size: 0.85rem;">Mot de passe actuel</label>
+            <input type="password" name="current_password" required style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+            <label style="display: block; font-size: 0.85rem;">Nouveau mot de passe</label>
+            <input type="password" name="new_password" required style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+            <label style="display: block; font-size: 0.85rem;">Confirmer le mot de passe</label>
+            <input type="password" name="confirm_password" required style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: #fff3cd; border-radius: 4px;">
+            <label style="display: block; font-size: 0.85rem;">Question de sécurité (optionnel)</label>
+            <input type="text" name="security_question" value="{{ current_user.security_question or '' }}" placeholder="Ex: Nom du premier animal de compagnie" style="width: 100%; margin-bottom: 0.3rem;">
+            <input type="text" name="security_answer" value="{{ current_user.security_answer or '' }}" placeholder="Réponse" style="width: 100%;">
+        </div>
+        <button type="submit" class="btn">Enregistrer</button>
+    </form>
+</div>
+{% endblock %}

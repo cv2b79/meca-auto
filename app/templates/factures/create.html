@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Créer Facture{% endblock %}
+{% block content %}
+<h2>Créer une facture</h2>
+<div class="card">
+    <p><strong>OR:</strong> {{ or_obj.numero }}</p>
+    <p><strong>Véhicule:</strong> {{ or_obj.vehicule.immatriculation }}</p>
+    <p><strong>Client:</strong> {{ or_obj.client.prenom }} {{ or_obj.client.nom }}</p>
+    <p><strong>Montant:</strong> {{ or_obj.montant }}€</p>
+</div>
+<form method="POST" class="card">
+    <p>Confirmer la création de la facture?</p>
+    <button type="submit" class="btn btn-success">Créer la facture</button>
+    <a href="{{ url_for('ordres.view', id=or_obj.id) }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

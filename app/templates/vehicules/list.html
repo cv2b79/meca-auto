@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Véhicules - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Véhicules</h2>
+
+<form method="GET" style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+    <input type="text" name="search" placeholder="Immatriculation, marque, modèle, VIN..." value="{{ search }}" style="padding: 0.5rem; width: 250px;">
+    <select name="sort" style="padding: 0.5rem;">
+        <option value="immat_asc" {% if sort=='immat_asc' %}selected{% endif %}>Immat A-Z</option>
+        <option value="immat_desc" {% if sort=='immat_desc' %}selected{% endif %}>Immat Z-A</option>
+        <option value="marque_asc" {% if sort=='marque_asc' %}selected{% endif %}>Marque A-Z</option>
+        <option value="recent" {% if sort=='recent' %}selected{% endif %}>Plus récents</option>
+    </select>
+    <button type="submit" class="btn">🔍</button>
+    <a href="{{ url_for('vehicules.list') }}" class="btn btn-secondary">Reset</a>
+    {% if current_user.can_manage_vehicules() %}
+    <a href="{{ url_for('vehicules.new') }}" class="btn" style="margin-left: auto;">+ Nouveau véhicule</a>
+    {% endif %}
+</form>
+
+<table>
+    <thead><tr><th>Immatriculation</th><th>Marque</th><th>Modèle</th><th>Année</th><th>Propriétaire</th><th>Dernière venue</th></tr></thead>
+    <tbody>
+    {% for v in vehicules %}
+    <tr>
+        <td><a href="{{ url_for('vehicules.view', id=v.id) }}"><strong>{{ v.immatriculation }}</strong></a></td>
+        <td>{{ v.marque }}</td>
+        <td>{{ v.modele }}</td>
+        <td>{{ v.annee or '-' }}</td>
+        <td>{{ v.proprietaire.prenom if v.proprietaire }} {{ v.proprietaire.nom if v.proprietaire else '-' }}</td>
+        <td>
+            {% set last_or = v.ordres|sort(attribute='created_at')|last %}
+            {% if last_or %}{{ last_or.created_at.strftime('%d/%m/%Y') }}{% else %}-{% endif %}
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" style="text-align: center; color: #999;">Aucun véhicule trouvé</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<p style="margin-top: 1rem; color: #666;">Total: {{ vehicules|length }} véhicule(s)</p>
+{% endblock %}

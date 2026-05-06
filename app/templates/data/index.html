@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Données - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Gestion des données</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <!-- SAUVEGARDE -->
+    <div class="card">
+        <h3 style="color: #1E3A5F;">💾 Sauvegardes</h3>
+        <p>Gérer les sauvegardes de la base de données</p>
+        <a href="{{ url_for('data.backups') }}" class="btn">📂 Voir les sauvegardes</a>
+        <a href="{{ url_for('data.backup_create') }}" class="btn btn-secondary" onclick="return confirm('Créer une nouvelle sauvegarde?')">➕Nouvelle sauvegarde</a>
+    </div>
+
+    <!-- EXPORT -->
+    <div class="card">
+        <h3 style="color: #1E3A5F;">📤 Export CSV</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <a href="{{ url_for('data.export_csv', type='clients') }}" class="btn btn-secondary">Exporter Clients</a>
+            <a href="{{ url_for('data.export_csv', type='vehicules') }}" class="btn btn-secondary">Exporter Véhicules</a>
+            <a href="{{ url_for('data.export_csv', type='ordres') }}" class="btn btn-secondary">Exporter Ordres</a>
+            <a href="{{ url_for('data.export_csv', type='interventions') }}" class="btn btn-secondary">Exporter Interventions</a>
+        </div>
+    </div>
+
+    <!-- IMPORT -->
+    <div class="card">
+        <h3 style="color: #1E3A5F;">📥 Import CSV</h3>
+        <form method="POST" action="{{ url_for('data.import_csv') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Type de données</label>
+                <select name="type" required>
+                    <option value="">-- Sélectionner --</option>
+                    <option value="clients">Clients</option>
+                    <option value="vehicules">Véhicules</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Fichier CSV</label>
+                <input type="file" name="file" accept=".csv" required>
+            </div>
+            <button type="submit" class="btn">Importer</button>
+        </form>
+        <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">Format attendu: CSV avec entêtes</p>
+    </div>
+
+    <!-- ARCHIVAGE -->
+    <div class="card">
+        <h3 style="color: #1E3A5F;">📦 Archivage</h3>
+        <p>Archiver les ordres de réparation clôturés</p>
+        <form method="POST" action="{{ url_for('data.archiver') }}">
+            <div class="form-group">
+                <label>Archiver les OR clôturés avant le</label>
+                <input type="date" name="date_limit" required>
+            </div>
+            <button type="submit" class="btn" onclick="return confirm('Confirmer l\'archivage?')">Archiver</button>
+        </form>
+    </div>
+
+    <!-- STATS -->
+    <div class="card">
+        <h3 style="color: #1E3A5F;">📊 Statistiques</h3>
+        <a href="{{ url_for('data.stats') }}" class="btn">Voir les statistiques</a>
+    </div>
+
+    <!-- LOGS -->
+    <div class="card">
+        <h3 style="color: #1E3A5F;">📋 Journal d'activité</h3>
+        <p>Historique des actions des utilisateurs</p>
+        <a href="{{ url_for('data.logs') }}" class="btn">📋 Voir les logs</a>
+    </div>
+
+    </div>
+{% endblock %}

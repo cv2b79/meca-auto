@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Journal des actions - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Journal des actions</h2>
+
+<form method="GET" style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+    <select name="action" style="padding: 0.5rem;" onchange="this.form.submit()">
+        <option value="">Toutes les actions</option>
+        {% for a in actions %}
+        <option value="{{ a }}" {% if action_filter==a %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+    </select>
+    <select name="user_id" style="padding: 0.5rem;" onchange="this.form.submit()">
+        <option value="">Tous les utilisateurs</option>
+        {% for u in users %}
+        <option value="{{ u.id }}" {% if user_filter==u.id %}selected{% endif %}>{{ u.prenom }} {{ u.nom }}</option>
+        {% endfor %}
+    </select>
+    <input type="date" name="date_from" value="{{ date_from or '' }}" style="padding: 0.5rem;" title="Date début">
+    <input type="date" name="date_to" value="{{ date_to or '' }}" style="padding: 0.5rem;" title="Date fin">
+    <select name="sort" style="padding: 0.5rem;" onchange="this.form.submit()">
+        <option value="date_desc" {% if sort=='date_desc' %}selected{% endif %}>Plus récents</option>
+        <option value="date_asc" {% if sort=='date_asc' %}selected{% endif %}>Plus anciens</option>
+        <option value="user" {% if sort=='user' %}selected{% endif %}>Par utilisateur</option>
+        <option value="action" {% if sort=='action' %}selected{% endif %}>Par action</option>
+    </select>
+    <button type="submit" class="btn">Filtrer</button>
+    <a href="{{ url_for('data.logs') }}" class="btn btn-secondary">Reset</a>
+</form>
+
+<div style="margin-bottom: 1rem; font-size: 0.9rem; color: #666;">
+    Affichage des 200 dernières actions
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Date/Heure</th>
+            <th>Utilisateur</th>
+            <th>Action</th>
+            <th>Détails</th>
+            <th>Cible</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for log in logs %}
+    <tr>
+        <td>{{ log.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td>{% if log.user %}{{ log.user.prenom }} {{ log.user.nom }}{% else %}System{% endif %}</td>
+        <td><span class="badge {% if 'delete' in log.action %}termine{% elif 'create' in log.action %}ouvert{% elif 'edit' in log.action %}en_cours{% else %}cloture{% endif %}">{{ log.action }}</span></td>
+        <td>{{ log.details or '-' }}</td>
+        <td>{% if log.target_type %}{{ log.target_type }} #{{ log.target_id }}{% else %}-{% endif %}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" style="text-align: center; color: #666; padding: 2rem;">Aucune action enregistrée</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<div style="margin-top: 1rem;">
+    <a href="{{ url_for('data.index') }}" class="btn btn-secondary">← Retour</a>
+</div>
+{% endblock %}

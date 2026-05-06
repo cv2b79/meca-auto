@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Clients - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Clients</h2>
+
+<form method="GET" style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+    <input type="text" name="search" placeholder="Rechercher (nom, prénom, tel, email)..." value="{{ search }}" style="padding: 0.5rem; width: 250px;">
+    <select name="sort" style="padding: 0.5rem;">
+        <option value="nom_asc" {% if sort=='nom_asc' %}selected{% endif %}>Nom A-Z</option>
+        <option value="nom_desc" {% if sort=='nom_desc' %}selected{% endif %}>Nom Z-A</option>
+        <option value="prenom_asc" {% if sort=='prenom_asc' %}selected{% endif %}>Prénom A-Z</option>
+        <option value="recent" {% if sort=='recent' %}selected{% endif %}>Plus récents</option>
+    </select>
+    <button type="submit" class="btn">🔍</button>
+    <a href="{{ url_for('clients.list') }}" class="btn btn-secondary">Reset</a>
+    {% if current_user.can_manage_clients() %}
+    <a href="{{ url_for('clients.new') }}" class="btn" style="margin-left: auto;">+ Nouveau client</a>
+    {% endif %}
+</form>
+
+<table>
+    <thead><tr><th>Nom</th><th>Prénom</th><th>Téléphone</th><th>Email</th><th>Véhicules</th><th>Dernière venue</th></tr></thead>
+    <tbody>
+    {% for c in clients %}
+    <tr>
+        <td><a href="{{ url_for('clients.view', id=c.id) }}"><strong>{{ c.nom }}</strong></a></td>
+        <td>{{ c.prenom }}</td>
+        <td>{{ c.telephone or '-' }}</td>
+        <td>{{ c.email or '-' }}</td>
+        <td>{{ c.vehicules.count() }}</td>
+        <td>
+            {% set last_or = c.ordres|sort(attribute='created_at')|last %}
+            {% if last_or %}{{ last_or.created_at.strftime('%d/%m/%Y') }}{% else %}-{% endif %}
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" style="text-align: center; color: #999;">Aucun client trouvé</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<p style="margin-top: 1rem; color: #666;">Total: {{ clients|length }} client(s)</p>
+{% endblock %}

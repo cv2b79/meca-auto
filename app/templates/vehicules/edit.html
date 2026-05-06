@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{% if vehicule %}Modifier{% else %}Nouveau{% endif %} Véhicule{% endblock %}
+{% block content %}
+<h2>{% if vehicule %}Modifier{% else %}Nouveau{% endif %} Véhicule</h2>
+<form method="POST" class="card">
+    <div class="form-group"><label>Immatriculation</label><input type="text" name="immatriculation" value="{{ vehicule.immatriculation if vehicule else '' }}" required></div>
+    <div class="form-group"><label>Marque</label><input type="text" name="marque" value="{{ vehicule.marque if vehicule else '' }}"></div>
+    <div class="form-group"><label>Modèle</label><input type="text" name="modele" value="{{ vehicule.modele if vehicule else '' }}"></div>
+    <div class="form-group"><label>Année</label><input type="number" name="annee" value="{{ vehicule.annee if vehicule else '' }}"></div>
+    <div class="form-group"><label>VIN</label><input type="text" name="vin" value="{{ vehicule.vin if vehicule else '' }}"></div>
+    <div class="form-group"><label>Couleur</label><input type="text" name="couleur" value="{{ vehicule.couleur if vehicule else '' }}"></div>
+    <div class="form-group"><label>Kilométrage</label><input type="number" name="kilometrage" value="{{ vehicule.kilometrage if vehicule else '' }}"></div>
+    <h3>Propriétaire</h3>
+    {% if vehicule and vehicule.proprietaire %}
+    <div class="form-group">
+        <select name="proprietaire_id">
+            <option value="{{ vehicule.proprietaire_id }}" selected>{{ vehicule.proprietaire.prenom }} {{ vehicule.proprietaire.nom }}</option>
+        </select>
+    </div>
+    {% else %}
+    <div class="form-group"><label>Nom</label><input type="text" name="proprio_nom"></div>
+    <div class="form-group"><label>Prénom</label><input type="text" name="proprio_prenom"></div>
+    <div class="form-group"><label>Téléphone</label><input type="text" name="proprio_tel"></div>
+    <div class="form-group"><label>Email</label><input type="email" name="proprio_email"></div>
+    {% endif %}
+    <button type="submit" class="btn">Enregistrer</button>
+    <a href="{{ url_for('vehicules.list') }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

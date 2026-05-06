@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}OR {{ or_obj.numero }}{% endblock %}
+{% block content %}
+<h2>Ordre de réparation {{ or_obj.numero }}</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+    <div class="card">
+        <p><strong>Statut:</strong> <span class="badge {{ or_obj.statut }}">{{ or_obj.statut }}</span></p>
+        <p><strong>Enseignant responsable:</strong> {% if or_obj.created_by_user %}{{ or_obj.created_by_user.prenom }} {{ or_obj.created_by_user.nom }}{% else %}-{% endif %}</p>
+        <p><strong>Véhicule:</strong> {{ or_obj.vehicule.immatriculation }} - {{ or_obj.vehicule.marque }} {{ or_obj.vehicule.modele }}</p>
+        <p><strong>Client:</strong> {% if client %}{{ client.prenom }} {{ client.nom }} - {{ client.telephone }}{% else %}Inconnu{% endif %}</p>
+        <p><strong>Description:</strong> {{ or_obj.description or '-' }}</p>
+        {% if or_obj.classe_nom or or_obj.eleve_nom %}
+        <p><strong>Classe/Élève:</strong> {% if or_obj.classe_nom %}{{ or_obj.classe_nom }}{% endif %}{% if or_obj.classe_nom and or_obj.eleve_nom %} - {% endif %}{% if or_obj.eleve_nom %}{{ or_obj.eleve_nom }}{% endif %}</p>
+        {% endif %}
+        <p><strong>Mode tarif:</strong> {{ or_obj.mode_tarif }}</p>
+        <p><strong>Montant:</strong> {% if or_obj.montant %}{{ or_obj.montant }}€{% else %}<span style="color: #999;">Non défini</span>{% endif %}</p>
+        {% if or_obj.pas_de_facturation %}
+        <p style="color: red; font-weight: bold;">⛔ Pas de facturation</p>
+        {% endif %}
+        {% if or_obj.rdv_date_heure %}
+        <p style="color: #1E3A5F; background: #e3f2fd; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+            📅 <strong>RDV planifié:</strong> {{ or_obj.rdv_date_heure.strftime('%d/%m/%Y à %H:%M') }} - {{ or_obj.rdv_titre or 'Intervention' }}
+        </p>
+        {% endif %}
+        {% if or_obj.client_recup_pieces == false or or_obj.client_recup_fluides == false %}
+        <p style="color: #856404; font-size: 0.9rem;">♻️ Dépollution: {% if not or_obj.client_recup_pieces %}pièces non récupérées{% endif %}{% if not or_obj.client_recup_pieces and not or_obj.client_recup_fluides %}, {% endif %}{% if not or_obj.client_recup_fluides %}fluides non récupérés{% endif %}</p>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <h4>📝 États des lieux</h4>
+        {% set etat_entree = or_obj.etats_lieux.filter_by(type='entree').first() %}
+        {% set etat_sortie = or_obj.etats_lieux.filter_by(type='sortie').first() %}
+        
+        <p><strong>Entrée:</strong> 
+            {% if etat_entree %}
+                <span style="color: green;">✓ {{ etat_entree.kilometrage }} km</span>
+                <small style="color: #666;">({{ etat_entree.created_at.strftime('%d/%m/%Y à %H:%M') }})</small>
+            {% else %}
+                <span style="color: red;">✗ Non réalisé</span>
+            {% endif %}
+        </p>
+        
+        <p><strong>Sortie:</strong> 
+            {% if etat_sortie %}
+                <span style="color: green;">✓ {{ etat_sortie.kilometrage }} km</span>
+                <small style="color: #666;">({{ etat_sortie.created_at.strftime('%d/%m/%Y à %H:%M') }})</small>
+            {% else %}
+                <span style="color: red;">✗ Non réalisé</span>
+            {% endif %}
+        </p>
+        
+        <div style="margin-top: 1rem;">
+            {% if current_user.role in ['eleve', 'enseignant'] %}
+                {% if not etat_entree %}
+                <a href="{{ url_for('ordres.etat_lieu_form', or_id=or_obj.id, type='entree') }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn" style="display: block; margin-bottom: 0.5rem;">
+                    ➕ État des lieux ENTRÉE
+                </a>
+                {% else %}
+                <a href="{{ url_for('ordres.etat_lieu_print', or_id=or_obj.id, type='entree') }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn btn-secondary" style="display: block; margin-bottom: 0.5rem;">
+                    🖨️ Imprimer ENTRÉE
+                </a>
+                {% endif %}
+                
+                {% if or_obj.statut != 'cloture' %}
+                <a href="{{ url_for('ordres.etat_lieu_form', or_id=or_obj.id, type='sortie') }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn" style="display: block;">
+                    ➕ État des lieux SORTIE
+                </a>
+                {% elif etat_sortie %}
+                <a href="{{ url_for('ordres.etat_lieu_print', or_id=or_obj.id, type='sortie') }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn btn-secondary" style="display: block;">
+                    🖨️ Imprimer SORTIE
+                </a>
+                {% endif %}
+            {% else %}
+                {% if etat_entree %}
+                <a href="{{ url_for('ordres.etat_lieu_print', or_id=or_obj.id, type='entree') }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn btn-secondary" style="display: block; margin-bottom: 0.5rem;">
+                    🖨️ Imprimer ENTRÉE
+                </a>
+                {% endif %}
+                {% if etat_sortie %}
+                <a href="{{ url_for('ordres.etat_lieu_print', or_id=or_obj.id, type='sortie') }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn btn-secondary" style="display: block;">
+                    🖨️ Imprimer SORTIE
+                </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if or_obj.statut != 'cloture' %}
+<div class="card" style="margin-top: 1rem;">
+    <h4>Modifier le statut</h4>
+    <form method="POST" action="{{ url_for('ordres.set_statut', id=or_obj.id) }}" style="display: flex; gap: 0.5rem; align-items: center;">
+        <select name="statut">
+            <option value="ouvert" {% if or_obj.statut=='ouvert' %}selected{% endif %}>Ouvert</option>
+            <option value="en_cours" {% if or_obj.statut=='en_cours' %}selected{% endif %}>En cours</option>
+            <option value="termine" {% if or_obj.statut=='termine' %}selected{% endif %}>Terminé</option>
+            <option value="cloture" {% if or_obj.statut=='cloture' %}selected{% endif %}>Clôturé</option>
+        </select>
+        <button type="submit" class="btn">Mettre à jour</button>
+    </form>
+    {% if or_obj.statut == 'termine' and not etat_sortie %}
+    <p style="color: red; margin-top: 0.5rem;">⚠️ État des lieux de SORTIE requis pour cloturer</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card" style="margin-top: 1rem;">
+    <h4>Actions</h4>
+    <div class="actions">
+        {% if current_user.can_edit_or() %}
+        <a href="{{ url_for('ordres.edit', id=or_obj.id) }}" class="btn">Modifier</a>
+        {% endif %}
+        <a href="{{ url_for('ordres.print_or', id=or_obj.id) }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn btn-secondary">Imprimer OR</a>
+        <a href="{{ url_for('ordres.controle', id=or_obj.id) }}" class="btn btn-secondary">Contrôle visuel</a>
+        {% if current_user.can_facturer() and or_obj.statut == 'cloture' and not or_obj.facture %}
+        <a href="{{ url_for('factures.create', or_id=or_obj.id) }}" class="btn btn-success">Créer la Facture</a>
+        {% elif or_obj.facture %}
+        <a href="{{ url_for('factures.view', id=or_obj.facture.id) }}" class="btn btn-secondary">Voir la Facture</a>
+        {% endif %}
+        {% if current_user.has_permission('delete_or') and or_obj.statut != 'cloture' %}
+        <form method="POST" action="{{ url_for('ordres.delete', id=or_obj.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer cet OR?');">
+            <button type="submit" class="btn btn-danger">Supprimer</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if rdv_list %}
+<h3>📅 Rendez-vous liés</h3>
+<table>
+    <thead><tr><th>Date</th><th>Titre</th><th>Statut</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rdv_list %}
+    <tr>
+        <td>{{ r.date_heure.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td>{{ r.titre }}</td>
+        <td><span style="color: {% if r.statut == 'confirme' %}green{% elif r.statut == 'annule' %}red{% elif r.statut == 'termine' %}gray{% else %}blue{% endif %};">{{ r.statut }}</span></td>
+        <td><a href="{{ url_for('agenda.edit', id=r.id) }}" class="btn btn-secondary" style="padding: 0.2rem 0.5rem;">Voir</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<div style="margin-top: 0.5rem;">
+    <a href="{{ url_for('agenda.new') }}?client_id={{ or_obj.client_id }}&vehicule_id={{ or_obj.vehicule_id }}" class="btn btn-secondary">+ Nouveau RDV</a>
+</div>
+{% endif %}
+
+<h3>Interventions élèves</h3>
+<table>
+    <thead><tr><th>Élève</th><th>Description</th><th>Fourniture</th><th>Qté</th><th>Heures</th></tr></thead>
+    <tbody>
+    {% for i in interventions %}
+    <tr>
+        <td>{{ i.eleve.prenom }} {{ i.eleve.nom }}</td>
+        <td>{{ i.description }}</td>
+        <td>{% if i.fourniture %}{{ i.fourniture.nom }}{% else %}-{% endif %}</td>
+        <td>{% if i.quantite %}{{ i.quantite }}{% else %}1{% endif %}</td>
+        <td>{{ i.heures }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% if current_user.has_permission('edit_intervention') and or_obj.statut != 'cloture' %}
+<div class="card" style="margin-top: 1rem; background: #f8f9fa;">
+    <h4>Ajouter une intervention</h4>
+    <form method="POST" action="{{ url_for('ordres.add_intervention', id=or_obj.id) }}">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label>Élève</label>
+                <select name="eleve_id" required>
+                    <option value="">Sélectionner...</option>
+                    {% for e in eleves %}<option value="{{ e.id }}">{{ e.prenom }} {{ e.nom }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Heures</label>
+                <input type="number" step="0.5" name="heures" value="0" min="0">
+            </div>
+            <div class="form-group">
+                <label>Fourniture</label>
+                <select name="fourniture_id">
+                    <option value="">Aucune</option>
+                    {% for f in fournitures %}<option value="{{ f.id }}">{{ f.nom }} ({{ f.prix_unitaire }}€)</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Description du travail</label>
+            <textarea name="description" rows="2" placeholder="Description de l'intervention..."></textarea>
+        </div>
+        <button type="submit" class="btn">Ajouter</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

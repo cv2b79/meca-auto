@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}{{ vehicule.immatriculation }} - Historique{% endblock %}
+{% block content %}
+<h2>{{ vehicule.immatriculation }} <span style="font-weight: normal; font-size: 0.8em;">{{ vehicule.marque }} {{ vehicule.modele }}</span></h2>
+
+<div class="card">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div><strong>Année:</strong> {{ vehicule.annee or '-' }}</div>
+        <div><strong>VIN:</strong> {{ vehicule.vin or '-' }}</div>
+        <div><strong>Couleur:</strong> {{ vehicule.couleur or '-' }}</div>
+        <div><strong>Kilométrage:</strong> {{ vehicule.kilometrage or '-' }} km</div>
+        <div><strong>Propriétaire actuel:</strong> {% if vehicule.proprietaire %}{{ vehicule.proprietaire.prenom }} {{ vehicule.proprietaire.nom }}{% else %}Aucun{% endif %}</div>
+    </div>
+    <div class="actions" style="margin-top: 1rem;">
+        {% if current_user.can_manage_vehicules() %}
+        <a href="{{ url_for('vehicules.edit', id=vehicule.id) }}" class="btn">Modifier</a>
+        {% endif %}
+        {% if current_user.can_create_or() %}
+        <a href="{{ url_for('ordres.new') }}?vehicule_id={{ vehicule.id }}" class="btn">Nouvel OR</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- RÉSUMÉ STATISTIQUE -->
+<div class="stats-grid" style="margin-top: 1rem;">
+    <div class="stat-box">
+        <div class="number">{{ ors|length }}</div>
+        <div class="label">Total OR</div>
+    </div>
+    <div class="stat-box" style="background: #d4edda;">
+        <div class="number">{{ ors|selectattr('statut', 'equalto', 'cloture')|list|length }}</div>
+        <div class="label">Clôturés</div>
+    </div>
+    <div class="stat-box" style="background: #cfe2ff;">
+        <div class="number">{{ total_interventions }}</div>
+        <div class="label">Interventions</div>
+    </div>
+    <div class="stat-box" style="background: #fff3cd;">
+        <div class="number">{{ total_heures }}h</div>
+        <div class="label">Heures élèves</div>
+    </div>
+    <div class="stat-box" style="background: #e8f5e9;">
+        <div class="number">{{ "%.2f"|format(ors|sum(attribute='montant') or 0) }} €</div>
+        <div class="label">Total facturé</div>
+    </div>
+</div>
+
+<!-- HISTORIQUE PROPRIÉTAIRES -->
+<h3>📜 Historique propriétaire</h3>
+{% if historiques %}
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+{% for h in historiques %}
+<div style="background: {% if loop.last %}#d4edda{% else %}#f8f9fa{% endif %}; padding: 0.75rem; border-radius: 8px; border: 1px solid #ddd; min-width: 150px;">
+    <div style="font-weight: bold;">{{ h.client.prenom }} {{ h.client.nom }}</div>
+    <div style="font-size: 0.8rem; color: #666;">
+        {{ h.date_debut.strftime('%m/%Y') if h.date_debut else '?' }} → {% if h.date_fin %}{{ h.date_fin.strftime('%m/%Y') }}{% else %}Maintenant{% endif %}
+    </div>
+</div>
+{% endfor %}
+</div>
+{% else %}
+<p style="color: #999;">Aucun historique de propriétaire</p>
+{% endif %}
+
+<!-- TRACEABILITÉ COMPLÈTE - OR ET INTERVENTIONS -->
+<h3>🔍 Historique complet des interventions</h3>
+{% if ors %}
+{% for o in ors|sort(attribute='created_at', reverse=True) %}
+<div class="card" style="margin-bottom: 1rem; border-left: 4px solid {% if o.statut == 'cloture' %}#28a745{% elif o.statut == 'termine' %}#17a2b8{% elif o.statut == 'en_cours' %}#0d6efd{% else %}#ffc107{% endif %};">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+        <div>
+            <h4 style="margin: 0;">
+                <a href="{{ url_for('ordres.view', id=o.id) }}">{{ o.numero }}</a>
+                <span class="badge {{ o.statut }}">{{ o.statut }}</span>
+            </h4>
+            <div style="color: #666; font-size: 0.9rem;">
+                📅 {{ o.created_at.strftime('%d/%m/%Y') if o.created_at else '' }} 
+                {% if o.classe_nom %}🏫 {{ o.classe_nom }}{% endif %}
+                {% if o.created_by_user %}👨‍🏫 {{ o.created_by_user.prenom }} {{ o.created_by_user.nom }}{% endif %}
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-weight: bold;">{{ "%.2f"|format(o.montant or 0) }} €</div>
+            {% if o.date_cloture %}
+            <div style="font-size: 0.8rem; color: #666;">Clôturé: {{ o.date_cloture.strftime('%d/%m/%Y') }}</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
+        <strong>Description:</strong> {{ o.description or 'Aucune description' }}
+    </div>
+    
+    <!-- ÉTATS DES LIEUX -->
+    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        {% if o.etats_lieux.filter_by(type='entree').first() %}
+        <div style="flex: 1; min-width: 200px; background: #fff3cd; padding: 0.75rem; border-radius: 4px;">
+            <strong>📥 État des lieux ENTRÉE</strong>
+            <div style="font-size: 0.85rem;">
+                Km: {{ o.etats_lieux.filter_by(type='entree').first().kilometrage or '-' }} | 
+                Carburant: {{ o.etats_lieux.filter_by(type='entree').first().niveau_carburant or '-' }}
+            </div>
+        </div>
+        {% endif %}
+        {% if o.etats_lieux.filter_by(type='sortie').first() %}
+        <div style="flex: 1; min-width: 200px; background: #d4edda; padding: 0.75rem; border-radius: 4px;">
+            <strong>📤 État des lieux SORTIE</strong>
+            <div style="font-size: 0.85rem;">
+                Km: {{ o.etats_lieux.filter_by(type='sortie').first().kilometrage or '-' }} | 
+                Carburant: {{ o.etats_lieux.filter_by(type='sortie').first().niveau_carburant or '-' }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- INTERVENTIONS ÉLÈVES -->
+    {% set interventions = o.interventions_eleves.all() %}
+    {% if interventions %}
+    <div>
+        <strong>👨‍🔧 Interventions ({{ interventions|length }})</strong>
+        <table style="width: 100%; margin-top: 0.5rem; font-size: 0.9rem;">
+            <thead><tr><th>Date</th><th>Élève</th><th>Description</th><th>Fourniture</th><th>Qté</th><th>Heures</th></tr></thead>
+            <tbody>
+            {% for i in interventions %}
+            <tr>
+                <td>{{ i.created_at.strftime('%d/%m') if i.created_at else '-' }}</td>
+                <td>{{ i.eleve.prenom }} {{ i.eleve.nom }}</td>
+                <td>{{ i.description[:40] if i.description else '' }}{% if i.description and i.description|length > 40 %}...{% endif %}</td>
+                <td>{% if i.fourniture %}{{ i.fourniture.nom }}{% else %}-{% endif %}</td>
+                <td>{% if i.quantite %}{{ i.quantite }}{% else %}1{% endif %}</td>
+                <td><strong>{{ i.heures or 0 }}h</strong></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div style="text-align: right; font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+            <strong>Total heures:</strong> {{ interventions|sum(attribute='heures') or 0 }}h
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p style="color: #999; text-align: center; padding: 2rem;">Aucun ordre de réparation</p>
+{% endif %}
+{% endblock %}

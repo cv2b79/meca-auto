@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Nouveau RDV - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Nouveau rendez-vous</h2>
+
+<form method="POST" class="card" style="max-width: 600px;">
+    <div class="form-group">
+        <label>Client *</label>
+        <select name="client_id" id="clientSelect" required onchange="updateVehicles()">
+            <option value="">-- Sélectionner --</option>
+            {% for c in clients %}
+            <option value="{{ c.id }}">{{ c.prenom }} {{ c.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="form-group" id="vehiculeGroup" style="display: none;">
+        <label>Véhicule</label>
+        <select name="vehicule_id" id="vehiculeSelect">
+            <option value="">-- Sélectionner --</option>
+        </select>
+    </div>
+    <div id="singleVehicleInfo" style="display: none; padding: 0.5rem; background: #e3f2fd; border-radius: 4px; margin-bottom: 1rem;">
+        Véhicule: <strong id="singleVehicleText"></strong>
+    </div>
+    
+    <div class="form-group">
+        <label>Titre *</label>
+        <input type="text" name="titre" required placeholder="Ex: Révision, Diagnostic...">
+    </div>
+    
+    <div class="form-group">
+        <label>Description</label>
+        <textarea name="description" rows="3" placeholder="Détails supplémentaires..."></textarea>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+            <label>Date *</label>
+            <input type="date" name="date" required>
+        </div>
+        <div class="form-group">
+            <label>Heure *</label>
+            <input type="time" name="time" required value="09:00">
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label>Durée (minutes)</label>
+        <select name="duree">
+            <option value="30">30 min</option>
+            <option value="60" selected>1h</option>
+            <option value="90">1h30</option>
+            <option value="120">2h</option>
+            <option value="180">3h</option>
+        </select>
+    </div>
+    
+    <div style="margin-top: 1rem;">
+        <button type="submit" class="btn">Créer le RDV</button>
+        <a href="{{ url_for('agenda.index') }}" class="btn btn-secondary">Annuler</a>
+    </div>
+</form>
+
+<script>
+// Pre-compute vehicles per client server-side
+var clientVehicles = {};
+{% for v in vehicules %}
+    var clientId = {{ v.proprietaire_id or 'null' }};
+    if (clientId) {
+        if (!clientVehicles[clientId]) clientVehicles[clientId] = [];
+        clientVehicles[clientId].push({id: {{ v.id }}, text: '{{ v.immatriculation }} - {{ v.marque }} {{ v.modele }}'});
+    }
+{% endfor %}
+
+function updateVehicles() {
+    var clientId = document.getElementById('clientSelect').value;
+    var vehiculeGroup = document.getElementById('vehiculeGroup');
+    var vehiculeSelect = document.getElementById('vehiculeSelect');
+    
+    // Reset
+    vehiculeSelect.innerHTML = '<option value="">-- Sélectionner --</option>';
+    vehiculeGroup.style.display = 'none';
+    
+    if (!clientId) return;
+    
+    var vehicles = clientVehicles[clientId] || [];
+    
+    // Add vehicles
+    for (var i = 0; i < vehicles.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = vehicles[i].id;
+        opt.text = vehicles[i].text;
+        vehiculeSelect.appendChild(opt);
+    }
+    
+    var singleVehicleInfo = document.getElementById('singleVehicleInfo');
+    var singleVehicleText = document.getElementById('singleVehicleText');
+    
+    // Show dropdown only if more than 1 vehicle
+    if (vehicles.length > 1) {
+        vehiculeGroup.style.display = 'block';
+        singleVehicleInfo.style.display = 'none';
+    } else if (vehicles.length == 1) {
+        // Show as read-only info, auto-select
+        singleVehicleText.textContent = vehicles[0].text;
+        singleVehicleInfo.style.display = 'block';
+        vehiculeGroup.style.display = 'none';
+        vehiculeSelect.value = vehicles[0].id;
+    } else {
+        singleVehicleInfo.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

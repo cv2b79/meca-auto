@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Agenda - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Agenda</h2>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <div>
+        <a href="{{ url_for('agenda.index', year=year, month=month-1) }}" class="btn btn-secondary">« Précédent</a>
+        <span style="font-size: 1.2rem; font-weight: bold; margin: 0 1rem;">
+            {{ ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][month-1] }} {{ year }}
+        </span>
+        <a href="{{ url_for('agenda.index', year=year, month=month+1) }}" class="btn btn-secondary">Suivant »</a>
+    </div>
+    <a href="{{ url_for('agenda.new') }}" class="btn">+ Nouveau RDV</a>
+</div>
+
+<div class="card" style="max-width: 100%;">
+    <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.9rem;">
+        <thead>
+            <tr style="background: var(--stat-box);">
+                <th style="padding: 0.75rem;">Lun</th>
+                <th style="padding: 0.75rem;">Mar</th>
+                <th style="padding: 0.75rem;">Mer</th>
+                <th style="padding: 0.75rem;">Jeu</th>
+                <th style="padding: 0.75rem;">Ven</th>
+                <th style="padding: 0.75rem; color: #999;">Sam</th>
+                <th style="padding: 0.75rem; color: #999;">Dim</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set current_day = first_day.replace(day=1) %}
+            {% set start_day = current_day - timedelta(days=current_day.weekday()) %}
+            
+            {% for week in range(6) %}
+            <tr>
+                {% for day in range(7) %}
+                {% set day_date = start_day + timedelta(days=week*7+day) %}
+                <td style="border: 1px solid var(--border); min-height: 120px; vertical-align: top; padding: 0.5rem; 
+                    {% if day_date.month != month %}background: var(--hover); opacity: 0.7;{% endif %}
+                    {% if day_date.date() == today.date() %}background: var(--info);{% endif %}">
+                    <div style="font-weight: bold; font-size: 1rem; margin-bottom: 0.5rem;">{{ day_date.day }}</div>
+                    {% for r in rdv_list %}
+                        {% if r.date_heure.date() == day_date.date() %}
+                        <div style="background: {% if r.statut == 'confirme' %}#4caf50{% elif r.statut == 'annule' %}#f44336{% elif r.statut == 'termine' %}#9e9e9e{% else %}#2196f3{% endif %}; 
+                            color: white; font-size: 0.8rem; padding: 4px 6px; margin: 2px 0; border-radius: 4px; cursor: pointer; text-align: left;"
+                            onclick="location.href='{{ url_for('agenda.edit', id=r.id) }}'">
+                            <strong>{{ r.date_heure.strftime('%H:%M') }}</strong> {{ r.titre }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 1rem; display: flex; gap: 1.5rem; font-size: 0.9rem;">
+    <span style="display: inline-flex; align-items: center;"><span style="background: #2196f3; width: 12px; height: 12px; display: inline-block; margin-right: 5px; border-radius: 2px;"></span> Planifié</span>
+    <span style="display: inline-flex; align-items: center;"><span style="background: #4caf50; width: 12px; height: 12px; display: inline-block; margin-right: 5px; border-radius: 2px;"></span> Confirmé</span>
+    <span style="display: inline-flex; align-items: center;"><span style="background: #f44336; width: 12px; height: 12px; display: inline-block; margin-right: 5px; border-radius: 2px;"></span> Annulé</span>
+    <span style="display: inline-flex; align-items: center;"><span style="background: #9e9e9e; width: 12px; height: 12px; display: inline-block; margin-right: 5px; border-radius: 2px;"></span> Terminé</span>
+</div>
+{% endblock %}

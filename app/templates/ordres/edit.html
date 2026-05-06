@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Modifier OR {{ or_obj.numero }}{% endblock %}
+{% block content %}
+<h2>Modifier {{ or_obj.numero }}</h2>
+<div style="margin-bottom: 1rem; padding: 0.8rem; background: #e8f4f8; border-radius: 4px;">
+    <strong>Enseignant responsable:</strong> {% if or_obj.created_by_user %}{{ or_obj.created_by_user.prenom }} {{ or_obj.created_by_user.nom }}{% else %}-{% endif %}
+</div>
+<form method="POST" class="card">
+    <div class="form-group"><label>Description</label><textarea name="description" rows="3">{{ or_obj.description }}</textarea></div>
+    <div class="form-group">
+        <label>Mode tarif</label>
+        <select name="mode_tarif">
+            <option value="forfait" {% if or_obj.mode_tarif=='forfait' %}selected{% endif %}>Forfait</option>
+            <option value="horaire" {% if or_obj.mode_tarif=='horaire' %}selected{% endif %}>Taux horaire</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Forfait</label>
+        <select name="forfait_id">
+            {% for f in forfaits %}<option value="{{ f.id }}" {% if or_obj.forfait_id==f.id %}selected{% endif %}>{{ f.nom }} - {{ f.montant }}€</option>{% endfor %}
+        </select>
+    </div>
+    <div class="form-group"><label>Montant</label><input type="number" step="0.01" name="montant" value="{{ or_obj.montant }}"></div>
+    
+    <div style="margin: 1rem 0; padding: 1rem; background: #fff3cd; border-radius: 4px;">
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="attente_pieces" {% if or_obj.attente_pieces %}checked{% endif %}>
+                <strong>🚧 En attente de pièces détachées</strong>
+            </label>
+        </div>
+        {% if or_obj.date_attente_pieces %}
+        <p style="font-size: 0.9em; color: #666;">En attente depuis le {{ or_obj.date_attente_pieces.strftime('%d/%m/%Y') }}</p>
+        {% endif %}
+        <div class="form-group">
+            <label>Remarque</label>
+            <input type="text" name="remarque_attente" value="{{ or_obj.remarque_attente or '' }}" placeholder="Ex: Pièce commandée, attente réponse client...">
+        </div>
+    </div>
+    
+    <div style="margin: 1rem 0; padding: 1rem; background: #f8d7da; border-radius: 4px;">
+        <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" name="pas_de_facturation" {% if or_obj.pas_de_facturation %}checked{% endif %}>
+            <strong>⛔ Pas de facturation</strong>
+        </label>
+        <p style="font-size: 0.85rem; color: #666; margin-top: 0.3rem;">Cocher cette case si l'intervention n'est pas facturée (ex: révision gratuite, atelier pédagogique)</p>
+    </div>
+    
+    <button type="submit" class="btn">Enregistrer</button>
+    <a href="{{ url_for('ordres.view', id=or_obj.id) }}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Contrôle visuel - {{ or_obj.numero }}</title>
+    <style>
+        @page { size: A4; margin: 1cm; }
+        body { font-family: Arial, sans-serif; font-size: 9pt; padding: 1cm; max-width: 210mm; margin: 0 auto; }
+        h1 { font-size: 14pt; text-align: center; border-bottom: 2px solid #333; padding-bottom: 0.5rem; margin: 0 0 1rem 0; }
+        h2 { font-size: 10pt; background: #eee; padding: 0.3rem; margin: 0.6rem 0 0.4rem 0; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 0.4rem; }
+        th, td { border: 1px solid #999; padding: 3px 5px; font-size: 8pt; }
+        th { background: #eee; }
+        
+        .header-table td { border: none; padding: 2px; font-size: 9pt; }
+        
+        .check-ok { display: inline-block; width: 12px; height: 12px; border: 1px solid #333; text-align: center; line-height: 10px; }
+        .check-yes { background: #333; color: white; }
+        
+        .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; font-size: 8pt; }
+        .checkbox-row { display: flex; align-items: center; gap: 3px; }
+        
+        .footer { margin-top: 1.5rem; display: flex; justify-content: space-between; }
+        .sig-box { width: 45%; text-align: center; }
+        .sig-line { border-top: 1px solid #333; margin-top: 25px; padding-top: 5px; font-size: 8pt; }
+        
+        @media print { .no-print { display: none; } body { padding: 0; } }
+    </style>
+</head>
+<body>
+    <h1>CONTRÔLE VISUEL DU VÉHICULE</h1>
+
+    <table class="header-table">
+        <tr>
+            <td width="50%">
+                <strong>Professeur :</strong> {{ or_obj.created_by_user.nom if or_obj.created_by_user else '' }}<br>
+                <strong>Classe :</strong> 
+            </td>
+            <td width="50%">
+                <strong>Nom :</strong> {{ or_obj.client.nom }}<br>
+                <strong>Prénom :</strong> {{ or_obj.client.prenom }}<br>
+                <strong>Téléphone :</strong> {{ or_obj.client.telephone }}
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <strong>Date :</strong> {{ print_date }}
+            </td>
+            <td>
+                <strong>Immatriculation :</strong> {{ or_obj.vehicule.immatriculation }}
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <strong>Marque :</strong> {{ or_obj.vehicule.marque }}<br>
+                <strong>Modèle :</strong> {{ or_obj.vehicule.modele }}<br>
+                <strong>Type :</strong> {{ or_obj.vehicule.type_veh }}<br>
+                <strong>Kilométrage :</strong> 
+            </td>
+            <td>
+                <strong>Date 1ère mise en circulation :</strong> {{ or_obj.vehicule.date_mise_circulation.strftime('%d/%m/%Y') if or_obj.vehicule.date_mise_circulation else '' }}<br>
+                <strong>N° série du type :</strong><br>
+                <strong>Énergie :</strong> {{ or_obj.vehicule.energie }}
+            </td>
+        </tr>
+    </table>
+
+    <p style="font-size: 8pt; margin: 0.4rem 0;">Placer une croix si le contrôle est réalisé + Bon (✓) / Observations à signaler (✗) :</p>
+
+    <h2>Instruments</h2>
+    <div class="checkbox-grid">
+        <div class="checkbox-row">☐ Voyant défaut allumé <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Ventilateur, chauffage, climatisation <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Avertisseur sonore <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Essuie-glace / Lave-glace <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+    </div>
+
+    <h2>Éclairage</h2>
+    <div class="checkbox-grid">
+        <div class="checkbox-row">☐ Veilleuses - Éclairage plaque <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Feux de croisement / route <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Clignotants - Répétiteurs <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Feux de stop <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Feux de recul <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Antibrouillard AV - AR <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Vide-poches - Plafonnier - Coffre <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+    </div>
+
+    <h2>Ouvrants</h2>
+    <div class="checkbox-grid">
+        <div class="checkbox-row">☐ Contrôle des ouvrants <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Fermeture centralisée <span style="margin-left: 10px;"></span>✓<span style="margin-left: 5px;">✗</span></div>
+    </div>
+
+    <h2>Contrôles sous capot</h2>
+    <div class="checkbox-grid">
+        <div class="checkbox-row">☐ Huile moteur <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Liquide de frein <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Circuit de refroidissement <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Direction assistée hydraulique <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Batterie (serrage des cosses) <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Lave-glace AV - AR <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ État - Tension courroie accessoires <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+    </div>
+
+    <h2>Dessous de caisse</h2>
+    <div class="checkbox-grid">
+        <div class="checkbox-row">☐ État soufflets direction <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ État soufflets de rotule <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ État soufflets de transmission <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Échappement <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+    </div>
+
+    <h2>Étanchéité</h2>
+    <div class="checkbox-grid">
+        <div class="checkbox-row">☐ Moteur <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Boîte de vitesses <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+        <div class="checkbox-row">☐ Circuit de freinage <span style="margin-left: 10px;">✓</span><span style="margin-left: 5px;">✗</span></div>
+    </div>
+
+    <h2>Observations</h2>
+    <div style="min-height: 50px; border: 1px solid #ccc; padding: 0.4rem;"></div>
+
+    <div class="footer">
+        <div class="sig-box">
+            <div class="sig-line">Accord client</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-line">Accord responsable</div>
+        </div>
+    </div>
+
+    <div class="no-print" style="margin-top: 1rem;">
+        <button class="btn" onclick="window.print()">🖨️ Imprimer</button>
+        <a href="{{ url_for('ordres.view', id=or_obj.id) }}" class="btn">← Retour</a>
+    </div>
+</body>
+</html>

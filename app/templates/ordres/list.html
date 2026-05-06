@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Ordres de réparation - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Ordres de réparation {% if current_user.can_create_or() %}<a href="{{ url_for('ordres.new') }}" class="btn" style="float: right;">+ Nouveau OR</a>{% endif %}</h2>
+
+<form method="GET" style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+    <input type="text" name="search" placeholder="Rechercher (N°, immat, client)..." value="{{ search }}" style="padding: 0.5rem; width: 200px;">
+    <select name="statut" style="padding: 0.5rem;">
+        <option value="">Tous statuts</option>
+        <option value="ouvert" {% if statut=='ouvert' %}selected{% endif %}>Ouvert</option>
+        <option value="en_cours" {% if statut=='en_cours' %}selected{% endif %}>En cours</option>
+        <option value="termine" {% if statut=='termine' %}selected{% endif %}>Terminé</option>
+        <option value="cloture" {% if statut=='cloture' %}selected{% endif %}>Clôturé</option>
+    </select>
+    <input type="date" name="date_from" value="{{ date_from or '' }}" style="padding: 0.5rem;" title="Date début">
+    <input type="date" name="date_to" value="{{ date_to or '' }}" style="padding: 0.5rem;" title="Date fin">
+    <select name="sort" style="padding: 0.5rem;" onchange="this.form.submit()">
+        <option value="date_desc" {% if sort=='date_desc' %}selected{% endif %}>Plus récents</option>
+        <option value="date_asc" {% if sort=='date_asc' %}selected{% endif %}>Plus anciens</option>
+        <option value="numero_desc" {% if sort=='numero_desc' %}selected{% endif %}>N° ↓</option>
+        <option value="numero_asc" {% if sort=='numero_asc' %}selected{% endif %}>N° ↑</option>
+        <option value="vehicule_asc" {% if sort=='vehicule_asc' %}selected{% endif %}>Véhicule A-Z</option>
+        <option value="vehicule_desc" {% if sort=='vehicule_desc' %}selected{% endif %}>Véhicule Z-A</option>
+        <option value="client_asc" {% if sort=='client_asc' %}selected{% endif %}>Client A-Z</option>
+        <option value="client_desc" {% if sort=='client_desc' %}selected{% endif %}>Client Z-A</option>
+        <option value="statut_asc" {% if sort=='statut_asc' %}selected{% endif %}>Statut A-Z</option>
+        <option value="statut_desc" {% if sort=='statut_desc' %}selected{% endif %}>Statut Z-A</option>
+        <option value="montant_desc" {% if sort=='montant_desc' %}selected{% endif %}>Montant ↓</option>
+        <option value="montant_asc" {% if sort=='montant_asc' %}selected{% endif %}>Montant ↑</option>
+    </select>
+    <button type="submit" class="btn">🔍</button>
+    <a href="{{ url_for('ordres.list') }}" class="btn btn-secondary">Reset</a>
+</form>
+
+<div style="overflow-x: auto;">
+<table>
+    <thead>
+        <tr>
+            {% set s = search if search else '' %}
+{% set st = statut if statut else '' %}
+{% set df = date_from if date_from else '' %}
+{% set dt = date_to if date_to else '' %}
+            <th><a href="?sort={% if sort=='numero_asc' %}numero_desc{% else %}numero_asc{% endif %}&search={{ s }}&statut={{ st }}&date_from={{ df }}&date_to={{ dt }}">N° ⬍</a></th>
+            <th><a href="?sort={% if sort=='vehicule_asc' %}vehicule_desc{% else %}vehicule_asc{% endif %}&search={{ s }}&statut={{ st }}&date_from={{ df }}&date_to={{ dt }}">Véhicule ⬍</a></th>
+            <th><a href="?sort={% if sort=='client_asc' %}client_desc{% else %}client_asc{% endif %}&search={{ s }}&statut={{ st }}&date_from={{ df }}&date_to={{ dt }}">Client ⬍</a></th>
+            <th><a href="?sort={% if sort=='statut_asc' %}statut_desc{% else %}statut_asc{% endif %}&search={{ s }}&statut={{ st }}&date_from={{ df }}&date_to={{ dt }}">Statut ⬍</a></th>
+            <th><a href="?sort={% if sort=='montant_desc' %}montant_asc{% else %}montant_desc{% endif %}&search={{ s }}&statut={{ st }}&date_from={{ df }}&date_to={{ dt }}">Montant ⬍</a></th>
+            <th><a href="?sort={% if sort=='date_desc' %}date_asc{% else %}date_desc{% endif %}&search={{ s }}&statut={{ st }}&date_from={{ df }}&date_to={{ dt }}">Date ⬍</a></th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for o in ordres %}
+    <tr>
+        <td><a href="{{ url_for('ordres.view', id=o.id) }}"><strong>{{ o.numero }}</strong></a></td>
+        <td>
+            <strong>{{ o.vehicule.immatriculation }}</strong><br>
+            <span style="color: #666; font-size: 0.9rem;">{{ o.vehicule.marque }} {{ o.vehicule.modele }}</span>
+        </td>
+        <td>{{ o.client.prenom }} {{ o.client.nom }}</td>
+        <td><span class="badge {{ o.statut }}">{{ o.statut }}</span></td>
+        <td>{% if o.montant %}{{ o.montant }}€{% else %}<span style="color: #999;">-</span>{% endif %}</td>
+        <td>{{ o.created_at.strftime('%d/%m/%Y') if o.created_at else '-' }}</td>
+        <td>
+            <a href="{{ url_for('ordres.view', id=o.id) }}" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Voir</a>
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align: center; color: #666; padding: 2rem;">Aucun ordre de réparation</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<p style="margin-top: 1rem; color: #666;">Total: {{ ordres|length }} ordre(s)</p>
+{% endblock %}

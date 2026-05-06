@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Checklist contrôle qualité - MEC AUTO{% endblock %}
+{% block content %}
+<h2>✅ Checklist contrôle qualité</h2>
+<p style="color: #666; margin-bottom: 1rem;">Points à vérifier avant restitution du véhicule au client.</p>
+
+<div class="card">
+    <form method="POST" action="{{ url_for('settings.checklist_add') }}" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
+        <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+            <div style="flex: 2;">
+                <label style="font-size: 0.8rem;">Nom du point de contrôle</label>
+                <input type="text" name="nom" required placeholder="Ex: Niveau huile" style="width: 100%;">
+            </div>
+            <div style="flex: 2;">
+                <label style="font-size: 0.8rem;">Description (optionnel)</label>
+                <input type="text" name="description" placeholder="Détails..." style="width: 100%;">
+            </div>
+            <button type="submit" class="btn">Ajouter</button>
+        </div>
+    </form>
+    
+    <table style="font-size: 0.9rem;">
+        <thead><tr><th>Point de contrôle</th><th>Description</th><th>Actif</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for item in checklist_items %}
+        <tr>
+            <td><strong>{{ item.nom }}</strong></td>
+            <td>{{ item.description or '-' }}</td>
+            <td>{% if item.actif %}<span style="color: green;">✓</span>{% else %}<span style="color: red;">✗</span>{% endif %}</td>
+            <td>
+                <a href="{{ url_for('settings.checklist_toggle', id=item.id) }}" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">{% if item.actif %}Désactiver{% else %}Activer{% endif %}</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align: center; color: #999;">Aucun point de contrôle défini</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

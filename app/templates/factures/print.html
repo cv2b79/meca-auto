@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{ facture.numero }}</title>
+    <style>
+        @page { size: A4; margin: 1cm; }
+        body { font-family: Arial, sans-serif; font-size: 10pt; padding: 1cm; max-width: 210mm; margin: 0 auto; }
+        
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+        .header h1 { font-size: 16pt; margin: 0; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { border: 1px solid #999; padding: 4px 8px; font-size: 9pt; }
+        th { background: #eee; text-align: left; }
+        
+        .section-title { background: #eee; padding: 0.3rem; font-weight: bold; margin: 1rem 0 0.5rem 0; }
+        
+        .total-box { margin-top: 1rem; text-align: right; }
+        
+        .signature { margin-top: 2rem; display: flex; justify-content: space-between; }
+        .sig-box { width: 45%; text-align: center; }
+        .sig-line { border-top: 1px solid #333; margin-top: 40px; padding-top: 5px; font-size: 9pt; }
+        
+        .no-print { margin: 1rem 0; }
+        .no-print a { margin-right: 0.5rem; }
+        
+        @media print { .no-print { display: none; } body { padding: 0; } }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <a href="{{ url_for('factures.view', id=facture.id) }}" class="btn">← Retour</a>
+        <button class="btn" onclick="window.print()">🖨️ Imprimer</button>
+    </div>
+
+    <div class="header">
+        <h1>FACTURE</h1>
+        <div>N°: {{ facture.numero }}</div>
+    </div>
+
+    <table style="margin-bottom: 0.5rem;">
+        <tr>
+            <td width="50%">
+                <strong>Professeur :</strong> {{ or_obj.created_by_user.nom if or_obj and or_obj.created_by_user else '' }}<br>
+                <strong>Classe :</strong> 
+            </td>
+            <td width="50%">
+                <strong>Nom :</strong> {{ client.nom }}<br>
+                <strong>Prénom :</strong> {{ client.prenom }}<br>
+                <strong>Adresse :</strong> {{ client.adresse or '' }}<br>
+                <strong>Téléphone :</strong> {{ client.telephone or '' }}
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <strong>Date :</strong> {{ facture.emitted_at.strftime('%d/%m/%Y') if facture.emitted_at else '' }}
+            </td>
+            <td>
+                <strong>Immatriculation :</strong> {{ vehicule.immatriculation if vehicule else '' }}
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <strong>Marque :</strong> {{ vehicule.marque if vehicule else '' }}<br>
+                <strong>Modèle :</strong> {{ vehicule.modele if vehicule else '' }}<br>
+                <strong>Type :</strong> {{ vehicule.type_veh if vehicule else '' }}<br>
+                <strong>Kilométrage :</strong> 
+            </td>
+            <td>
+                <strong>Date 1ère mise en circulation :</strong> {{ vehicule.date_mise_circulation.strftime('%d/%m/%Y') if vehicule and vehicule.date_mise_circulation else '' }}<br>
+                <strong>Énergie :</strong> {{ vehicule.energie if vehicule else '' }}
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-title">LIBELLÉ DES OPÉRATIONS EFFECTUÉES</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Opération</th>
+                <th style="width: 100px;">Heures et centièmes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if interventions %}
+                {% for i in interventions %}
+                <tr>
+                    <td>{{ i.description or i.operation.nom if i.operation else '' }}</td>
+                    <td style="text-align: right;">{{ "%.2f"|format(i.heures) if i.heures else '0.00' }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td>{{ facture.details or 'Voir ordre de réparation' }}</td>
+                    <td></td>
+                </tr>
+            {% endif %}
+            {% if surcharge_lines %}
+                {% for s in surcharge_lines %}
+                <tr>
+                    <td>{{ s.nom }}</td>
+                    <td style="text-align: right;">-</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div class="total-box">
+        <div class="total-row">
+            <strong>TOTAL HEURES ET CENTIÈMES: </strong>
+            <span>{{ "%.2f"|format(total_heures) }} h</span>
+        </div>
+        {% if taux_horaire %}
+        <div class="total-row">
+            <span>TAUX HORAIRE T.T.C. {{ "%.2f"|format(taux_horaire) }} €</span>
+        </div>
+        {% endif %}
+        {% if or_obj and or_obj.pas_de_facturation %}
+        <div class="total-row" style="font-size: 12pt; margin-top: 0.5rem; color: red;">
+            <strong>⛔ PAS DE FACTURATION - TRAVAUX INTERNES</strong>
+        </div>
+        {% else %}
+        <div class="total-row" style="font-size: 12pt; margin-top: 0.5rem;">
+            <strong>TOTAL EN EUROS: {{ "%.2f"|format(facture.montant) }} €</strong>
+        </div>
+        {% endif %}
+        {% if facture.montant_surcharge and facture.montant_surcharge > 0 %}
+        <div class="total-row" style="color: #856404;">
+            <em>dont dépollution: {{ "%.2f"|format(facture.montant_surcharge) }} €</em>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="signature">
+        <div class="sig-box">
+            <div class="sig-line">Accord client</div>
+        </div>
+        <div class="sig-box">
+            <div class="sig-line">Accord responsable</div>
+        </div>
+    </div>
+</body>
+</html>
