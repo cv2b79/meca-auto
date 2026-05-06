@@ -6,21 +6,9 @@
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
     <div class="card">
         <h3>Enseignants</h3>
-        <form method="POST" style="margin-bottom: 1rem;">
-            <input type="hidden" name="action" value="add_enseignant">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                <input type="text" name="nom" placeholder="Nom" required>
-                <input type="text" name="prenom" placeholder="Prénom" required>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
-                <input type="email" name="email" placeholder="Email">
-                <input type="tel" name="telephone" placeholder="Téléphone">
-            </div>
-            <button type="submit" class="btn" style="margin-top: 0.5rem;">+ Ajouter</button>
-        </form>
-        
+        <p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">Les enseignants sont les utilisateurs avec le rôle "enseignant". Créez-les dans la section Utilisateurs.</p>
         <table>
-            <thead><tr><th>Nom</th><th>Email</th><th>Actif</th><th></th></tr></thead>
+            <thead><tr><th>Nom</th><th>Email</th><th>Actif</th></tr></thead>
             <tbody>
                 {% for e in enseignants %}
                 <tr>
@@ -28,18 +16,6 @@
                     <td>{{ e.email or '' }}</td>
                     <td>
                         {% if e.actif %}<span style="color: green;">✓</span>{% else %}<span style="color: red;">✗</span>{% endif %}
-                    </td>
-                    <td>
-                        <form method="POST" style="display:inline;">
-                            <input type="hidden" name="action" value="toggle_enseignant">
-                            <input type="hidden" name="id" value="{{ e.id }}">
-                            <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem;">{% if e.actif %}✗{% else %}✓{% endif %}</button>
-                        </form>
-                        <form method="POST" style="display:inline;">
-                            <input type="hidden" name="action" value="delete_enseignant">
-                            <input type="hidden" name="id" value="{{ e.id }}">
-                            <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem;" onclick="return confirm('Supprimer?')">🗑️</button>
-                        </form>
                     </td>
                 </tr>
                 {% endfor %}

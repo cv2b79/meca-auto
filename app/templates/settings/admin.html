@@ -112,23 +112,21 @@
 </div>
 
 <!-- CLASSES & ENSEIGNANTS -->
-<div class="card" style="margin-top: 1.5rem;">
+<div class="card" style="margin-top: 1.5rem;" id="classes-enseignants">
     <h3>🏫 Classes et Enseignants</h3>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
         <div>
             <h4>Enseignants</h4>
-            <form method="POST" style="margin-bottom: 1rem;">
-                <input type="hidden" name="action" value="add_enseignant">
-                <div style="display: flex; gap: 0.5rem;">
-                    <input type="text" name="nom" placeholder="Nom" required>
-                    <input type="text" name="prenom" placeholder="Prénom" required>
-                    <button type="submit" class="btn">➕</button>
-                </div>
-            </form>
+            <p style="font-size: 0.9rem; color: #666;">Les enseignants sont les utilisateurs avec le rôle "enseignant"</p>
             <ul>
             {% for e in enseignants %}
-                <li>{{ e.prenom }} {{ e.nom }} {% if not e.actif %}(inactif){% endif %}</li>
+                <li>
+                    {{ e.prenom }} {{ e.nom }} (utilisateur) {% if not e.actif %}(inactif){% endif %}
+                </li>
             {% endfor %}
+            {% if enseignants|length == 0 %}
+                <li>Aucun enseignant - créez un utilisateur avec le rôle "enseignant"</li>
+            {% endif %}
             </ul>
         </div>
         <div>
@@ -142,7 +140,19 @@
             </form>
             <ul>
             {% for c in classes %}
-                <li>{{ c.nom }}</li>
+                <li>
+                    {{ c.nom }} {% if not c.actif %}(inactif){% endif %}
+                    <form method="POST" style="display:inline; margin-left: 0.5rem;">
+                        <input type="hidden" name="action" value="toggle_classe">
+                        <input type="hidden" name="id" value="{{ c.id }}">
+                        <button type="submit" style="padding: 0.1rem 0.3rem; font-size: 0.8rem;">{% if c.actif %}✗{% else %}✓{% endif %}</button>
+                    </form>
+                    <form method="POST" style="display:inline; margin-left: 0.2rem;">
+                        <input type="hidden" name="action" value="delete_classe">
+                        <input type="hidden" name="id" value="{{ c.id }}">
+                        <button type="submit" style="padding: 0.1rem 0.3rem; font-size: 0.8rem;" onclick="return confirm('Supprimer?')">🗑️</button>
+                    </form>
+                </li>
             {% endfor %}
             </ul>
         </div>
@@ -174,6 +184,25 @@
             <div class="form-group">
                 <label>Email expéditeur</label>
                 <input type="email" name="smtp_from" value="{{ smtp_config.smtp_from or '' }}">
+            </div>
+        </div>
+        <button type="submit" class="btn">Enregistrer</button>
+    </form>
+</div>
+
+<!-- SÉCURITÉ -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3>🔒 Sécurité</h3>
+    <form method="POST">
+        <input type="hidden" name="action" value="save_security">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label>Tentatives de connexion max</label>
+                <input type="number" name="max_login_attempts" value="{{ security_config.max_login_attempts if security_config else 3 }}" min="1" max="10">
+            </div>
+            <div class="form-group">
+                <label>Durée de verrouillage (minutes)</label>
+                <input type="number" name="lockout_duration" value="{{ security_config.lockout_duration if security_config else 15 }}" min="1" max="60">
             </div>
         </div>
         <button type="submit" class="btn">Enregistrer</button>
@@ -217,7 +246,7 @@
 
 <!-- FOURNITURES -->
 <div class="card" style="margin-top: 1.5rem;">
-    <h3>🧴 Fournitures</h3>
+    <h3 id="fournitures">🧴 Fournitures</h3>
     <form method="POST" action="{{ url_for('settings.fourniture_new') }}" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
         <input type="text" name="nom" placeholder="Nom de la fourniture" required style="flex: 1;">
         <input type="number" step="0.01" name="prix_unitaire" placeholder="Prix unitaire (€)" style="width: 150px;">
@@ -228,16 +257,23 @@
         <tbody>
         {% for f in fournitures %}
         <tr>
-            <td>{{ f.nom }}</td>
-            <td>{{ f.prix_unitaire }}€</td>
+            <form method="POST" action="{{ url_for('settings.admin') }}">
+            <input type="hidden" name="action" value="edit_fourniture">
+            <input type="hidden" name="id" value="{{ f.id }}">
+            <td><input type="text" name="nom" value="{{ f.nom }}" style="width: 100%;"></td>
+            <td><input type="number" step="0.01" name="prix_unitaire" value="{{ f.prix_unitaire }}" style="width: 80px;"></td>
+            <td><button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem;">✓</button></td>
+            </form>
             <td>
-                <form method="POST" action="{{ url_for('settings.fourniture_delete', id=f.id) }}" style="display:inline;">
+                <form method="POST" action="{{ url_for('settings.admin') }}" style="display:inline;">
+                    <input type="hidden" name="action" value="delete_fourniture">
+                    <input type="hidden" name="id" value="{{ f.id }}">
                     <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.5rem;" onclick="return confirm('Supprimer?')">✕</button>
                 </form>
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="3" style="text-align: center; color: #666;">Aucune fourniture</td></tr>
+        <tr><td colspan="4" style="text-align: center; color: #666;">Aucune fourniture</td></tr>
         {% endfor %}
         </tbody>
     </table>

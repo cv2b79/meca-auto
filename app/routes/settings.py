@@ -123,7 +123,7 @@ def index():
     forfaits = Forfait.query.filter_by(actif=True).all()
     surcharges = RecupSurcharge.query.filter_by(actif=True).all()
     consommables = Consumable.query.filter_by(actif=True).all()
-    enseignants = Enseignant.query.order_by(Enseignant.nom).all()
+    enseignants = User.query.filter_by(role='enseignant').order_by(User.nom).all()
     classes = Classe.query.order_by(Classe.nom).all()
     users = User.query.order_by(User.nom).all()
     
@@ -242,9 +242,9 @@ def fourniture_new():
     db.session.add(fourniture)
     db.session.commit()
     flash('Fourniture créée', 'success')
-    return redirect(url_for('settings.admin', tab='fournitures'))
+    return redirect(url_for('settings.admin', tab='fournitures') + '#fournitures')
 
-@settings_bp.route('/fourniture/<int:id>/edit', methods=['POST'])
+@settings_bp.route('/fourniture/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def fourniture_edit(id):
     if not current_user.can_manage_settings():
@@ -252,11 +252,15 @@ def fourniture_edit(id):
         return redirect(url_for('main.index'))
     
     fourniture = Fourniture.query.get_or_404(id)
-    fourniture.nom = request.form.get('nom')
-    fourniture.prix_unitaire = request.form.get('prix_unitaire') or 0
-    db.session.commit()
-    flash('Fourniture modifiée', 'success')
-    return redirect(url_for('settings.admin', tab='fournitures'))
+    
+    if request.method == 'POST':
+        fourniture.nom = request.form.get('nom')
+        fourniture.prix_unitaire = request.form.get('prix_unitaire') or 0
+        db.session.commit()
+        flash('Fourniture modifiée', 'success')
+        return redirect(url_for('settings.admin', tab='fournitures') + '#fournitures')
+    
+    return render_template('settings/fourniture_edit.html', fourniture=fourniture)
 
 @settings_bp.route('/fourniture/<int:id>/delete')
 @login_required
@@ -269,7 +273,7 @@ def fourniture_delete(id):
     fourniture.actif = False
     db.session.commit()
     flash('Fourniture supprimée', 'success')
-    return redirect(url_for('settings.admin', tab='fournitures'))
+    return redirect(url_for('settings.admin', tab='fournitures') + '#fournitures')
 
 # === IMPORT ÉLÈVES ===
 @settings_bp.route('/import_eleves', methods=['POST'])
@@ -485,6 +489,23 @@ def admin():
             flash('Informations de l\'établissement enregistrées', 'success')
             return redirect(url_for('settings.admin'))
         
+        # === SÉCURITÉ ===
+        if action == 'save_security':
+            security_settings = {
+                'max_login_attempts': request.form.get('max_login_attempts'),
+                'lockout_duration': request.form.get('lockout_duration')
+            }
+            for key, value in security_settings.items():
+                param = Parametre.query.filter_by(cle=key).first()
+                if param:
+                    param.valeur = value
+                else:
+                    param = Parametre(cle=key, valeur=value)
+                    db.session.add(param)
+            db.session.commit()
+            flash('Configuration sécurité enregistrée', 'success')
+            return redirect(url_for('settings.admin'))
+        
         # Change password for current user
         if action == 'change_password':
             current_password = request.form.get('current_password')
@@ -557,6 +578,44 @@ def admin():
                 db.session.commit()
                 flash('Utilisateur supprimé', 'success')
         
+        elif action == 'edit_fourniture':
+            f = Fourniture.query.get(request.form.get('id'))
+            if f:
+                f.nom = request.form.get('nom')
+                f.prix_unitaire = request.form.get('prix_unitaire') or 0
+                db.session.commit()
+                flash('Fourniture modifiée', 'success')
+        
+        elif action == 'delete_fourniture':
+            f = Fourniture.query.get(request.form.get('id'))
+            if f:
+                db.session.delete(f)
+                db.session.commit()
+                flash('Fourniture supprimée', 'success')
+        
+        elif action == 'add_enseignant':
+            nom = request.form.get('nom')
+            prenom = request.form.get('prenom')
+            if nom and prenom:
+                ens = Enseignant(nom=nom, prenom=prenom)
+                db.session.add(ens)
+                db.session.commit()
+                flash('Enseignant ajouté', 'success')
+        
+        elif action == 'toggle_enseignant':
+            ens = Enseignant.query.get(request.form.get('id'))
+            if ens:
+                ens.actif = not ens.actif
+                db.session.commit()
+                flash(f'Enseignant {"activé" if ens.actif else "désactivé"}', 'success')
+        
+        elif action == 'delete_enseignant':
+            ens = Enseignant.query.get(request.form.get('id'))
+            if ens:
+                db.session.delete(ens)
+                db.session.commit()
+                flash('Enseignant supprimé', 'success')
+        
         elif action == 'add_classe':
             nom = request.form.get('nom')
             if nom:
@@ -564,6 +623,13 @@ def admin():
                 db.session.add(cls)
                 db.session.commit()
                 flash('Classe ajoutée', 'success')
+        
+        elif action == 'toggle_classe':
+            cls = Classe.query.get(request.form.get('id'))
+            if cls:
+                cls.actif = not cls.actif
+                db.session.commit()
+                flash(f'Classe {"activée" if cls.actif else "désactivée"}', 'success')
         
         elif action == 'delete_classe':
             cls = Classe.query.get(request.form.get('id'))
@@ -608,7 +674,12 @@ def admin():
         param = Parametre.query.filter_by(cle=key).first()
         smtp_config[key] = param.valeur if param else ''
     
-    enseignants = Enseignant.query.order_by(Enseignant.nom).all()
+    security_config = {
+        'max_login_attempts': Parametre.get('max_login_attempts', '3'),
+        'lockout_duration': Parametre.get('lockout_duration', '15')
+    }
+    
+    enseignants = User.query.filter_by(role='enseignant').order_by(User.nom).all()
     classes = Classe.query.order_by(Classe.nom).all()
     
     # Logs data for logs tab
@@ -643,7 +714,8 @@ def admin():
                           etab_adresse=Parametre.get('etab_adresse', ''),
                           etab_tel=Parametre.get('etab_tel', ''),
                           etab_email=Parametre.get('etab_email', ''),
-                          etab_siren=Parametre.get('etab_siren', ''))
+                          etab_siren=Parametre.get('etab_siren', ''),
+                          security_config=security_config)
 
 @settings_bp.route('/permissions', methods=['GET', 'POST'])
 @login_required

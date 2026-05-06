@@ -17,6 +17,8 @@ class User(UserMixin, db.Model):
     actif = db.Column(db.Boolean, default=True)
     security_question = db.Column(db.String(200))
     security_answer = db.Column(db.String(200))
+    failed_attempts = db.Column(db.Integer, default=0)
+    locked_until = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

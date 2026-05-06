@@ -45,16 +45,27 @@ def create(or_id):
     if request.method == 'POST':
         total = float(or_obj.montant or 0) + float(or_obj.montant_surcharge or 0)
         
-        facture = Facture(
-            numero=Facture.generer_numero(or_obj),
-            or_id=or_id,
-            montant=total,
-            mode_tarif=or_obj.mode_tarif
-        )
-
+        intervention_details = or_obj.interventions_eleves.all()
+        
+        total_fournitures = 0
         details = f"Travaux sur {or_obj.vehicule.immatriculation} - {or_obj.vehicule.marque} {or_obj.vehicule.modele}\n"
         details += f"Mode: {'Forfait' if or_obj.mode_tarif == 'forfait' else 'Taux horaire'}\n"
         details += f"Montant travaux: {or_obj.montant}€\n"
+        
+        if intervention_details:
+            total_heures = sum(float(i.heures or 0) for i in intervention_details)
+            details += f"Temps total: {total_heures} heures\n"
+            
+            for inter in intervention_details:
+                if inter.fourniture_id:
+                    qte = inter.quantite or 1
+                    prix = float(inter.fourniture.prix_unitaire or 0)
+                    total_fournitures += prix * qte
+                    details += f"  - {inter.fourniture.nom} x{qte} = {prix * qte}€\n"
+        
+        if total_fournitures > 0:
+            details += f"Fournitures: {total_fournitures}€\n"
+            total += total_fournitures
         
         if or_obj.montant_surcharge > 0:
             details += f"Frais dépollution: {or_obj.montant_surcharge}€\n"
@@ -62,14 +73,16 @@ def create(or_id):
                 details += "  - Pièces non récupérées\n"
             if not or_obj.client_recup_fluides:
                 details += "  - Fluides non récupérés\n"
-        details += f"Montant: {or_obj.montant}€"
-
-        intervention_details = or_obj.interventions_eleves.all()
-        if intervention_details:
-            total_heures = sum(float(i.heures or 0) for i in intervention_details)
-            details += f"\nTemps total: {total_heures} heures"
-
-        facture.details = details
+        
+        details += f"\nTotal: {total}€"
+        
+        facture = Facture(
+            numero=Facture.generer_numero(or_obj),
+            or_id=or_id,
+            montant=total,
+            mode_tarif=or_obj.mode_tarif,
+            details=details
+        )
 
         or_obj.statut = 'cloture'
         or_obj.date_cloture = datetime.utcnow()

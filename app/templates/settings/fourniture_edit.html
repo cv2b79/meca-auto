@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Modifier fourniture - MEC AUTO{% endblock %}
+{% block content %}
+<h2>Modifier fourniture</h2>
+
+<div class="card" style="max-width: 500px;">
+    <form method="POST">
+        <div class="form-group">
+            <label>Nom</label>
+            <input type="text" name="nom" value="{{ fourniture.nom }}" required>
+        </div>
+        <div class="form-group">
+            <label>Prix unitaire (€)</label>
+            <input type="number" step="0.01" name="prix_unitaire" value="{{ fourniture.prix_unitaire }}">
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn">Enregistrer</button>
+            <a href="{{ url_for('settings.admin', tab='fournitures') }}" class="btn btn-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
