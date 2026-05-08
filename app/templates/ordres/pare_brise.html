@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <title>OR {{ or_obj.numero }} - {{ vehicule.immatriculation }}</title>
     <style>
-        @page { size: A5 landscape; margin: 0.5cm; }
+        @page { size: A4 landscape; margin: 0.5cm; }
         * { box-sizing: border-box; }
         body { 
             font-family: Arial, sans-serif; 
-            font-size: 12pt; 
+            font-size: 11pt; 
             margin: 0; 
             padding: 0.5rem;
             max-width: 100%;
@@ -21,11 +21,14 @@
             margin-bottom: 0.8rem;
         }
         .header h1 { 
-            font-size: 16pt; 
+            font-size: 18pt; 
             color: #1E3A5F; 
             margin: 0; 
             text-transform: uppercase; 
         }
+        
+        .two-col { display: flex; gap: 1rem; }
+        .col { flex: 1; }
         
         .vehicle-box { 
             background: #f5f5f5; 
@@ -47,22 +50,23 @@
         }
         .info-label { font-weight: bold; }
         
-        .work-box { 
+        .work-box, .etat-box { 
             background: #fff; 
             border: 1px solid #999; 
-            padding: 0.8rem; 
-            min-height: 100px;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
         }
-        .work-box h3 { 
+        .work-box h3, .etat-box h3 { 
             margin: 0 0 0.5rem 0; 
             font-size: 11pt; 
             color: #1E3A5F;
-            background: #e8f4f8;
-            padding: 0.3rem;
+            padding: 0.3rem 0.5rem;
         }
+        .work-box h3 { background: #e8f4f8; }
+        .etat-box h3 { background: #fff3e0; }
         
         .footer { 
-            margin-top: 1rem; 
+            margin-top: 0.5rem; 
             text-align: center; 
             font-size: 10pt; 
             color: #666;
@@ -99,32 +103,77 @@
         <h1>{{ etab_nom }}</h1>
     </div>
 
-    <div class="vehicle-box">
-        <h2>🚗 {{ vehicule.immatriculation }}</h2>
-        <div class="info-row">
-            <span><span class="info-label">Marque:</span> {{ vehicule.marque or 'N/A' }}</span>
-            <span><span class="info-label">Modèle:</span> {{ vehicule.modele or 'N/A' }}</span>
-        </div>
-        <div class="info-row">
-            <span><span class="info-label">OR:</span> {{ or_obj.numero }}</span>
-            <span><span class="info-label">Statut:</span> {{ or_obj.statut }}</span>
-        </div>
-    </div>
+    <div class="two-col">
+        <div class="col">
+            <div class="vehicle-box">
+                <h2>🚗 {{ vehicule.immatriculation }}</h2>
+                <div class="info-row">
+                    <span><span class="info-label">Marque:</span> {{ vehicule.marque or 'N/A' }}</span>
+                    <span><span class="info-label">Modèle:</span> {{ vehicule.modele or 'N/A' }}</span>
+                </div>
+                <div class="info-row">
+                    <span><span class="info-label">OR:</span> {{ or_obj.numero }}</span>
+                    <span><span class="info-label">Statut:</span> {{ or_obj.statut }}</span>
+                </div>
+            </div>
 
-    <div class="work-box">
-        <h3>📋 Travaux à effectuer</h3>
-        {% if or_obj.description %}
-        <p style="white-space: pre-wrap;">{{ or_obj.description }}</p>
-        {% else %}
-        <p style="color: #999;">Aucun descriptif</p>
-        {% endif %}
+            <div class="work-box">
+                <h3>📋 Travaux à effectuer</h3>
+                {% if or_obj.description %}
+                <p style="white-space: pre-wrap;">{{ or_obj.description }}</p>
+                {% else %}
+                <p style="color: #999;">Aucun descriptif</p>
+                {% endif %}
+                
+                {% if or_obj.eleve_nom %}
+                <p style="margin-top: 0.8rem; font-size: 11pt;">
+                    <strong>Élève:</strong> {{ or_obj.eleve_nom }}
+                    {% if or_obj.classe_nom %} - <strong>Classe:</strong> {{ or_obj.classe_nom }}{% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
         
-        {% if or_obj.eleve_nom %}
-        <p style="margin-top: 0.8rem; font-size: 11pt;">
-            <strong>Élève:</strong> {{ or_obj.eleve_nom }}
-            {% if or_obj.classe_nom %} - <strong>Classe:</strong> {{ or_obj.classe_nom }}{% endif %}
-        </p>
-        {% endif %}
+        <div class="col">
+            <div class="etat-box">
+                <h3>🔍 État des lieux d'entrée</h3>
+                {% if etat_entree %}
+                <div class="info-row">
+                    <span><span class="info-label">Km:</span> {{ etat_entree.kilometrage or 'N/A' }}</span>
+                    <span><span class="info-label">Carburant:</span> {{ etat_entree.niveau_carburant or 'N/A' }}</span>
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <span class="info-label">Dommages:</span>
+                    <p style="margin: 0.2rem 0;">{{ etat_entree.dommages or 'Aucun' }}</p>
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <span class="info-label">Observations:</span>
+                    <p style="margin: 0.2rem 0;">{{ etat_entree.observations or 'Aucune' }}</p>
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <span class="info-label">Responsable:</span> {{ etat_entree.responsable or 'N/A' }}
+                </div>
+                {% else %}
+                <p style="color: #999;">État des lieux d'entrée non effectué</p>
+                {% endif %}
+            </div>
+            
+            {% if etat_sortie %}
+            <div class="etat-box">
+                <h3>✅ État des lieux de sortie</h3>
+                <div class="info-row">
+                    <span><span class="info-label">Km:</span> {{ etat_sortie.kilometrage or 'N/A' }}</span>
+                    <span><span class="info-label">Carburant:</span> {{ etat_sortie.niveau_carburant or 'N/A' }}</span>
+                </div>
+                {% if etat_sortie.observations %}
+                <div style="margin-top: 0.5rem;">
+                    <span class="info-label">Observations:</span>
+                    <p style="margin: 0.2rem 0;">{{ etat_sortie.observations }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
     </div>
 
     <div class="footer">
@@ -132,7 +181,7 @@
     </div>
 
     <div class="no-print">
-        <button class="btn" onclick="window.print()">🖨️ Imprimer pour pare-brise</button>
+        <button class="btn" onclick="window.print()">🖨️ Imprimer</button>
         <a href="{{ url_for('ordres.view', id=or_obj.id) }}" class="btn" style="background: #666;">Retour</a>
     </div>
 </body>

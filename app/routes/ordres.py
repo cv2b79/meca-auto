@@ -644,15 +644,21 @@ def etat_lieu_print():
 @ordres_bp.route('/<int:id>/print-pare-brise')
 @login_required
 def print_pare_brise(id):
-    """Impression simplifiée pour pare-brise - véhicule + travaux uniquement"""
+    """Impression simplifiée pour pare-brise - véhicule + travaux + états lieux"""
     or_obj = OrdreReparation.query.get_or_404(id)
     vehicule = or_obj.vehicule
+    
+    from app.models import etat_lieu
+    etat_entree = etat_lieu.query.filter_by(or_id=id, type='entree').first()
+    etat_sortie = etat_lieu.query.filter_by(or_id=id, type='sortie').first()
     
     return render_template('ordres/pare_brise.html', 
         or_obj=or_obj, 
         vehicule=vehicule,
         etab_nom=Parametre.get('etab_nom', 'MEC AUTO'),
-        print_date=datetime.now().strftime('%d/%m/%Y à %H:%M'))
+        print_date=datetime.now().strftime('%d/%m/%Y à %H:%M'),
+        etat_entree=etat_entree,
+        etat_sortie=etat_sortie)
 
 @ordres_bp.route('/controle/<int:id>', methods=['GET', 'POST'])
 @login_required
