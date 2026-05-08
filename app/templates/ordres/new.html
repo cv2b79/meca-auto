@@ -16,7 +16,7 @@
                            placeholder="AB-123-CD" 
                            style="text-transform: uppercase; flex: 1; padding: 0.6rem; font-size: 1rem;"
                            maxlength="9"
-                           oninput="let v=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(v.length>2)v=v.slice(0,2)+'-'+v.slice(2,5);if(v.length>5)v=v.slice(0,6)+'-'+v.slice(6,8);this.value=v.slice(0,9);if(this.value.length>=7){clearTimeout(window.searchTimeout);window.searchTimeout=setTimeout(searchVehicle,500);}">
+                           onkeyup="let v=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(v.length>2&&v.charAt(2)!='-')v=v.slice(0,2)+'-'+v.slice(2);if(v.length>6&&v.charAt(6)!='-')v=v.slice(0,6)+'-'+v.slice(6);this.value=v.slice(0,9);if(this.value.length>=7){clearTimeout(window.searchTimeout);window.searchTimeout=setTimeout(searchVehicle,500);}">
                     <button type="button" onclick="searchVehicle()" 
                             style="padding: 0.6rem 1rem; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">
                         🔍
