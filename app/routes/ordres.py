@@ -294,7 +294,9 @@ def new():
             eleve_nom = request.form.get('eleve_nom') or None,
             eleve_id = request.form.get('eleve_id') or None,
             rdv_titre = request.form.get('rdv_titre') or None,
-            rdv_date_heure = None
+            rdv_date_heure = None,
+            ct_valide = request.form.get('ct_valide') == 'on',
+            assurance_valide = request.form.get('assurance_valide') == 'on'
         )
         
         # Handle planned RDV - create proper RendezVous record

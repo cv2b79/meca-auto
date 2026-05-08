@@ -117,6 +117,14 @@
             <span><span class="info-label">Professeur:</span> {{ created_by_user.prenom }} {{ created_by_user.nom }}</span>
         </div>
         {% endif %}
+        <div style="margin-top: 0.8rem; display: flex; gap: 1rem; font-size: 10pt;">
+            <span style="padding: 0.3rem 0.6rem; background: {% if or_obj.ct_valide %}#d4edda{% else %}#f8d7da{% endif %}; border-radius: 4px;">
+                {% if or_obj.ct_valide %}✅{% else %}❌{% endif %} CT
+            </span>
+            <span style="padding: 0.3rem 0.6rem; background: {% if or_obj.assurance_valide %}#d4edda{% else %}#f8d7da{% endif %}; border-radius: 4px;">
+                {% if or_obj.assurance_valide %}✅{% else %}❌{% endif %} Assurance
+            </span>
+        </div>
     </div>
 
     <div class="work-box">

@@ -176,6 +176,10 @@ class OrdreReparation(db.Model):
     rdv_date_heure = db.Column(db.DateTime)
     rdv_titre = db.Column(db.String(100))
     
+    # Contrôles CT et assurance
+    ct_valide = db.Column(db.Boolean, default=False)
+    assurance_valide = db.Column(db.Boolean, default=False)
+    
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_by_user = db.relationship('User', foreign_keys=[created_by], lazy='joined')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
