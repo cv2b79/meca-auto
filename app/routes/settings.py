@@ -137,7 +137,8 @@ def index():
                 'smtp_user': request.form.get('smtp_user'),
                 'smtp_password': request.form.get('smtp_password'),
                 'smtp_from': request.form.get('smtp_from'),
-                'email_notifications': request.form.get('email_notifications', '')
+                'email_notifications': request.form.get('email_notifications', ''),
+                'email_ddfpt_notif': request.form.get('email_ddfpt_notif', '')
             }
             for key, value in smtp_settings.items():
                 param = Parametre.query.filter_by(cle=key).first()
@@ -159,7 +160,7 @@ def index():
     users = User.query.order_by(User.nom).all()
     
     smtp_config = {}
-    for key in ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from', 'email_notifications']:
+    for key in ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from', 'email_notifications', 'email_ddfpt_notif']:
         param = Parametre.query.filter_by(cle=key).first()
         smtp_config[key] = param.valeur if param else ''
     

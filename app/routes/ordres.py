@@ -9,12 +9,21 @@ from email.mime.multipart import MIMEMultipart
 from flask import current_app
 
 def send_notification_email(or_obj, client, vehicule):
-    """Envoyer notification au magasinier lors de création d'OR"""
-    emails_config = Parametre.get('email_notifications', '')
-    if not emails_config:
-        return
+    """Envoyer notification au magasinier + DDFPT lors de création d'OR avec PDF joint"""
+    from app.models import etat_lieu
+    from flask import render_template
     
-    emails = [e.strip() for e in emails_config.split(',') if e.strip()]
+    # Get emails - storekeeper + optional DDFPT
+    emails_config = Parametre.get('email_notifications', '')
+    ddfpt_email = Parametre.get('email_ddfpt_notif', '')
+    
+    emails = []
+    if emails_config:
+        emails.extend([e.strip() for e in emails_config.split(',') if e.strip()])
+    if ddfpt_email:
+        emails.extend([e.strip() for e in ddfpt_email.split(',') if e.strip()])
+    
+    emails = list(set(emails))  # Remove duplicates
     if not emails:
         return
     
@@ -31,38 +40,75 @@ def send_notification_email(or_obj, client, vehicule):
     if not smtp_host or not smtp_user:
         return
     
-    categorie = or_obj.categorie or 'Mécanique'
-    subject = f"🚗 Nouveau véhicule dans l'atelier - OR {or_obj.numero}"
+    # Get user who created OR
+    created_by_user = User.query.get(or_obj.created_by) if or_obj.created_by else None
+    professor_name = f"{created_by_user.prenom} {created_by_user.nom}" if created_by_user else "N/A"
     
-    body = f"""Nouveau véhicule entrant dans l'atelier:
+    # Get etat lieux
+    etat_entree = etat_lieu.query.filter_by(or_id=or_obj.id, type='entree').first()
+    etat_sortie = etat_lieu.query.filter_by(or_id=or_obj.id, type='sortie').first()
+    
+    subject = f"Ouverture Ordre de réparation Meca Auto - {or_obj.numero}"
+    
+    body = f"""Ouverture d'un nouvel ordre de réparation:
 
 Numéro OR: {or_obj.numero}
-Catégorie: {categorie}
-Date: {or_obj.date_creation.strftime('%d/%m/%Y à %H:%M') if or_obj.date_creation else 'N/A'}
+Statut: {or_obj.statut}
+Date de création: {or_obj.date_creation.strftime('%d/%m/%Y à %H:%M') if or_obj.date_creation else 'N/A'}
 
 Véhicule:
 - Immatriculation: {vehicule.immatriculation}
 - Marque: {vehicule.marque or 'N/A'}
 - Modèle: {vehicule.modele or 'N/A'}
 
-Client:
-- Nom: {client.nom} {client.prenom}
-- Téléphone: {client.telephone or 'N/A'}
-- Email: {client.email or 'N/A'}
+Travaux à effectuer:
+{or_obj.description[:500] if or_obj.description else 'Aucun'}
 
-Description: {or_obj.description[:200] if or_obj.description else 'N/A'}
+Informations complémentaires:
+- Classe: {or_obj.classe_nom or 'N/A'}
+- Élève: {or_obj.eleve_nom or 'N/A'}
+- Professor: {professor_name}
 
-Professeur: {current_user.prenom} {current_user.nom}
+État des lieux d'entrée: {'Effectué' if etat_entree else 'Non effectué'}
 
 ---
+Document PDF en pièce jointe.
 Cet email est envoyé automatiquement par MEC AUTO"""
 
     try:
+        # Generate PDF
+        try:
+            from weasyprint import HTML
+            pdf_html = render_template('ordres/pare_brise.html', 
+                or_obj=or_obj, 
+                vehicule=vehicule,
+                etab_nom=Parametre.get('etab_nom', 'MEC AUTO'),
+                print_date=datetime.now().strftime('%d/%m/%Y à %H:%M'),
+                etat_entree=etat_entree,
+                etat_sortie=etat_sortie,
+                created_by_user=created_by_user)
+            pdf_bytes = HTML(string=pdf_html).write_pdf()
+            has_pdf = True
+        except Exception as e:
+            print(f"PDF generation failed: {e}")
+            pdf_bytes = None
+            has_pdf = False
+        
         msg = MIMEMultipart()
         msg['From'] = smtp_from
         msg['To'] = ', '.join(emails)
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
+        
+        # Attach PDF if generated
+        if has_pdf and pdf_bytes:
+            from email.mime.base import MIMEBase
+            from email import encoders
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(pdf_bytes)
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', f'attachment; filename=OR_{or_obj.numero}.pdf')
+            msg.attach(part)
         
         server = smtplib.SMTP(smtp_host, smtp_port)
         server.starttls()

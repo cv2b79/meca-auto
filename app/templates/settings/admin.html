@@ -231,10 +231,16 @@
                 <input type="email" name="smtp_from" value="{{ smtp_config.smtp_from or '' }}">
             </div>
             <div class="form-group">
-                <label>Emails de notification création OR</label>
+                <label>Emails de notification création OR (Magasinier)</label>
                 <input type="text" name="email_notifications" value="{{ smtp_config.email_notifications or '' }}" 
                        placeholder="email1@exemple.com, email2@exemple.com">
-                <small style="color: #666;">Séparés par virgule. Reçoit un email à chaque création d'OR.</small>
+                <small style="color: #666;">Séparés par virgule. Reçoit un email avec PDF à chaque création d'OR.</small>
+            </div>
+            <div class="form-group">
+                <label>Email notification DDFPT</label>
+                <input type="text" name="email_ddfpt_notif" value="{{ smtp_config.email_ddfpt_notif or '' }}" 
+                       placeholder="email@exemple.com">
+                <small style="color: #666;">Le DDFPT reçoit aussi le mail avec PDF à chaque création d'OR.</small>
             </div>
         </div>
         <button type="submit" class="btn">Enregistrer</button>
