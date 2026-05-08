@@ -9,45 +9,43 @@
         <div class="card" style="padding: 1.5rem;">
             <h3 style="margin: 0 0 1rem 0; color: #1976d2;">🚗 Véhicule & 👤 Client</h3>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div>
-                    <label style="font-weight: 500;">Immatriculation <span style="color: red;">*</span></label>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <input type="text" id="immat" name="immatriculation" required 
-                               placeholder="AB-123-CD" 
-                               style="text-transform: uppercase; width: 100%; padding: 0.6rem; font-size: 1rem;"
-                               maxlength="9"
-                               onkeyup="let v=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(v.length>2&&v.charAt(2)!='-')v=v.slice(0,2)+'-'+v.slice(2);if(v.length>6&&v.charAt(6)!='-')v=v.slice(0,6)+'-'+v.slice(6);this.value=v.slice(0,9);if(this.value.length>=7){clearTimeout(window.searchTimeout);window.searchTimeout=setTimeout(searchVehicle,500);}">
-                        <button type="button" onclick="searchVehicle()" 
-                                style="padding: 0.6rem; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            🔍
-                        </button>
-                    </div>
-                    <input type="hidden" name="vehicule_id" id="vehicule_id">
-                    <div id="result" style="min-height: 2rem; padding: 0.5rem; margin: 0.5rem 0; background: #f5f5f5; border-radius: 4px; font-size: 0.9rem;"></div>
-                    
-                    <div id="new_vehicle" style="display: none; padding: 0.75rem; background: #fff3e0; border-radius: 4px; margin-top: 0.5rem;">
-                        <p style="margin: 0 0 0.5rem 0; font-weight: 500; color: #e65100; font-size: 0.9rem;">➕ Nouveau véhicule</p>
-                        <input type="text" name="marque" placeholder="Marque *" required style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem; font-size: 0.9rem;">
-                        <input type="text" name="modele" placeholder="Modèle *" required style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem; font-size: 0.9rem;">
-                        <input type="number" name="annee" placeholder="Année" style="width: 100%; padding: 0.4rem; font-size: 0.9rem;">
-                    </div>
+            <div class="form-group">
+                <label style="font-weight: 500;">Immatriculation <span style="color: red;">*</span></label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="immat" name="immatriculation" required 
+                           placeholder="AB-123-CD" 
+                           style="text-transform: uppercase; width: 100%; padding: 0.6rem; font-size: 1rem;"
+                           maxlength="9"
+                           onkeyup="let v=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(v.length>2&&v.charAt(2)!='-')v=v.slice(0,2)+'-'+v.slice(2);if(v.length>6&&v.charAt(6)!='-')v=v.slice(0,6)+'-'+v.slice(6);this.value=v.slice(0,9);if(this.value.length>=7){clearTimeout(window.searchTimeout);window.searchTimeout=setTimeout(searchVehicle,500);}">
+                    <button type="button" onclick="searchVehicle()" 
+                            style="padding: 0.6rem; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        🔍
+                    </button>
                 </div>
+                <input type="hidden" name="vehicule_id" id="vehicule_id">
+                <div id="result" style="min-height: 2rem; padding: 0.5rem; margin: 0.5rem 0; background: #f5f5f5; border-radius: 4px; font-size: 0.9rem;"></div>
                 
-                <div>
-                    <div class="form-group">
-                        <label style="font-weight: 500;">Nom <span style="color: red;">*</span></label>
-                        <input type="text" name="client_nom" id="client_nom" required placeholder="Nom" style="width: 100%; padding: 0.6rem;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-weight: 500;">Prénom <span style="color: red;">*</span></label>
-                        <input type="text" name="client_prenom" id="client_prenom" required placeholder="Prénom" style="width: 100%; padding: 0.6rem;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-weight: 500;">Téléphone</label>
-                        <input type="tel" name="client_tel" id="client_tel" placeholder="06 12 34 56 78" maxlength="14" style="width: 100%; padding: 0.6rem;" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^(\d{2})(\d{0,2})(\d{0,2})(\d{0,2})(\d{0,2})$/, '$1 $2 $3 $4 $5').replace(/\s+/g, ' ').trim();">
-                    </div>
+                <div id="new_vehicle" style="display: none; padding: 0.75rem; background: #fff3e0; border-radius: 4px; margin-top: 0.5rem;">
+                    <p style="margin: 0 0 0.5rem 0; font-weight: 500; color: #e65100; font-size: 0.9rem;">➕ Nouveau véhicule</p>
+                    <input type="text" name="marque" placeholder="Marque *" required style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem; font-size: 0.9rem;">
+                    <input type="text" name="modele" placeholder="Modèle *" required style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem; font-size: 0.9rem;">
+                    <input type="number" name="annee" placeholder="Année" style="width: 100%; padding: 0.4rem; font-size: 0.9rem;">
                 </div>
+            </div>
+            
+            <hr style="margin: 1rem 0; border: none; border-top: 1px solid #eee;">
+            
+            <div class="form-group">
+                <label style="font-weight: 500;">Nom <span style="color: red;">*</span></label>
+                <input type="text" name="client_nom" id="client_nom" required placeholder="Nom du client" style="width: 100%; padding: 0.6rem;">
+            </div>
+            <div class="form-group">
+                <label style="font-weight: 500;">Prénom <span style="color: red;">*</span></label>
+                <input type="text" name="client_prenom" id="client_prenom" required placeholder="Prénom du client" style="width: 100%; padding: 0.6rem;">
+            </div>
+            <div class="form-group">
+                <label style="font-weight: 500;">Téléphone</label>
+                <input type="tel" name="client_tel" id="client_tel" placeholder="06 12 34 56 78" maxlength="14" style="width: 100%; padding: 0.6rem;" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^(\d{2})(\d{0,2})(\d{0,2})(\d{0,2})(\d{0,2})$/, '$1 $2 $3 $4 $5').replace(/\s+/g, ' ').trim();">
             </div>
         </div>
         
