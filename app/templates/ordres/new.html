@@ -60,9 +60,50 @@
             
             <div class="form-group">
                 <label style="font-weight: 500;">Travaux demandés</label>
-                <textarea name="description" id="description" rows="5" 
+                <textarea name="description" id="description" rows="4" 
                           placeholder="Décrivez les travaux à effectuer..." 
                           style="width: 100%; padding: 0.6rem; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                <div class="form-group">
+                    <label style="font-weight: 500;">Classe</label>
+                    <select name="classe_nom" style="width: 100%; padding: 0.6rem; font-size: 1rem;">
+                        <option value="">-- Aucune --</option>
+                        {% for c in classes %}
+                        <option value="{{ c.nom }}">{{ c.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: 500;">Élève responsable</label>
+                    <select name="eleve_id" style="width: 100%; padding: 0.6rem; font-size: 1rem;">
+                        <option value="">-- Sélectionner --</option>
+                        {% for e in eleves %}
+                        <option value="{{ e.id }}">{{ e.prenom }} {{ e.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <input type="hidden" name="eleve_nom" id="eleve_nom">
+            
+            <div style="margin-top: 1rem; padding: 0.75rem; background: #fce4ec; border-radius: 4px;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
+                    <input type="checkbox" id="plan_rdv_check" 
+                           onchange="if(this.checked){document.getElementById('rdv_fields').style.display='block';}else{document.getElementById('rdv_fields').style.display='none';}"
+                           style="width: 1.2rem; height: 1.2rem;">
+                    📅 Prise de rendez-vous
+                </label>
+                <div id="rdv_fields" style="display: none; margin-top: 0.5rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div class="form-group">
+                            <input type="date" name="rdv_date" style="width: 100%; padding: 0.5rem;">
+                        </div>
+                        <div class="form-group">
+                            <input type="time" name="rdv_time" value="09:00" style="width: 100%; padding: 0.5rem;">
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; padding: 0.75rem; background: #fff3e0; border-radius: 4px; cursor: pointer;">
@@ -74,52 +115,6 @@
                 <p style="margin: 0; font-size: 0.9rem; color: #1565c0;">
                     ℹ️ La tarification sera définie à la clôture de l'OR
                 </p>
-            </div>
-        </div>
-
-        <div class="card" style="padding: 1.5rem;">
-            <h3 style="margin: 0 0 1rem 0; color: #7b1fa2;">👨‍🎓 Classe & Options</h3>
-            
-            <div class="form-group">
-                <label style="font-weight: 500;">Classe</label>
-                <select name="classe_nom" style="width: 100%; padding: 0.6rem; font-size: 1rem;">
-                    <option value="">-- Sélectionner --</option>
-                    {% for c in classes %}
-                    <option value="{{ c.nom }}">{{ c.nom }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label style="font-weight: 500;">Élève responsable</label>
-                <select name="eleve_id" style="width: 100%; padding: 0.6rem; font-size: 1rem;">
-                    <option value="">-- Sélectionner un élève --</option>
-                    {% for e in eleves %}
-                    <option value="{{ e.id }}">{{ e.prenom }} {{ e.nom }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <input type="hidden" name="eleve_nom" id="eleve_nom">
-            
-            <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #eee;">
-            
-            <div style="background: #fce4ec; padding: 1rem; border-radius: 4px;">
-                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
-                    <input type="checkbox" id="plan_rdv_check" 
-                           onchange="if(this.checked){document.getElementById('rdv_fields').style.display='block';}else{document.getElementById('rdv_fields').style.display='none';}"
-                           style="width: 1.2rem; height: 1.2rem;">
-                    📅 Prise de rendez-vous
-                </label>
-                <div id="rdv_fields" style="display: none; margin-top: 1rem;">
-                    <div class="form-group">
-                        <label style="font-weight: 500;">Date</label>
-                        <input type="date" name="rdv_date" style="width: 100%; padding: 0.6rem;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-weight: 500;">Heure</label>
-                        <input type="time" name="rdv_time" value="09:00" style="width: 100%; padding: 0.6rem;">
-                    </div>
-                </div>
             </div>
         </div>
     </div>
