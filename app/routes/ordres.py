@@ -308,25 +308,21 @@ def set_statut(id):
         flash('Statut invalide', 'error')
         return redirect(url_for('ordres.view', id=id))
 
-    # Vérifications état des lieux
+    # Vérifications état des lieux (seulement pour cloture par DDFPT)
     etat_entree = or_obj.etats_lieux.filter_by(type='entree').first()
     etat_sortie = or_obj.etats_lieux.filter_by(type='sortie').first()
 
-    if new_statut == 'termine' and not etat_sortie:
-        flash('État des lieux de SORTIE requis avant de terminer', 'warning')
-        return redirect(url_for('ordres.etat_lieu_form', or_id=id, type='sortie'))
-
-    if new_statut == 'cloture' and not etat_sortie:
+    if new_statut == 'cloture' and not etat_sortie and current_user.role == 'ddfpt':
         flash('État des lieux de SORTIE requis avant de cloturer', 'warning')
         return redirect(url_for('ordres.etat_lieu_form', or_id=id, type='sortie'))
     
-    # Vérifier la checklist pour termine/cloture
-    if new_statut in ['termine', 'cloture']:
+# Vérifier la checklist pour termine/cloture (seulement pour DDFPT)
+    if new_statut in ['termine', 'cloture'] and current_user.role == 'ddfpt':
         from app.models import ChecklistItem, ChecklistVerification
         checklist_items = ChecklistItem.query.filter_by(actif=True).all()
         if checklist_items:
             verifs = ChecklistVerification.query.filter_by(or_id=id).all()
-            verif_dict = {v.checklist_item_id: v.verified for v in verifs}
+            verif_dict = {v.checklist_item_id: True for v in verifs}
             non_verified = [item.nom for item in checklist_items if not verif_dict.get(item.id, False)]
             if non_verified:
                 flash('Checklist non complétée: ' + ', '.join(non_verified), 'error')
