@@ -641,6 +641,19 @@ def etat_lieu_print():
     }
     return render_template('ordres/etat_lieu_print.html', **data)
 
+@ordres_bp.route('/<int:id>/print-pare-brise')
+@login_required
+def print_pare_brise(id):
+    """Impression simplifiée pour pare-brise - véhicule + travaux uniquement"""
+    or_obj = OrdreReparation.query.get_or_404(id)
+    vehicule = or_obj.vehicule
+    
+    return render_template('ordres/pare_brise.html', 
+        or_obj=or_obj, 
+        vehicule=vehicule,
+        etab_nom=Parametre.get('etab_nom', 'MEC AUTO'),
+        print_date=datetime.now().strftime('%d/%m/%Y à %H:%M'))
+
 @ordres_bp.route('/controle/<int:id>', methods=['GET', 'POST'])
 @login_required
 def controle(id):

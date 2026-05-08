@@ -120,6 +120,7 @@
         <a href="{{ url_for('ordres.edit', id=or_obj.id) }}" class="btn">Modifier</a>
         {% endif %}
         <a href="{{ url_for('ordres.print_or', id=or_obj.id) }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn btn-secondary">Imprimer OR</a>
+        <a href="{{ url_for('ordres.print_pare_brise', id=or_obj.id) }}" onclick="window.open(this.href, 'popup', 'width=600,height=400'); return false;" class="btn btn-secondary" style="background: #17a2b8;">🚗 Pare-brise</a>
         <a href="{{ url_for('ordres.controle', id=or_obj.id) }}" class="btn btn-secondary">Contrôle visuel</a>
         {% if current_user.can_facturer() and or_obj.statut in ['termine', 'cloture'] and not or_obj.facture %}
         <a href="{{ url_for('factures.create', or_id=or_obj.id) }}" class="btn btn-success">Créer la Facture</a>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>OR {{ or_obj.numero }} - {{ vehicule.immatriculation }}</title>
+    <style>
+        @page { size: A5 landscape; margin: 0.5cm; }
+        * { box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            font-size: 12pt; 
+            margin: 0; 
+            padding: 0.5rem;
+            max-width: 100%;
+        }
+        
+        .header { 
+            text-align: center; 
+            border-bottom: 3px solid #1E3A5F; 
+            padding-bottom: 0.5rem; 
+            margin-bottom: 0.8rem;
+        }
+        .header h1 { 
+            font-size: 16pt; 
+            color: #1E3A5F; 
+            margin: 0; 
+            text-transform: uppercase; 
+        }
+        
+        .vehicle-box { 
+            background: #f5f5f5; 
+            padding: 1rem; 
+            border-radius: 6px; 
+            border: 2px solid #1E3A5F;
+            margin-bottom: 1rem;
+        }
+        .vehicle-box h2 { 
+            margin: 0 0 0.5rem 0; 
+            font-size: 14pt; 
+            color: #1E3A5F;
+        }
+        
+        .info-row { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 0.3rem 0;
+        }
+        .info-label { font-weight: bold; }
+        
+        .work-box { 
+            background: #fff; 
+            border: 1px solid #999; 
+            padding: 0.8rem; 
+            min-height: 100px;
+        }
+        .work-box h3 { 
+            margin: 0 0 0.5rem 0; 
+            font-size: 11pt; 
+            color: #1E3A5F;
+            background: #e8f4f8;
+            padding: 0.3rem;
+        }
+        
+        .footer { 
+            margin-top: 1rem; 
+            text-align: center; 
+            font-size: 10pt; 
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 0.5rem;
+        }
+        
+        .no-print { 
+            text-align: center; 
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid #ccc;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #2E6DA4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 11pt;
+            cursor: pointer;
+        }
+        .btn:hover { background: #1E3A5F; }
+        
+        @media print { 
+            .no-print { display: none; } 
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ etab_nom }}</h1>
+    </div>
+
+    <div class="vehicle-box">
+        <h2>🚗 {{ vehicule.immatriculation }}</h2>
+        <div class="info-row">
+            <span><span class="info-label">Marque:</span> {{ vehicule.marque or 'N/A' }}</span>
+            <span><span class="info-label">Modèle:</span> {{ vehicule.modele or 'N/A' }}</span>
+        </div>
+        <div class="info-row">
+            <span><span class="info-label">OR:</span> {{ or_obj.numero }}</span>
+            <span><span class="info-label">Statut:</span> {{ or_obj.statut }}</span>
+        </div>
+    </div>
+
+    <div class="work-box">
+        <h3>📋 Travaux à effectuer</h3>
+        {% if or_obj.description %}
+        <p style="white-space: pre-wrap;">{{ or_obj.description }}</p>
+        {% else %}
+        <p style="color: #999;">Aucun descriptif</p>
+        {% endif %}
+        
+        {% if or_obj.eleve_nom %}
+        <p style="margin-top: 0.8rem; font-size: 11pt;">
+            <strong>Élève:</strong> {{ or_obj.eleve_nom }}
+            {% if or_obj.classe_nom %} - <strong>Classe:</strong> {{ or_obj.classe_nom }}{% endif %}
+        </p>
+        {% endif %}
+    </div>
+
+    <div class="footer">
+        <p>Imprimé le {{ print_date }}</p>
+    </div>
+
+    <div class="no-print">
+        <button class="btn" onclick="window.print()">🖨️ Imprimer pour pare-brise</button>
+        <a href="{{ url_for('ordres.view', id=or_obj.id) }}" class="btn" style="background: #666;">Retour</a>
+    </div>
+</body>
+</html>

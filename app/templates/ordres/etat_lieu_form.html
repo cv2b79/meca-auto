@@ -67,7 +67,12 @@
 
         <div class="form-group">
             <label>Responsable *</label>
+            {% if or_obj and or_obj.eleve_nom %}
+            <input type="text" name="responsable" value="{{ or_obj.eleve_nom }}" readonly style="background: #e9ecef;">
+            <small style="color: #666;">Élève désigné lors de la création de l'OR</small>
+            {% else %}
             <input type="text" name="responsable" required placeholder="Nom du responsable">
+            {% endif %}
         </div>
 
         {% if type_etat == 'sortie' and checklist_items %}
