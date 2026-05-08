@@ -128,7 +128,7 @@
         <tr data-role="{{ u.role }}" data-classe="{% if u.classe %}{{ u.classe.nom }}{% endif %}" data-actif="{{ u.actif|int }}">
             <td>{{ u.nom }}</td>
             <td>{{ u.prenom }}</td>
-            <td title="{{ u.email }}">{% if u.email %}{{ u.email[:25] }}{% if u.email|length > 25 %}...{% endif %}{% else %}—{% endif %}</td>
+            <td title="{{ u.email }}">{% if u.email %}{{ u.email[:10] }}{% if u.email|length > 10 %}...{% endif %}{% else %}—{% endif %}</td>
             <td>{{ u.login }}</td>
             <td><span class="badge {% if u.role=='ddfpt' %}cloture{% elif u.role=='magasinier' %}termine{% elif u.role=='enseignant' %}en_cours{% else %}ouvert{% endif %}">{{ u.role }}</span></td>
             <td>{% if u.classe %}{{ u.classe.nom }}{% else %}—{% endif %}</td>
