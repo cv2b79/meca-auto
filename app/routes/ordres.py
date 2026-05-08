@@ -102,12 +102,12 @@ def new():
             vehicule = Vehicule.query.get(vehicule_id)
         
         if not vehicule:
-            from sqlalchemy import or_ as sql_or
+            from sqlalchemy import or_ as sql_or, func
         immat_input = request.form.get('immatriculation', '').upper().replace('-', '').replace(' ', '')
         existing_vehicule = Vehicule.query.filter(
             sql_or(
                 Vehicule.immatriculation == request.form.get('immatriculation', '').upper(),
-                Vehicule.immatriculation.replace('-', '').replace(' ', '') == immat_input
+                func.replace(func.replace(Vehicule.immatriculation, '-', ''), ' ', '') == immat_input
             )
         ).first()
         if existing_vehicule:
