@@ -5,6 +5,7 @@ from app import db
 import csv
 from io import StringIO
 from datetime import datetime
+from sqlalchemy import func
 
 stats_bp = Blueprint('stats', __name__)
 
@@ -55,20 +56,26 @@ def index():
     vehicules_count = Vehicule.query.count()
     
     # Status breakdown
-    statuts = {
+    or_by_status = {
         'ouvert': len([o for o in ordres if o.statut == 'ouvert']),
         'en_cours': len([o for o in ordres if o.statut == 'en_cours']),
         'termine': len([o for o in ordres if o.statut == 'termine']),
         'cloture': len([o for o in ordres if o.statut == 'cloture'])
     }
     
+    # OR by month
+    or_by_month = {m: 0 for m in range(1, 13)}
+    for o in ordres:
+        if o.created_at and o.created_at.month in or_by_month:
+            or_by_month[o.created_at.month] += 1
+    
     return render_template('stats/index.html',
                           total_ors=total_ors, total_ca=total_ca, taux_cloture=taux_cloture,
                           ca_moyen=ca_moyen, or_without_invoice=or_without_invoice,
                           evolution_or=evolution_or, evolution_ca=evolution_ca,
                           prev_year=prev_year, clients_count=clients_count,
-                          vehicules_count=vehicules_count, or_by_status=statuts,
-                          year=year, month=month)
+                          vehicules_count=vehicules_count, or_by_status=or_by_status,
+                          or_by_month=or_by_month, year=year, month=month)
 
 @stats_bp.route('/export-ors')
 @login_required
