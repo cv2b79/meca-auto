@@ -137,8 +137,10 @@ def view_html(id):
 @login_required
 def pdf(id):
     try:
+        import weasyprint
         from weasyprint import HTML
-    except OSError:
+    except Exception as e:
+        flash(f'WeasyPrint non installé: {str(e)}', 'error')
         return redirect(url_for('factures.view_html', id=id))
 
     facture = Facture.query.get_or_404(id)
@@ -175,8 +177,11 @@ def pdf(id):
         surcharge_lines=surcharge_lines)
 
     try:
+        from weasyprint import HTML
         pdf = HTML(string=html).write_pdf()
     except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
         flash(f'Erreur génération PDF: {str(e)}', 'error')
         return redirect(url_for('factures.view', id=id))
 
