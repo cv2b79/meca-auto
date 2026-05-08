@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request, make_response
+from flask import Blueprint, render_template, request, make_response, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app.models import OrdreReparation, EleveIntervention, User
+from app.models import OrdreReparation, EleveIntervention, User, Client, Vehicule
+from app import db
 import csv
 from io import StringIO
 from datetime import datetime
@@ -14,7 +15,60 @@ def index():
         flash('Accès refusé', 'error')
         return redirect(url_for('main.index'))
     
-    return render_template('stats/index.html')
+    year = request.args.get('year', datetime.now().year, type=int)
+    month = request.args.get('month', type=int)
+    
+    # Base query
+    query = OrdreReparation.query
+    
+    # Filter by year
+    if year:
+        query = query.filter(db.extract('year', OrdreReparation.created_at) == year)
+    
+    # Filter by month
+    if month:
+        query = query.filter(db.extract('month', OrdreReparation.created_at) == month)
+    
+    ordres = query.all()
+    
+    # Calculate stats
+    total_ors = len(ordres)
+    total_ca = sum(o.montant or 0 for o in ordres)
+    or_clotures = len([o for o in ordres if o.statut == 'cloture'])
+    taux_cloture = (or_clotures / total_ors * 100) if total_ors > 0 else 0
+    ca_moyen = (total_ca / total_ors) if total_ors > 0 else 0
+    
+    # OR without invoice
+    or_without_invoice = len([o for o in ordres if o.statut == 'cloture' and not o.facture])
+    
+    # Previous year stats
+    prev_year = year - 1
+    prev_ordres = OrdreReparation.query.filter(db.extract('year', OrdreReparation.created_at) == prev_year).all()
+    prev_total = len(prev_ordres)
+    prev_ca = sum(o.montant or 0 for o in prev_ordres)
+    
+    evolution_or = ((total_ors - prev_total) / prev_total * 100) if prev_total > 0 else 0
+    evolution_ca = ((total_ca - prev_ca) / prev_ca * 100) if prev_ca > 0 else 0
+    
+    # Counts
+    clients_count = Client.query.count()
+    vehicules_count = Vehicule.query.count()
+    
+    # Status breakdown
+    statuts = {
+        'ouvert': len([o for o in ordres if o.statut == 'ouvert']),
+        'en_cours': len([o for o in ordres if o.statut == 'en_cours']),
+        'termine': len([o for o in ordres if o.statut == 'termine']),
+        'cloture': len([o for o in ordres if o.statut == 'cloture'])
+    }
+    
+    return render_template('stats/index.html',
+                          total_ors=total_ors, total_ca=total_ca, taux_cloture=taux_cloture,
+                          ca_moyen=ca_moyen, or_without_invoice=or_without_invoice,
+                          evolution_or=evolution_or, evolution_ca=evolution_ca,
+                          prev_year=prev_year, clients_count=clients_count,
+                          vehicules_count=vehicules_count, statuts=statuts,
+                          year=year, month=month)
 
 @stats_bp.route('/export-ors')
 @login_required
