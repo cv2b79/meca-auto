@@ -67,7 +67,7 @@ def index():
                           ca_moyen=ca_moyen, or_without_invoice=or_without_invoice,
                           evolution_or=evolution_or, evolution_ca=evolution_ca,
                           prev_year=prev_year, clients_count=clients_count,
-                          vehicules_count=vehicules_count, statuts=statuts,
+                          vehicules_count=vehicules_count, or_by_status=statuts,
                           year=year, month=month)
 
 @stats_bp.route('/export-ors')
