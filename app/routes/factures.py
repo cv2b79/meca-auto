@@ -34,7 +34,7 @@ def create(or_id):
 
     or_obj = OrdreReparation.query.get_or_404(or_id)
 
-    if or_obj.statut != 'termine':
+    if or_obj.statut not in ['termine', 'cloture']:
         flash('L\'OR doit être terminé avant facturation', 'error')
         return redirect(url_for('ordres.view', id=or_id))
 
