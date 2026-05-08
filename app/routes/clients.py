@@ -90,8 +90,14 @@ def delete(id):
         flash('Accès refusé', 'error')
         return redirect(url_for('clients.list'))
     client = Client.query.get_or_404(id)
-    if client.vehicules.count() > 0:
-        flash('Impossible de supprimer un client avec des véhicules', 'error')
+    
+    # Check for linked vehicles
+    from app.models import Vehicule, OrdreReparation
+    vehicules = Vehicule.query.filter_by(proprietaire_id=id).count()
+    ors = OrdreReparation.query.filter_by(client_id=id).count()
+    
+    if vehicules > 0 or ors > 0:
+        flash(f'Impossible de supprimer: {vehicules} véhicule(s) et {ors} OR(s) lié(s)', 'error')
         return redirect(url_for('clients.view', id=id))
     db.session.delete(client)
     db.session.commit()
