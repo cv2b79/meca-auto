@@ -204,12 +204,16 @@ def new():
             db.session.flush()
             vehicule_id = vehicule.id
         else:
-            client_id = vehicule.proprietaire_id
+            # Véhicule existant
+            if vehicule and vehicule.proprietaire_id:
+                client_id = vehicule.proprietaire_id
+            else:
+                client_id = None
 
         vehicule = Vehicule.query.get(vehicule_id)
         client = None
 
-        if not vehicule.proprietaire:
+        if not vehicule or not vehicule.proprietaire:
             client = Client(
                 nom=request.form.get('client_nom'),
                 prenom=request.form.get('client_prenom'),
