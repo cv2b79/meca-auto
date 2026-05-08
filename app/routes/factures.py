@@ -178,11 +178,12 @@ def pdf(id):
 
     try:
         from weasyprint import HTML
-        pdf = HTML(string=html).write_pdf()
+        base_url = request.host_url if request else None
+        pdf = HTML(string=html, base_url=base_url).write_pdf()
     except Exception as e:
         import traceback
         error_detail = traceback.format_exc()
-        flash(f'Erreur génération PDF: {str(e)}', 'error')
+        flash(f'Erreur génération PDF: {str(e)}\n{error_detail[:500]}', 'error')
         return redirect(url_for('factures.view', id=id))
 
     return send_file(
