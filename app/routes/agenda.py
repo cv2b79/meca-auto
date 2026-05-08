@@ -113,7 +113,7 @@ def edit(id):
     
     return render_template('agenda/edit.html', rdv=rdv, clients=clients, vehicules=vehicules, related_ors=related_ors)
 
-@agenda_bp.route('/<int:id>/delete')
+@agenda_bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
 def delete(id):
     rdv = RendezVous.query.get_or_404(id)

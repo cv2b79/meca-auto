@@ -221,7 +221,7 @@ def forfait_edit(id):
     flash('Forfait modifié', 'success')
     return redirect(url_for('settings.index'))
 
-@settings_bp.route('/forfait/<int:id>/delete')
+@settings_bp.route('/forfait/<int:id>/delete', methods=['POST'])
 @login_required
 def forfait_delete(id):
     if not current_user.can_manage_settings():
@@ -269,7 +269,7 @@ def fourniture_edit(id):
     
     return render_template('settings/fourniture_edit.html', fourniture=fourniture)
 
-@settings_bp.route('/fourniture/<int:id>/delete')
+@settings_bp.route('/fourniture/<int:id>/delete', methods=['POST'])
 @login_required
 def fourniture_delete(id):
     if not current_user.can_manage_settings():
@@ -418,7 +418,7 @@ def surcharge_new():
     flash('Frais de dépollution créé', 'success')
     return redirect(url_for('settings.index'))
 
-@settings_bp.route('/surcharge/<int:id>/delete')
+@settings_bp.route('/surcharge/<int:id>/delete', methods=['POST'])
 @login_required
 def surcharge_delete(id):
     if not current_user.can_manage_settings():
@@ -466,7 +466,7 @@ def consommable_edit(id):
     flash('Consommable modifié', 'success')
     return redirect(url_for('settings.index'))
 
-@settings_bp.route('/consommable/<int:id>/delete')
+@settings_bp.route('/consommable/<int:id>/delete', methods=['POST'])
 @login_required
 def consommable_delete(id):
     if not current_user.can_manage_settings():
@@ -890,7 +890,7 @@ def checklist_toggle(id):
     flash(f'Point {"activé" if item.actif else "désactivé"}', 'success')
     return redirect(url_for('settings.checklist'))
 
-@settings_bp.route('/checklist/<int:id>/delete')
+@settings_bp.route('/checklist/<int:id>/delete', methods=['POST'])
 @login_required
 def checklist_delete(id):
     if current_user.role not in ['ddfpt', 'enseignant']:
