@@ -161,7 +161,7 @@ def new():
         return redirect(url_for('ordres.list'))
 
     if request.method == 'POST':
-        vehicule_id = request.form.get('vehicule_id')
+        vehicule_id = request.form.get('vehicule_id') or None
         immat = request.form.get('immatriculation', '').upper().replace('-', '').replace(' ', '')
         
         # Vérifier si véhicule existant ou à créer
