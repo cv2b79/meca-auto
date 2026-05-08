@@ -40,7 +40,7 @@
         <div class="label">Heures élèves</div>
     </div>
     <div class="stat-box" style="background: #e8f5e9;">
-        <div class="number">{{ "%.2f"|format(ors|sum(attribute='montant') or 0) }} €</div>
+        <div class="number">{{ "%.2f"|format(ors|selectattr('montant')|sum(attribute='montant') or 0) }} €</div>
         <div class="label">Total facturé</div>
     </div>
 </div>
