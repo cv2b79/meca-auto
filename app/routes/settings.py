@@ -64,6 +64,19 @@ def index():
                 user.actif = not user.actif
                 flash(f'Utilisateur {"activé" if user.actif else "désactivé"}', 'success')
         
+        elif action == 'edit_user':
+            user = User.query.get(request.form.get('id'))
+            if user:
+                user.nom = request.form.get('nom')
+                user.prenom = request.form.get('prenom')
+                user.email = request.form.get('email') or None
+                user.login = request.form.get('login')
+                user.role = request.form.get('role')
+                classe_id = request.form.get('classe_id')
+                user.classe_id = int(classe_id) if classe_id else None
+                db.session.commit()
+                flash('Utilisateur modifié', 'success')
+        
         elif action == 'delete_user':
             user = User.query.get(request.form.get('id'))
             if user and user.id != current_user.id:

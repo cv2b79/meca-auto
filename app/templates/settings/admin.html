@@ -128,11 +128,13 @@
         <tr data-role="{{ u.role }}" data-classe="{% if u.classe %}{{ u.classe.nom }}{% endif %}" data-actif="{{ u.actif|int }}">
             <td>{{ u.nom }}</td>
             <td>{{ u.prenom }}</td>
+            <td>{{ u.email or '—' }}</td>
             <td>{{ u.login }}</td>
             <td><span class="badge {% if u.role=='ddfpt' %}cloture{% elif u.role=='magasinier' %}termine{% elif u.role=='enseignant' %}en_cours{% else %}ouvert{% endif %}">{{ u.role }}</span></td>
             <td>{% if u.classe %}{{ u.classe.nom }}{% else %}—{% endif %}</td>
             <td>{% if u.actif %}✓{% else %}✗{% endif %}</td>
             <td>
+                <button type="button" class="btn btn-secondary" style="padding: 0.2rem 0.5rem;" onclick="showEditUser('{{ u.id }}', '{{ u.nom }}', '{{ u.prenom }}', '{{ u.email or '' }}', '{{ u.login }}', '{{ u.role }}', '{% if u.classe %}{{ u.classe.id }}{% endif %}')">✏️</button>
                 {% if current_user.id != u.id %}
                 <form method="POST" style="display: inline;">
                     <input type="hidden" name="action" value="toggle_user">
@@ -374,5 +376,76 @@ function filterUsers() {
     
     document.getElementById('filter_count').textContent = visible + ' / ' + rows.length + ' utilisateurs';
 }
+
+// Edit User Modal
+function showEditUser(id, nom, prenom, email, login, role, classeId) {
+    document.getElementById('edit_user_id').value = id;
+    document.getElementById('edit_nom').value = nom;
+    document.getElementById('edit_prenom').value = prenom;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_login').value = login;
+    document.getElementById('edit_role').value = role;
+    
+    var classeSelect = document.getElementById('edit_classe_id');
+    classeSelect.value = classeId;
+    classeSelect.style.display = (role === 'eleve') ? 'block' : 'none';
+    
+    document.getElementById('edit_user_modal').style.display = 'block';
+}
+
+function hideEditUser() {
+    document.getElementById('edit_user_modal').style.display = 'none';
+}
 </script>
+
+<!-- Edit User Modal -->
+<div id="edit_user_modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="background: white; margin: 10% auto; padding: 2rem; border-radius: 8px; max-width: 500px;">
+        <h3>Modifier l'utilisateur</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="edit_user">
+            <input type="hidden" name="id" id="edit_user_id">
+            
+            <div class="form-group">
+                <label>Nom</label>
+                <input type="text" name="nom" id="edit_nom" required>
+            </div>
+            <div class="form-group">
+                <label>Prénom</label>
+                <input type="text" name="prenom" id="edit_prenom" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" id="edit_email">
+            </div>
+            <div class="form-group">
+                <label>Login</label>
+                <input type="text" name="login" id="edit_login" required>
+            </div>
+            <div class="form-group">
+                <label>Rôle</label>
+                <select name="role" id="edit_role" onchange="var c=document.getElementById('edit_classe_id');c.style.display=(this.value==='eleve')?'block':'none';">
+                    <option value="eleve">Élève</option>
+                    <option value="enseignant">Enseignant</option>
+                    <option value="magasinier">Magasinier</option>
+                    <option value="ddfpt">DDFPT</option>
+                </select>
+            </div>
+            <div class="form-group" id="edit_classe_id_container" style="display: none;">
+                <label>Classe</label>
+                <select name="classe_id" id="edit_classe_id">
+                    <option value="">-- Aucune --</option>
+                    {% for c in classes %}
+                    <option value="{{ c.id }}">{{ c.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="margin-top: 1rem;">
+                <button type="submit" class="btn">Enregistrer</button>
+                <button type="button" onclick="hideEditUser()" class="btn btn-secondary">Annuler</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
