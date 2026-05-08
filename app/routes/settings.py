@@ -310,12 +310,11 @@ def import_eleves():
     errors = []
     for i, row in enumerate(reader, 1):
         try:
-            nom = row.get('Nom', '').strip()
-            # Handle both with and without accent
-            prenom = row.get('Prénom', '').strip() or row.get('Prenom', '').strip()
-            classe_nom = row.get('Classe', '').strip()
-            # Handle both date formats
-            ddn = row.get('Date de naissance', '').strip() or row.get('DDN', '').strip() or row.get('ddn', '').strip()
+            nom = row.get('nom', '').strip() or row.get('Nom', '').strip()
+            prenom = row.get('prénom', '').strip() or row.get('prenom', '').strip() or row.get('Prénom', '').strip() or row.get('Prenom', '').strip()
+            ddn = row.get('date de naissance', '').strip() or row.get('ddn', '').strip() or row.get('Date de naissance', '').strip()
+            classe_nom = row.get('classe', '').strip() or row.get('Classe', '').strip()
+            email = row.get('adresse email', '').strip() or row.get('email', '').strip() or row.get('Email', '').strip()
             
             if not nom or not prenom:
                 errors.append(f"Ligne {i}: Nom ou Prénom manquant")
@@ -356,6 +355,7 @@ def import_eleves():
                 nom=nom,
                 prenom=prenom,
                 login=login,
+                email=email if email else None,
                 role='eleve',
                 actif=True,
                 classe_id=classe_id

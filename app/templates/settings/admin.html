@@ -294,7 +294,7 @@
 <!-- IMPORT ÉLÈVES -->
 <div class="card" style="margin-top: 1.5rem;">
     <h3>📥 Import d'élèves</h3>
-    <p style="color: #666; font-size: 0.9rem;">Importer une liste d'élèves depuis un fichier CSV. Colonnes attendues: <strong>Nom, Prénom, Classe, DDN</strong></p>
+    <p style="color: #666; font-size: 0.9rem;">Importer une liste d'élèves depuis un fichier CSV. Colonnes attendues: <strong>nom, prénom, date de naissance, classe, adresse email</strong></p>
     <form method="POST" action="{{ url_for('settings.import_eleves') }}" enctype="multipart/form-data" style="display: flex; gap: 0.5rem; align-items: center;">
         <input type="file" name="file" accept=".csv" required style="flex: 1;">
         <button type="submit" class="btn">Importer</button>
