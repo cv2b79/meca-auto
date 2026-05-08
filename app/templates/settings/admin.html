@@ -103,7 +103,7 @@
                     <option value="ddfpt">DDFPT</option>
                 </select>
             </div>
-            <div id="classe_field" style="display: none;">
+            <div id="classe_field">
                 <label style="font-size: 0.8rem;">Classe</label>
                 <select name="classe_id" id="classe_select" onchange="toggleNewClasse(this.value)">
                     <option value="">-- Aucune --</option>
@@ -347,6 +347,14 @@ function toggleClasseField(role) {
     champClasse.style.display = (role === 'eleve') ? 'block' : 'none';
     document.getElementById('new_classe_field').style.display = 'none';
 }
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', function() {
+    var roleSelect = document.querySelector('select[name="role"]');
+    if (roleSelect) {
+        toggleClasseField(roleSelect.value);
+    }
+});
 
 function toggleNewClasse(value) {
     var newClasseField = document.getElementById('new_classe_field');
