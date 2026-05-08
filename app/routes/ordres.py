@@ -3,6 +3,74 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import OrdreReparation, Client, Vehicule, EleveIntervention, User, Forfait, Parametre, RecupSurcharge, Classe, RendezVous, Log, Fourniture
 from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from flask import current_app
+
+def send_notification_email(or_obj, client, vehicule):
+    """Envoyer notification au magasinier lors de création d'OR"""
+    emails_config = Parametre.get('email_notifications', '')
+    if not emails_config:
+        return
+    
+    emails = [e.strip() for e in emails_config.split(',') if e.strip()]
+    if not emails:
+        return
+    
+    def get_smtp_param(key, default=''):
+        param = Parametre.query.filter_by(cle=key).first()
+        return param.valeur if param else current_app.config.get(key.upper(), default)
+    
+    smtp_host = get_smtp_param('smtp_host')
+    smtp_port = int(get_smtp_param('smtp_port', '587'))
+    smtp_user = get_smtp_param('smtp_user')
+    smtp_password = get_smtp_param('smtp_password')
+    smtp_from = get_smtp_param('smtp_from', 'atelier@lycee.fr')
+    
+    if not smtp_host or not smtp_user:
+        return
+    
+    categorie = or_obj.categorie or 'Mécanique'
+    subject = f"🚗 Nouveau véhicule dans l'atelier - OR {or_obj.numero}"
+    
+    body = f"""Nouveau véhicule entrant dans l'atelier:
+
+Numéro OR: {or_obj.numero}
+Catégorie: {categorie}
+Date: {or_obj.date_creation.strftime('%d/%m/%Y à %H:%M') if or_obj.date_creation else 'N/A'}
+
+Véhicule:
+- Immatriculation: {vehicule.immatriculation}
+- Marque: {vehicule.marque or 'N/A'}
+- Modèle: {vehicule.modele or 'N/A'}
+
+Client:
+- Nom: {client.nom} {client.prenom}
+- Téléphone: {client.telephone or 'N/A'}
+- Email: {client.email or 'N/A'}
+
+Description: {or_obj.description[:200] if or_obj.description else 'N/A'}
+
+Professeur: {current_user.prenom} {current_user.nom}
+
+---
+Cet email est envoyé automatiquement par MEC AUTO"""
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = smtp_from
+        msg['To'] = ', '.join(emails)
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+        
+        server = smtplib.SMTP(smtp_host, smtp_port)
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.send_message(msg)
+        server.quit()
+    except Exception as e:
+        print(f"Erreur envoi notification: {e}")
 
 ordres_bp = Blueprint('ordres', __name__)
 
@@ -221,6 +289,11 @@ def new():
             client_name = vehicule.proprietaire.nom
         Log.log(current_user, 'create_or', f'OR {or_numero} créé - Client: {client_name} - Véhicule: {vehicule.immatriculation}', 'OrdreReparation', or_obj.id)
         db.session.commit()
+        
+        # Envoyer notification au magasinier
+        final_client = client if client else (vehicule.proprietaire if vehicule and vehicule.proprietaire else None)
+        if final_client:
+            send_notification_email(or_obj, final_client, vehicule)
 
         flash(f'OR {or_numero} créé', 'success')
         

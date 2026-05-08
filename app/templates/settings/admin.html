@@ -222,6 +222,12 @@
                 <label>Email expéditeur</label>
                 <input type="email" name="smtp_from" value="{{ smtp_config.smtp_from or '' }}">
             </div>
+            <div class="form-group">
+                <label>Emails de notification création OR</label>
+                <input type="text" name="email_notifications" value="{{ smtp_config.email_notifications or '' }}" 
+                       placeholder="email1@exemple.com, email2@exemple.com">
+                <small style="color: #666;">Séparés par virgule. Reçoit un email à chaque création d'OR.</small>
+            </div>
         </div>
         <button type="submit" class="btn">Enregistrer</button>
     </form>

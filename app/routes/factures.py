@@ -4,6 +4,11 @@ from app import db
 from app.models import Facture, OrdreReparation, EleveIntervention, Log
 from datetime import datetime
 import io
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
 factures_bp = Blueprint('factures', __name__)
 
@@ -201,23 +206,64 @@ def send(id):
         return redirect(url_for('factures.list'))
 
     from flask import current_app
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-
+    from app.models import Parametre
+    
+    def get_smtp_param(key, default=''):
+        param = Parametre.query.filter_by(cle=key).first()
+        return param.valeur if param else current_app.config.get(key.upper(), default)
+    
+    # Generate PDF first
+    try:
+        from weasyprint import HTML
+        base_url = request.host_url if request else None
+    except Exception:
+        base_url = None
+    
     facture = Facture.query.get_or_404(id)
     or_obj = facture.ordre
     client = or_obj.client
+    vehicule = or_obj.vehicule
+    
+    interventions = EleveIntervention.query.filter_by(or_id=or_obj.id).all()
+    total_heures = sum(float(i.heures or 0) for i in interventions)
+    
+    taux = Parametre.query.filter_by(cle='taux_horaire').first()
+    taux_horaire = float(taux.valeur) if taux else 50.0
+    
+    surcharge_lines = []
+    if or_obj.client_recup_pieces or or_obj.client_recup_fluides:
+        from app.models import RecupSurcharge
+        surcharges = RecupSurcharge.query.filter_by(actif=True).all()
+        for s in surcharges:
+            if 'pieces' in s.nom.lower() and or_obj.client_recup_pieces:
+                surcharge_lines.append(s)
+            if 'huile' in s.nom.lower() or 'fluide' in s.nom.lower():
+                if or_obj.client_recup_fluides:
+                    surcharge_lines.append(s)
+    
+    html = render_template('factures/pdf.html', 
+        facture=facture, 
+        or_obj=or_obj, 
+        client=client,
+        vehicule=vehicule,
+        interventions=interventions,
+        total_heures=total_heures,
+        taux_horaire=taux_horaire,
+        surcharge_lines=surcharge_lines)
+    
+    pdf_bytes = None
+    try:
+        if base_url:
+            pdf_bytes = HTML(string=html, base_url=base_url).write_pdf()
+        else:
+            pdf_bytes = HTML(string=html).write_pdf()
+    except Exception as e:
+        flash(f'Erreur génération PDF: {str(e)}', 'error')
+        return redirect(url_for('factures.view', id=id))
 
     if not client.email:
         flash('Pas d\'email client', 'error')
         return redirect(url_for('factures.view', id=id))
-
-    # Get SMTP config from database first, then fall back to config
-    from app.models import Parametre
-    def get_smtp_param(key, default=''):
-        param = Parametre.query.filter_by(cle=key).first()
-        return param.valeur if param else current_app.config.get(key.upper(), default)
     
     smtp_host = get_smtp_param('smtp_host')
     smtp_port = int(get_smtp_param('smtp_port', '587'))
@@ -236,6 +282,13 @@ def send(id):
 
     body = f"Bonjour {client.prenom} {client.nom},\n\nVeuillez trouver ci-joint votre facture {facture.numero}.\n\nMontant: {facture.montant}€\n\nCordialement,\nAtelier"
     msg.attach(MIMEText(body, 'plain'))
+    
+    # Attach PDF
+    part = MIMEBase('application', 'octet-stream')
+    part.set_payload(pdf_bytes)
+    encoders.encode_base64(part)
+    part.add_header('Content-Disposition', f'attachment; filename=facture_{facture.numero}.pdf')
+    msg.attach(part)
 
     try:
         server = smtplib.SMTP(smtp_host, smtp_port)
