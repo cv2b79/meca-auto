@@ -112,6 +112,11 @@
             <span><span class="info-label">OR:</span> {{ or_obj.numero }}</span>
             <span><span class="info-label">Statut:</span> {{ or_obj.statut }}</span>
         </div>
+        {% if created_by_user %}
+        <div class="info-row" style="margin-top: 0.5rem;">
+            <span><span class="info-label">Professeur:</span> {{ created_by_user.prenom }} {{ created_by_user.nom }}</span>
+        </div>
+        {% endif %}
     </div>
 
     <div class="work-box">

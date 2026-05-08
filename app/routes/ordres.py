@@ -652,13 +652,16 @@ def print_pare_brise(id):
     etat_entree = etat_lieu.query.filter_by(or_id=id, type='entree').first()
     etat_sortie = etat_lieu.query.filter_by(or_id=id, type='sortie').first()
     
+    created_by_user = User.query.get(or_obj.created_by) if or_obj.created_by else None
+    
     return render_template('ordres/pare_brise.html', 
         or_obj=or_obj, 
         vehicule=vehicule,
         etab_nom=Parametre.get('etab_nom', 'MEC AUTO'),
         print_date=datetime.now().strftime('%d/%m/%Y à %H:%M'),
         etat_entree=etat_entree,
-        etat_sortie=etat_sortie)
+        etat_sortie=etat_sortie,
+        created_by_user=created_by_user)
 
 @ordres_bp.route('/controle/<int:id>', methods=['GET', 'POST'])
 @login_required
