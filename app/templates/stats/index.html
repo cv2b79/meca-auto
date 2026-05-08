@@ -1,6 +1,7 @@
 {% extends "base.html" %}
-{% from "datetime" import datetime %}
 {% block title %}Statistiques - MEC AUTO{% endblock %}
+{% block content %}
+{% set current_year = 2026 %}
 {% block content %}
 <h2>Statistiques</h2>
 
@@ -25,7 +26,7 @@
             {% endfor %}
         </select>
     </label>
-    <a href="{{ url_for('stats.index', year=datetime.now().year) }}" class="btn btn-secondary">Reset</a>
+    <a href="{{ url_for('stats.index', year=current_year) }}" class="btn btn-secondary">Reset</a>
 </form>
 
 <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
