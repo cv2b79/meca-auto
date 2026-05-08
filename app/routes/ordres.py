@@ -110,9 +110,9 @@ def new():
                 Vehicule.immatriculation.replace('-', '').replace(' ', '') == immat_input
             )
         ).first()
-            if existing_vehicule:
-                flash('Un véhicule avec cette immatriculation existe déjà', 'error')
-                return redirect(url_for('ordres.new'))
+        if existing_vehicule:
+            flash('Un véhicule avec cette immatriculation existe déjà', 'error')
+            return redirect(url_for('ordres.new'))
             
             client = Client(
                 nom=request.form.get('client_nom'),
