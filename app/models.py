@@ -39,7 +39,7 @@ class User(UserMixin, db.Model):
     def has_permission(self, perm):
         perms = {
             'ddfpt': ['create_or', 'edit_or', 'delete_or', 'facturer', 'see_stats', 'manage_settings', 'manage_users', 'manage_clients', 'manage_vehicules', 'edit_intervention', 'edit_etat_lieu', 'controle_visuel'],
-            'magasinier': ['facturer', 'manage_settings', 'edit_etat_lieu', 'controle_visuel'],
+            'magasinier': ['create_or', 'edit_or', 'facturer', 'manage_settings', 'edit_etat_lieu', 'controle_visuel', 'manage_clients', 'manage_vehicules'],
             'enseignant': ['create_or', 'edit_or', 'manage_clients', 'manage_vehicules', 'edit_intervention', 'edit_etat_lieu', 'controle_visuel'],
             'eleve': ['edit_intervention', 'edit_etat_lieu', 'controle_visuel']
         }
