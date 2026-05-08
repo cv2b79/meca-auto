@@ -172,16 +172,23 @@ def new():
         if not vehicule:
             from sqlalchemy import or_ as sql_or, func
         immat_input = request.form.get('immatriculation', '').upper().replace('-', '').replace(' ', '')
+        # Chercher si véhicule existe déjà par immat
         existing_vehicule = Vehicule.query.filter(
             sql_or(
                 Vehicule.immatriculation == request.form.get('immatriculation', '').upper(),
                 func.replace(func.replace(Vehicule.immatriculation, '-', ''), ' ', '') == immat_input
             )
         ).first()
+        
         if existing_vehicule:
-            flash('Un véhicule avec cette immatriculation existe déjà', 'error')
-            return redirect(url_for('ordres.new'))
-            
+            # Véhicule existe déjà, utiliser celui-ci
+            vehicule_id = existing_vehicule.id
+            if existing_vehicule.proprietaire_id:
+                client_id = existing_vehicule.proprietaire_id
+            else:
+                client_id = None
+        else:
+            # Nouveau véhicule à créer
             client = Client(
                 nom=request.form.get('client_nom'),
                 prenom=request.form.get('client_prenom'),
@@ -203,12 +210,6 @@ def new():
             db.session.add(vehicule)
             db.session.flush()
             vehicule_id = vehicule.id
-        else:
-            # Véhicule existant
-            if vehicule and vehicule.proprietaire_id:
-                client_id = vehicule.proprietaire_id
-            else:
-                client_id = None
 
         vehicule = Vehicule.query.get(vehicule_id)
         client = None
