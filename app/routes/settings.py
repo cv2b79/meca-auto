@@ -286,11 +286,13 @@ def fourniture_delete(id):
 @settings_bp.route('/import_eleves', methods=['POST'])
 @login_required
 def import_eleves():
+    print("DEBUG: import_eleves called")
     if not current_user.can_manage_settings():
         flash('Accès refusé', 'error')
         return redirect(url_for('main.index'))
     
     if 'file' not in request.files:
+        print("DEBUG: No file in request")
         flash('Aucun fichier sélectionné', 'error')
         return redirect(url_for('settings.admin', tab='import'))
     
@@ -304,17 +306,37 @@ def import_eleves():
         return redirect(url_for('settings.admin', tab='import'))
     
     import csv
-    reader = csv.DictReader(file.read().decode('utf-8').splitlines())
+    content = file.read().decode('utf-8').splitlines()
+    # Auto-detect delimiter (comma or semicolon)
+    first_line = content[0] if content else ''
+    delimiter = ';' if ';' in first_line else ','
+    
+    # Clean headers (remove BOM if present)
+    content[0] = content[0].replace('\ufeff', '')
+    reader = csv.DictReader(content, delimiter=delimiter)
+    
+    print(f"DEBUG: Delimiter detected: {delimiter}")
+    print(f"DEBUG: Headers: {reader.fieldnames}")
     
     count = 0
     errors = []
     for i, row in enumerate(reader, 1):
+        print(f"DEBUG: Row {i}: {row}")
         try:
-            nom = row.get('nom', '').strip() or row.get('Nom', '').strip()
-            prenom = row.get('prénom', '').strip() or row.get('prenom', '').strip() or row.get('Prénom', '').strip() or row.get('Prenom', '').strip()
-            ddn = row.get('date de naissance', '').strip() or row.get('ddn', '').strip() or row.get('Date de naissance', '').strip()
-            classe_nom = row.get('classe', '').strip() or row.get('Classe', '').strip()
-            email = row.get('adresse email', '').strip() or row.get('email', '').strip() or row.get('Email', '').strip()
+            # Handle various column name formats
+            nom = row.get('nom', '') or row.get('Nom', '') or row.get('NOM', '')
+            prenom = row.get('prénom', '') or row.get('prenom', '') or row.get('Prénom', '') or row.get('Prenom', '') or row.get('PRÉNOM', '')
+            ddn = row.get('date de naissance', '') or row.get('ddn', '') or row.get('Date de naissance', '') or row.get('DDN', '')
+            classe_nom = row.get('classe', '') or row.get('Classe', '') or row.get('CLASSE', '')
+            email = row.get('adresse e-mail', '') or row.get('adresse email', '') or row.get('email', '') or row.get('Email', '') or row.get('Adresse E-mail', '')
+            
+            nom = nom.strip()
+            prenom = prenom.strip()
+            ddn = ddn.strip()
+            classe_nom = classe_nom.strip()
+            email = email.strip()
+            
+            print(f"DEBUG: nom='{nom}', prenom='{prenom}', classe='{classe_nom}', email='{email}'")
             
             if not nom or not prenom:
                 errors.append(f"Ligne {i}: Nom ou Prénom manquant")

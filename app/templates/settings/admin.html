@@ -59,6 +59,31 @@
 <!-- UTILISATEURS -->
 <div class="card" style="margin-top: 1.5rem;">
     <h3>👥 Gestion des utilisateurs ({{ users|length }})</h3>
+    
+    <!-- Filtres -->
+    <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+        <span style="font-weight: 500;">Filtrer:</span>
+        <select id="filter_role" onchange="filterUsers()" style="padding: 0.4rem;">
+            <option value="">Tous les rôles</option>
+            <option value="eleve">Élève</option>
+            <option value="enseignant">Enseignant</option>
+            <option value="magasinier">Magasinier</option>
+            <option value="ddfpt">DDFPT</option>
+        </select>
+        <select id="filter_classe" onchange="filterUsers()" style="padding: 0.4rem;">
+            <option value="">Toutes les classes</option>
+            {% for c in classes %}
+            <option value="{{ c.nom }}">{{ c.nom }}</option>
+            {% endfor %}
+        </select>
+        <select id="filter_actif" onchange="filterUsers()" style="padding: 0.4rem;">
+            <option value="">Tous</option>
+            <option value="1">Actifs seuls</option>
+            <option value="0">Inactifs seuls</option>
+        </select>
+        <span id="filter_count" style="color: #666; font-size: 0.9rem;"></span>
+    </div>
+    
     <form method="POST" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
         <input type="hidden" name="action" value="add_user">
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
@@ -92,9 +117,9 @@
     
     <table>
         <thead><tr><th>Nom</th><th>Prénom</th><th>Login</th><th>Rôle</th><th>Classe</th><th>Actif</th><th>Actions</th></tr></thead>
-        <tbody>
+        <tbody id="users_table">
         {% for u in users %}
-        <tr>
+        <tr data-role="{{ u.role }}" data-classe="{% if u.classe %}{{ u.classe.nom }}{% endif %}" data-actif="{{ u.actif|int }}">
             <td>{{ u.nom }}</td>
             <td>{{ u.prenom }}</td>
             <td>{{ u.login }}</td>
@@ -306,6 +331,30 @@
 function toggleClasseField(role) {
     var champClasse = document.getElementById('classe_field');
     champClasse.style.display = (role === 'eleve') ? 'block' : 'none';
+}
+
+function filterUsers() {
+    var filterRole = document.getElementById('filter_role').value;
+    var filterClasse = document.getElementById('filter_classe').value;
+    var filterActif = document.getElementById('filter_actif').value;
+    var rows = document.querySelectorAll('#users_table tr');
+    var visible = 0;
+    
+    rows.forEach(function(row) {
+        var role = row.getAttribute('data-role');
+        var classe = row.getAttribute('data-classe');
+        var actif = row.getAttribute('data-actif');
+        
+        var show = true;
+        if (filterRole && role !== filterRole) show = false;
+        if (filterClasse && classe !== filterClasse) show = false;
+        if (filterActif && actif !== filterActif) show = false;
+        
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    
+    document.getElementById('filter_count').textContent = visible + ' / ' + rows.length + ' utilisateurs';
 }
 </script>
 {% endblock %}
