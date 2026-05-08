@@ -47,6 +47,10 @@
                 <label style="font-weight: 500;">Téléphone</label>
                 <input type="tel" name="client_tel" id="client_tel" placeholder="06 12 34 56 78" maxlength="14" style="width: 100%; padding: 0.6rem;" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^(\d{2})(\d{0,2})(\d{0,2})(\d{0,2})(\d{0,2})$/, '$1 $2 $3 $4 $5').replace(/\s+/g, ' ').trim();">
             </div>
+            <div class="form-group">
+                <label style="font-weight: 500;">Email</label>
+                <input type="email" name="client_email" id="client_email" placeholder="email@exemple.fr" style="width: 100%; padding: 0.6rem;">
+            </div>
         </div>
         
         <div class="card" style="padding: 1.5rem; max-width: 100% !important; width: 100%;">
