@@ -29,14 +29,28 @@ def index():
             login = request.form.get('login')
             password = request.form.get('password')
             role = request.form.get('role')
+            email = request.form.get('email')
+            new_classe_nom = request.form.get('new_classe')
+            
             if nom and prenom and login and password and role:
                 print(f"Creating user: {login}")  # Debug
                 if User.query.filter_by(login=login).first():
                     flash('Login déjà utilisé', 'error')
                 else:
-                    user = User(nom=nom, prenom=prenom, login=login, role=role)
-                    user.set_password(password)
+                    # Handle new class creation
                     classe_id = request.form.get('classe_id')
+                    if new_classe_nom:
+                        existing_classe = Classe.query.filter_by(nom=new_classe_nom).first()
+                        if existing_classe:
+                            classe_id = existing_classe.id
+                        else:
+                            new_classe = Classe(nom=new_classe_nom)
+                            db.session.add(new_classe)
+                            db.session.flush()
+                            classe_id = new_classe.id
+                    
+                    user = User(nom=nom, prenom=prenom, login=login, role=role, email=email or None)
+                    user.set_password(password)
                     if classe_id:
                         user.classe_id = int(classe_id)
                     db.session.add(user)

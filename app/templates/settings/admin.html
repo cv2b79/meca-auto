@@ -86,11 +86,12 @@
     
     <form method="POST" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
         <input type="hidden" name="action" value="add_user">
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
-            <div><label style="font-size: 0.8rem;">Nom</label><input type="text" name="nom" required style="width: 100%;"></div>
-            <div><label style="font-size: 0.8rem;">Prénom</label><input type="text" name="prenom" required style="width: 100%;"></div>
-            <div><label style="font-size: 0.8rem;">Login</label><input type="text" name="login" required style="width: 100%;"></div>
-            <div><label style="font-size: 0.8rem;">Mot de passe</label><input type="password" name="password" required style="width: 100%;"></div>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
+            <div><label style="font-size: 0.8rem;">Nom *</label><input type="text" name="nom" required style="width: 100%;"></div>
+            <div><label style="font-size: 0.8rem;">Prénom *</label><input type="text" name="prenom" required style="width: 100%;"></div>
+            <div><label style="font-size: 0.8rem;">Email</label><input type="email" name="email" style="width: 100%;"></div>
+            <div><label style="font-size: 0.8rem;">Login *</label><input type="text" name="login" required style="width: 100%;"></div>
+            <div><label style="font-size: 0.8rem;">Mot de passe *</label><input type="password" name="password" required style="width: 100%;"></div>
         </div>
         <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
             <div>
@@ -104,19 +105,24 @@
             </div>
             <div id="classe_field" style="display: none;">
                 <label style="font-size: 0.8rem;">Classe</label>
-                <select name="classe_id">
+                <select name="classe_id" id="classe_select" onchange="toggleNewClasse(this.value)">
                     <option value="">-- Aucune --</option>
+                    <option value="__new__">+ Nouvelle classe</option>
                     {% for c in classes %}
                     <option value="{{ c.id }}">{{ c.nom }}</option>
                     {% endfor %}
                 </select>
+            </div>
+            <div id="new_classe_field" style="display: none;">
+                <label style="font-size: 0.8rem;">Nouvelle classe</label>
+                <input type="text" name="new_classe" placeholder="Nom de la classe" style="width: 120px;">
             </div>
             <button type="submit" class="btn" style="margin-top: 1rem;">➕ Ajouter</button>
         </div>
     </form>
     
     <table>
-        <thead><tr><th>Nom</th><th>Prénom</th><th>Login</th><th>Rôle</th><th>Classe</th><th>Actif</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Nom</th><th>Prénom</th><th>Email</th><th>Login</th><th>Rôle</th><th>Classe</th><th>Actif</th><th>Actions</th></tr></thead>
         <tbody id="users_table">
         {% for u in users %}
         <tr data-role="{{ u.role }}" data-classe="{% if u.classe %}{{ u.classe.nom }}{% endif %}" data-actif="{{ u.actif|int }}">
@@ -337,6 +343,12 @@
 function toggleClasseField(role) {
     var champClasse = document.getElementById('classe_field');
     champClasse.style.display = (role === 'eleve') ? 'block' : 'none';
+    document.getElementById('new_classe_field').style.display = 'none';
+}
+
+function toggleNewClasse(value) {
+    var newClasseField = document.getElementById('new_classe_field');
+    newClasseField.style.display = (value === '__new__') ? 'block' : 'none';
 }
 
 function filterUsers() {
