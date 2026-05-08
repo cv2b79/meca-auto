@@ -71,7 +71,8 @@
                 <a href="{{ url_for('ordres.etat_lieu_form', or_id=or_obj.id, type='sortie') }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn" style="display: block;">
                     ➕ État des lieux SORTIE
                 </a>
-                {% elif etat_sortie %}
+                {% endif %}
+                {% if etat_sortie %}
                 <a href="{{ url_for('ordres.etat_lieu_print', or_id=or_obj.id, type='sortie') }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn btn-secondary" style="display: block;">
                     🖨️ Imprimer SORTIE
                 </a>
@@ -92,7 +93,7 @@
     </div>
 </div>
 
-{% if or_obj.statut != 'cloture' %}
+{% if or_obj.statut != 'cloture' or current_user.role == 'ddfpt' %}
 <div class="card" style="margin-top: 1rem;">
     <h4>Modifier le statut</h4>
     <form method="POST" action="{{ url_for('ordres.set_statut', id=or_obj.id) }}" style="display: flex; gap: 0.5rem; align-items: center;">
@@ -100,7 +101,9 @@
             <option value="ouvert" {% if or_obj.statut=='ouvert' %}selected{% endif %}>Ouvert</option>
             <option value="en_cours" {% if or_obj.statut=='en_cours' %}selected{% endif %}>En cours</option>
             <option value="termine" {% if or_obj.statut=='termine' %}selected{% endif %}>Terminé</option>
+            {% if current_user.role == 'ddfpt' %}
             <option value="cloture" {% if or_obj.statut=='cloture' %}selected{% endif %}>Clôturé</option>
+            {% endif %}
         </select>
         <button type="submit" class="btn">Mettre à jour</button>
     </form>
