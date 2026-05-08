@@ -13,9 +13,10 @@
                 <label style="font-weight: 500;">Immatriculation <span style="color: red;">*</span></label>
                 <div style="display: flex; gap: 0.5rem;">
                     <input type="text" id="immat" name="immatriculation" required 
-                           placeholder="Ex: AB-123-CD" 
+                           placeholder="AB-123-CD" 
                            style="text-transform: uppercase; flex: 1; padding: 0.6rem; font-size: 1rem;"
-                           oninput="if(this.value.length >= 2) { clearTimeout(window.searchTimeout); window.searchTimeout = setTimeout(searchVehicle, 500); }">
+                           maxlength="9"
+                           oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^([A-Z]{2})([0-9]{0,3})([A-Z]{0,2})$/, '$1-$2-$3').replace(/-+$/g, '').slice(0,9); if(this.value.length >= 7) { clearTimeout(window.searchTimeout); window.searchTimeout = setTimeout(searchVehicle, 500); }">
                     <button type="button" onclick="searchVehicle()" 
                             style="padding: 0.6rem 1rem; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">
                         🔍
@@ -46,7 +47,7 @@
             </div>
             <div class="form-group">
                 <label style="font-weight: 500;">Téléphone</label>
-                <input type="tel" name="client_tel" id="client_tel" placeholder="06 XX XX XX XX" style="width: 100%; padding: 0.6rem;">
+                <input type="tel" name="client_tel" id="client_tel" placeholder="06 12 34 56 78" maxlength="14" style="width: 100%; padding: 0.6rem;" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^(\d{2})(\d{0,2})(\d{0,2})(\d{0,2})(\d{0,2})$/, '$1 $2 $3 $4 $5').replace(/\s+/g, ' ').trim();">
             </div>
             <div class="form-group">
                 <label style="font-weight: 500;">Email</label>
