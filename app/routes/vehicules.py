@@ -40,7 +40,14 @@ def search():
     if not q:
         return jsonify({'found': False})
     
-    vehicule = Vehicule.query.filter(Vehicule.immatriculation.like(f'%{q}%')).first()
+    # Search in both stored format and without dashes
+    from sqlalchemy import or_
+    vehicule = Vehicule.query.filter(
+        or_(
+            Vehicule.immatriculation.like(f'%{q}%'),
+            Vehicule.immatriculation.replace('-', '').like(f'%{q}%')
+        )
+    ).first()
     if vehicule:
         return jsonify({
             'found': True,

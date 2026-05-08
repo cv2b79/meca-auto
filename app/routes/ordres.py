@@ -102,7 +102,14 @@ def new():
             vehicule = Vehicule.query.get(vehicule_id)
         
         if not vehicule:
-            existing_vehicule = Vehicule.query.filter_by(immatriculation=request.form.get('immatriculation').upper()).first()
+            from sqlalchemy import or_ as sql_or
+        immat_input = request.form.get('immatriculation', '').upper().replace('-', '').replace(' ', '')
+        existing_vehicule = Vehicule.query.filter(
+            sql_or(
+                Vehicule.immatriculation == request.form.get('immatriculation', '').upper(),
+                Vehicule.immatriculation.replace('-', '').replace(' ', '') == immat_input
+            )
+        ).first()
             if existing_vehicule:
                 flash('Un véhicule avec cette immatriculation existe déjà', 'error')
                 return redirect(url_for('ordres.new'))
