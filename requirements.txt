@@ -6,4 +6,4 @@ Flask-Login==0.6.3
 psycopg2-binary==2.9.9
 gunicorn==21.2.0
 python-dotenv==1.0.0
-weasyprint==60.2
+xhtml2pdf==0.2.17

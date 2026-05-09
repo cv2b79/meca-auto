@@ -3,459 +3,622 @@
 {% block content %}
 <h2>⚙️ Administration</h2>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-    <!-- SAUVEGARDES & LOGS -->
-    <div>
-        <div class="card" style="margin-bottom: 1rem;">
-            <h3>💾 Sauvegardes</h3>
-            <div style="display: flex; gap: 0.5rem;">
-                <a href="{{ url_for('data.backups') }}" class="btn">Voir les sauvegardes</a>
-                <a href="{{ url_for('data.backup_create') }}" class="btn btn-secondary" onclick="return confirm('Créer une sauvegarde?')">➕ Nouvelle</a>
+<style>
+.admin-tabs { display: flex; gap: 0; border-bottom: 2px solid #1976d2; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.admin-tab  { padding: 0.65rem 1.3rem; cursor: pointer; border: 1px solid #ddd; border-bottom: none;
+              background: #f5f5f5; font-weight: 500; font-size: 0.93rem; user-select: none;
+              margin-right: 3px; border-radius: 6px 6px 0 0; color: #555; transition: background 0.15s; }
+.admin-tab:hover  { background: #e3f2fd; color: #1976d2; }
+.admin-tab.active { background: #1976d2; color: white; border-color: #1976d2; }
+.admin-panel { display: none; }
+.admin-panel.active { display: block; }
+.full-card { background: white; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 1.5rem; margin-bottom: 1.5rem; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; }
+</style>
+
+<div class="admin-tabs">
+    <div class="admin-tab active" onclick="showTab('utilisateurs')"  id="tab-utilisateurs">👥 Utilisateurs</div>
+    <div class="admin-tab"        onclick="showTab('etablissement')" id="tab-etablissement">🏫 Établissement</div>
+    <div class="admin-tab"        onclick="showTab('fournitures')"   id="tab-fournitures">🧴 Fournitures</div>
+    <div class="admin-tab"        onclick="showTab('email')"         id="tab-email">📧 Email</div>
+    <div class="admin-tab"        onclick="showTab('donnees')"       id="tab-donnees">💾 Données</div>
+    <div class="admin-tab"        onclick="showTab('securite')"      id="tab-securite">🔒 Sécurité</div>
+</div>
+
+<!-- ===== UTILISATEURS ===== -->
+<div class="admin-panel active" id="panel-utilisateurs">
+
+    <div class="full-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h3 style="margin: 0;">👥 Utilisateurs ({{ users|length }})</h3>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <select id="filter_role" onchange="filterUsers()" style="padding: 0.4rem; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">Tous les rôles</option>
+                    <option value="eleve">Élève</option>
+                    <option value="enseignant">Enseignant</option>
+                    <option value="magasinier">Magasinier</option>
+                    <option value="ddfpt">DDFPT</option>
+                </select>
+                <select id="filter_classe" onchange="filterUsers()" style="padding: 0.4rem; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">Toutes les classes</option>
+                    {% for c in classes %}<option value="{{ c.nom }}">{{ c.nom }}</option>{% endfor %}
+                </select>
+                <select id="filter_actif" onchange="filterUsers()" style="padding: 0.4rem; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">Tous</option>
+                    <option value="1">Actifs</option>
+                    <option value="0">Inactifs</option>
+                </select>
+                <span id="filter_count" style="color: #888; font-size: 0.88rem;"></span>
             </div>
         </div>
-        
-        <div class="card" style="margin-bottom: 1rem;">
-            <h3>📋 Logs</h3>
-            <p style="color: #666;">Historique des actions</p>
-            <a href="{{ url_for('data.logs') }}" class="btn">Voir les logs</a>
-        </div>
 
-        <div class="card">
-            <h3>📊 Statistiques</h3>
-            <a href="{{ url_for('data.stats') }}" class="btn">Voir les statistiques</a>
+        <!-- Formulaire ajout -->
+        <form method="POST" style="padding: 1rem; background: #f0f4ff; border-radius: 6px; margin-bottom: 1rem;">
+            <input type="hidden" name="action" value="add_user">
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr) auto auto auto; gap: 0.5rem; align-items: end;">
+                <div><label style="font-size: 0.78rem; font-weight:600; display:block; margin-bottom:0.2rem;">Nom *</label><input type="text" name="nom" required style="width:100%;"></div>
+                <div><label style="font-size: 0.78rem; font-weight:600; display:block; margin-bottom:0.2rem;">Prénom *</label><input type="text" name="prenom" required style="width:100%;"></div>
+                <div><label style="font-size: 0.78rem; font-weight:600; display:block; margin-bottom:0.2rem;">Email</label><input type="email" name="email" style="width:100%;"></div>
+                <div><label style="font-size: 0.78rem; font-weight:600; display:block; margin-bottom:0.2rem;">Login *</label><input type="text" name="login" required style="width:100%;"></div>
+                <div><label style="font-size: 0.78rem; font-weight:600; display:block; margin-bottom:0.2rem;">Mot de passe *</label><input type="password" name="password" required style="width:100%;"></div>
+                <div>
+                    <label style="font-size: 0.78rem; font-weight:600; display:block; margin-bottom:0.2rem;">Rôle</label>
+                    <select name="role" onchange="toggleClasseField(this.value)" style="height:34px;">
+                        <option value="eleve">Élève</option>
+                        <option value="enseignant">Enseignant</option>
+                        <option value="magasinier">Magasinier</option>
+                        <option value="ddfpt">DDFPT</option>
+                    </select>
+                </div>
+                <div id="classe_field">
+                    <label style="font-size: 0.78rem; font-weight:600; display:block; margin-bottom:0.2rem;">Classe</label>
+                    <select name="classe_id" id="classe_select" onchange="toggleNewClasse(this.value)" style="height:34px;">
+                        <option value="">-- Aucune --</option>
+                        <option value="__new__">+ Nouvelle</option>
+                        {% for c in classes %}<option value="{{ c.id }}">{{ c.nom }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div id="new_classe_field" style="display:none;">
+                    <label style="font-size: 0.78rem; font-weight:600; display:block; margin-bottom:0.2rem;">Nouvelle classe</label>
+                    <input type="text" name="new_classe" placeholder="Nom" style="width:110px; height:34px;">
+                </div>
+                <div style="padding-top: 1.2rem;"><button type="submit" class="btn" style="height:34px; white-space:nowrap;">➕ Ajouter</button></div>
+            </div>
+        </form>
+
+        <!-- Tableau -->
+        <div style="overflow-x: auto;">
+            <table style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>Nom</th><th>Prénom</th><th>Email</th><th>Login</th>
+                        <th>Rôle</th><th>Classe</th><th style="text-align:center;">Actif</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users_table">
+                {% for u in users %}
+                <tr data-role="{{ u.role }}" data-classe="{% if u.classe %}{{ u.classe.nom }}{% endif %}" data-actif="{{ u.actif|int }}">
+                    <td>{{ u.nom }}</td>
+                    <td>{{ u.prenom }}</td>
+                    <td title="{{ u.email or '' }}">{% if u.email %}{{ u.email[:14] }}{% if u.email|length > 14 %}…{% endif %}{% else %}—{% endif %}</td>
+                    <td>{{ u.login }}</td>
+                    <td><span class="badge {% if u.role=='ddfpt' %}cloture{% elif u.role=='magasinier' %}termine{% elif u.role=='enseignant' %}en_cours{% else %}ouvert{% endif %}">{{ u.role }}</span></td>
+                    <td>{% if u.classe %}{{ u.classe.nom }}{% else %}—{% endif %}</td>
+                    <td style="text-align:center;">{% if u.actif %}<span style="color:#2e7d32;">✓</span>{% else %}<span style="color:#ccc;">✗</span>{% endif %}</td>
+                    <td style="white-space:nowrap;">
+                        <button type="button" class="btn btn-secondary" style="padding:0.2rem 0.5rem;"
+                            onclick="showEditUser('{{ u.id }}','{{ u.nom }}','{{ u.prenom }}','{{ u.email or '' }}','{{ u.login }}','{{ u.role }}','{% if u.classe %}{{ u.classe.id }}{% endif %}')">✏️</button>
+                        {% if current_user.id != u.id %}
+                        <form method="POST" style="display:inline;">
+                            <input type="hidden" name="action" value="toggle_user">
+                            <input type="hidden" name="id" value="{{ u.id }}">
+                            <button type="submit" class="btn btn-secondary" style="padding:0.2rem 0.5rem;">{% if u.actif %}Désact.{% else %}Activer{% endif %}</button>
+                        </form>
+                        {% if current_user.can_delete() %}
+                        <form method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
+                            <input type="hidden" name="action" value="delete_user">
+                            <input type="hidden" name="id" value="{{ u.id }}">
+                            <button type="submit" class="btn btn-danger" style="padding:0.2rem 0.5rem;">🗑️</button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- EXPORT/IMPORT -->
-    <div>
-        <div class="card" style="margin-bottom: 1rem;">
-            <h3>📤 Export CSV</h3>
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <a href="{{ url_for('data.export_csv', type='clients') }}" class="btn btn-secondary">Clients</a>
-                <a href="{{ url_for('data.export_csv', type='vehicules') }}" class="btn btn-secondary">Véhicules</a>
-                <a href="{{ url_for('data.export_csv', type='ordres') }}" class="btn btn-secondary">Ordres</a>
+    <div class="grid-2">
+        <!-- Classes -->
+        <div class="full-card" style="margin-bottom:0;">
+            <h3 style="margin:0 0 1rem 0;">🏷️ Classes</h3>
+            <form method="POST" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                <input type="hidden" name="action" value="add_classe">
+                <input type="text" name="nom" placeholder="Nom de la classe" required style="flex:1;">
+                <button type="submit" class="btn">➕ Ajouter</button>
+            </form>
+            <table style="width:100%;">
+                <thead><tr><th>Classe</th><th style="text-align:center;">Actif</th><th></th></tr></thead>
+                <tbody>
+                {% for c in classes %}
+                <tr>
+                    <td>{{ c.nom }}</td>
+                    <td style="text-align:center;">{% if c.actif %}<span style="color:#2e7d32;">✓</span>{% else %}<span style="color:#ccc;">✗</span>{% endif %}</td>
+                    <td style="white-space:nowrap; text-align:right;">
+                        <form method="POST" style="display:inline;">
+                            <input type="hidden" name="action" value="toggle_classe">
+                            <input type="hidden" name="id" value="{{ c.id }}">
+                            <button type="submit" class="btn btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.8rem;">{% if c.actif %}Désact.{% else %}Activer{% endif %}</button>
+                        </form>
+                        <form method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
+                            <input type="hidden" name="action" value="delete_classe">
+                            <input type="hidden" name="id" value="{{ c.id }}">
+                            <button type="submit" class="btn btn-danger" style="padding:0.2rem 0.5rem; font-size:0.8rem;">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="color:#999; text-align:center;">Aucune classe</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Import élèves -->
+        <div class="full-card" style="margin-bottom:0;">
+            <h3 style="margin:0 0 1rem 0;">📥 Import d'élèves CSV</h3>
+            <p style="color:#666; font-size:0.9rem; margin-bottom:1rem;">Colonnes attendues : <strong>nom, prénom, date de naissance, classe, adresse email</strong></p>
+            <form method="POST" action="{{ url_for('settings.import_eleves') }}" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".csv" required style="width:100%; margin-bottom:0.75rem;">
+                <button type="submit" class="btn">Importer</button>
+            </form>
+            <div style="margin-top:1rem; padding:0.75rem; background:#f8f9fa; border-radius:4px; font-size:0.82rem; color:#666; line-height:1.6;">
+                <strong>Règles de génération :</strong><br>
+                Login : 3 premières lettres du prénom + 3 du nom<br>
+                Mot de passe provisoire : date de naissance au format <em>JJMMAAAA</em> (ex: 15032006)<br>
+                Si pas de date de naissance → mot de passe = login
             </div>
         </div>
-        
-        <div class="card">
-            <h3>📥 Import CSV</h3>
+    </div>
+</div>
+
+<!-- ===== ÉTABLISSEMENT ===== -->
+<div class="admin-panel" id="panel-etablissement">
+    <div style="max-width: 700px; margin: 0 auto;">
+        <div class="full-card">
+            <h3 style="margin:0 0 1.25rem 0;">🏫 Informations de l'établissement</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="save_etablissement">
+                <div class="grid-2" style="margin-bottom:1rem;">
+                    <div class="form-group" style="margin:0;">
+                        <label>Nom de l'établissement</label>
+                        <input type="text" name="etab_nom" value="{{ etab_nom or '' }}" style="width:100%;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Téléphone</label>
+                        <input type="text" name="etab_tel" value="{{ etab_tel or '' }}" style="width:100%;">
+                    </div>
+                    <div class="form-group" style="margin:0; grid-column: span 2;">
+                        <label>Adresse</label>
+                        <input type="text" name="etab_adresse" value="{{ etab_adresse or '' }}" style="width:100%;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Email</label>
+                        <input type="email" name="etab_email" value="{{ etab_email or '' }}" style="width:100%;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>SIRET / UAI</label>
+                        <input type="text" name="etab_siren" value="{{ etab_siren or '' }}" style="width:100%;">
+                    </div>
+                </div>
+                <button type="submit" class="btn">💾 Enregistrer</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ===== FOURNITURES ===== -->
+<div class="admin-panel" id="panel-fournitures">
+    <div class="full-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+            <h3 style="margin:0;">🧴 Fournitures ({{ fournitures|length }})</h3>
+            <form method="POST" action="{{ url_for('settings.fourniture_new') }}" style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="text" name="nom" placeholder="Nom de la fourniture" required style="width:220px;">
+                <input type="number" step="0.01" min="0" name="prix_unitaire" placeholder="Prix unitaire (€)" style="width:150px;">
+                <button type="submit" class="btn">➕ Ajouter</button>
+            </form>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%;">
+                <thead>
+                    <tr>
+                        <th style="width:60%;">Nom</th>
+                        <th style="width:20%; text-align:right;">Prix unitaire (€)</th>
+                        <th style="width:20%; text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for f in fournitures %}
+                <tr>
+                    <form method="POST" action="{{ url_for('settings.admin') }}">
+                    <input type="hidden" name="action" value="edit_fourniture">
+                    <input type="hidden" name="id" value="{{ f.id }}">
+                    <td><input type="text" name="nom" value="{{ f.nom }}" style="width:100%;"></td>
+                    <td style="text-align:right;"><input type="number" step="0.01" name="prix_unitaire" value="{{ f.prix_unitaire }}" style="width:100px; text-align:right;"></td>
+                    <td style="text-align:right; white-space:nowrap;">
+                        <button type="submit" class="btn btn-secondary" style="padding:0.2rem 0.6rem;">💾 Sauver</button>
+                    </td>
+                    </form>
+                    <td style="text-align:right;">
+                        <form method="POST" action="{{ url_for('settings.admin') }}" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
+                            <input type="hidden" name="action" value="delete_fourniture">
+                            <input type="hidden" name="id" value="{{ f.id }}">
+                            <button type="submit" class="btn btn-danger" style="padding:0.2rem 0.6rem;">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="text-align:center; color:#999; padding:2rem;">Aucune fourniture enregistrée</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== EMAIL ===== -->
+<div class="admin-panel" id="panel-email">
+    <div class="full-card">
+        <h3 style="margin:0 0 1.25rem 0;">📧 Configuration SMTP</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="save_smtp">
+
+            <h4 style="margin:0 0 0.75rem 0; color:#444; font-size:0.95rem; text-transform:uppercase; letter-spacing:.05em;">Serveur d'envoi</h4>
+            <div class="grid-3" style="margin-bottom:1.5rem;">
+                <div class="form-group" style="margin:0;">
+                    <label>Serveur SMTP</label>
+                    <input type="text" name="smtp_host" value="{{ smtp_config.smtp_host or '' }}" style="width:100%;" placeholder="smtp.gmail.com">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label>Port</label>
+                    <input type="number" name="smtp_port" value="{{ smtp_config.smtp_port or '587' }}" style="width:100%;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label>Email expéditeur</label>
+                    <input type="email" name="smtp_from" value="{{ smtp_config.smtp_from or '' }}" style="width:100%;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label>Utilisateur</label>
+                    <input type="text" name="smtp_user" value="{{ smtp_config.smtp_user or '' }}" style="width:100%;">
+                </div>
+                <div class="form-group" style="margin:0; grid-column: span 2;">
+                    <label>Mot de passe</label>
+                    <input type="password" name="smtp_password" value="{{ smtp_config.smtp_password or '' }}" style="width:100%;">
+                </div>
+            </div>
+
+            <hr style="margin:1.25rem 0; border:none; border-top:1px solid #eee;">
+
+            <div class="grid-2" style="margin-bottom:1.5rem;">
+                <div>
+                    <h4 style="margin:0 0 0.75rem 0; color:#444; font-size:0.95rem; text-transform:uppercase; letter-spacing:.05em;">Notifications internes</h4>
+                    <div class="form-group">
+                        <label>Email(s) Magasinier</label>
+                        <input type="text" name="email_notifications" value="{{ smtp_config.email_notifications or '' }}"
+                               placeholder="email1@exemple.com, email2@exemple.com" style="width:100%;">
+                        <small style="color:#666;">Reçoivent le PDF récap OR à chaque création. Séparés par virgule.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Email DDFPT</label>
+                        <input type="text" name="email_ddfpt_notif" value="{{ smtp_config.email_ddfpt_notif or '' }}"
+                               placeholder="email@exemple.com" style="width:100%;">
+                        <small style="color:#666;">Reçoit également le PDF récap à chaque création.</small>
+                    </div>
+
+                    {% set all_emails = [] %}
+                    {% if smtp_config.email_notifications %}
+                        {% for e in smtp_config.email_notifications.split(',') %}
+                            {% if e.strip() %}{% set _ = all_emails.append({'adresse': e.strip(), 'role': 'Magasinier'}) %}{% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if smtp_config.email_ddfpt_notif %}
+                        {% for e in smtp_config.email_ddfpt_notif.split(',') %}
+                            {% if e.strip() %}{% set _ = all_emails.append({'adresse': e.strip(), 'role': 'DDFPT'}) %}{% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if all_emails %}
+                    <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin-top:0.5rem;">
+                        <thead><tr style="background:#f5f5f5;">
+                            <th style="padding:0.4rem 0.6rem; border:1px solid #ddd;">Rôle</th>
+                            <th style="padding:0.4rem 0.6rem; border:1px solid #ddd;">Adresse</th>
+                            <th style="padding:0.4rem 0.6rem; border:1px solid #ddd; text-align:center;">Statut</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for item in all_emails %}
+                        <tr>
+                            <td style="padding:0.4rem 0.6rem; border:1px solid #ddd;">
+                                {% if item.role == 'DDFPT' %}
+                                    <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:0.1rem 0.5rem;font-size:0.78rem;font-weight:600;">DDFPT</span>
+                                {% else %}
+                                    <span style="background:#fef9c3;color:#854d0e;border-radius:4px;padding:0.1rem 0.5rem;font-size:0.78rem;font-weight:600;">Magasinier</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding:0.4rem 0.6rem; border:1px solid #ddd; font-family:monospace;">{{ item.adresse }}</td>
+                            <td style="padding:0.4rem 0.6rem; border:1px solid #ddd; text-align:center; color:#16a34a; font-weight:600;">✔ Actif</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+                    {% if smtp_config.smtp_host %}
+                    <p style="margin-top:0.5rem; font-size:0.8rem; color:#555;">
+                        📤 <strong>{{ smtp_config.smtp_host }}:{{ smtp_config.smtp_port or '587' }}</strong>
+                        — expéditeur : <strong>{{ smtp_config.smtp_from or smtp_config.smtp_user }}</strong>
+                    </p>
+                    {% else %}
+                    <p style="margin-top:0.5rem; font-size:0.8rem; color:#e57373;">⚠️ Serveur SMTP non configuré.</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <h4 style="margin:0 0 0.75rem 0; color:#444; font-size:0.95rem; text-transform:uppercase; letter-spacing:.05em;">Notifications clients automatiques</h4>
+                    <p style="margin:0 0 0.75rem 0; font-size:0.88rem; color:#666;">Envoyées à l'adresse email du client si elle est renseignée.</p>
+                    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                        <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer; padding:0.75rem; background:#f8f9fa; border-radius:6px; border:1px solid #e0e0e0;">
+                            <input type="checkbox" name="notif_client_cree" {% if smtp_config.notif_client_cree == '1' %}checked{% endif %} style="width:18px; height:18px;">
+                            <span><strong>📋 OR créé</strong><br><small style="color:#666;">Confirmation de prise en charge</small></span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer; padding:0.75rem; background:#f8f9fa; border-radius:6px; border:1px solid #e0e0e0;">
+                            <input type="checkbox" name="notif_client_en_cours" {% if smtp_config.notif_client_en_cours == '1' %}checked{% endif %} style="width:18px; height:18px;">
+                            <span><strong>🔧 OR en cours</strong><br><small style="color:#666;">Les travaux ont démarré</small></span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer; padding:0.75rem; background:#e8f5e9; border-radius:6px; border:1px solid #c8e6c9;">
+                            <input type="checkbox" name="notif_client_cloture" {% if smtp_config.notif_client_cloture == '1' %}checked{% endif %} style="width:18px; height:18px;">
+                            <span><strong>✅ OR clôturé</strong><br><small style="color:#666;">Véhicule prêt à récupérer</small></span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer; padding:0.75rem; background:#fff3e0; border-radius:6px; border:1px solid #ffe0b2;">
+                            <input type="checkbox" name="notif_client_facture" {% if smtp_config.notif_client_facture == '1' %}checked{% endif %} style="width:18px; height:18px;">
+                            <span><strong>🧾 Facture créée</strong><br><small style="color:#666;">Envoi avec PDF joint</small></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn" style="padding:0.7rem 2rem;">💾 Enregistrer la configuration</button>
+        </form>
+    </div>
+</div>
+
+<!-- ===== DONNÉES ===== -->
+<div class="admin-panel" id="panel-donnees">
+    <div class="grid-3">
+        <div class="full-card" style="margin-bottom:0;">
+            <h3 style="margin:0 0 1rem 0;">📤 Export CSV</h3>
+            <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                <a href="{{ url_for('data.export_csv', type='clients') }}" class="btn btn-secondary" style="text-align:center;">Clients</a>
+                <a href="{{ url_for('data.export_csv', type='vehicules') }}" class="btn btn-secondary" style="text-align:center;">Véhicules</a>
+                <a href="{{ url_for('data.export_csv', type='ordres') }}" class="btn btn-secondary" style="text-align:center;">Ordres de réparation</a>
+            </div>
+        </div>
+
+        <div class="full-card" style="margin-bottom:0;">
+            <h3 style="margin:0 0 1rem 0;">📥 Import CSV</h3>
             <form method="POST" action="{{ url_for('data.import_csv') }}" enctype="multipart/form-data">
                 <div class="form-group">
-                    <select name="type" required style="width: 100%;">
-                        <option value="">-- Type --</option>
+                    <select name="type" required style="width:100%;">
+                        <option value="">-- Type de données --</option>
                         <option value="clients">Clients</option>
                         <option value="vehicules">Véhicules</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <input type="file" name="file" accept=".csv" required>
+                    <input type="file" name="file" accept=".csv" required style="width:100%;">
                 </div>
-                <button type="submit" class="btn">Importer</button>
+                <button type="submit" class="btn" style="width:100%;">Importer</button>
             </form>
         </div>
-    </div>
-</div>
 
-<!-- UTILISATEURS -->
-<div class="card" style="margin-top: 1.5rem;">
-    <h3>👥 Gestion des utilisateurs ({{ users|length }})</h3>
-    
-    <!-- Filtres -->
-    <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
-        <span style="font-weight: 500;">Filtrer:</span>
-        <select id="filter_role" onchange="filterUsers()" style="padding: 0.4rem;">
-            <option value="">Tous les rôles</option>
-            <option value="eleve">Élève</option>
-            <option value="enseignant">Enseignant</option>
-            <option value="magasinier">Magasinier</option>
-            <option value="ddfpt">DDFPT</option>
-        </select>
-        <select id="filter_classe" onchange="filterUsers()" style="padding: 0.4rem;">
-            <option value="">Toutes les classes</option>
-            {% for c in classes %}
-            <option value="{{ c.nom }}">{{ c.nom }}</option>
-            {% endfor %}
-        </select>
-        <select id="filter_actif" onchange="filterUsers()" style="padding: 0.4rem;">
-            <option value="">Tous</option>
-            <option value="1">Actifs seuls</option>
-            <option value="0">Inactifs seuls</option>
-        </select>
-        <span id="filter_count" style="color: #666; font-size: 0.9rem;"></span>
-    </div>
-    
-    <form method="POST" style="margin-bottom: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 4px;">
-        <input type="hidden" name="action" value="add_user">
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
-            <div><label style="font-size: 0.8rem;">Nom *</label><input type="text" name="nom" required style="width: 100%;"></div>
-            <div><label style="font-size: 0.8rem;">Prénom *</label><input type="text" name="prenom" required style="width: 100%;"></div>
-            <div><label style="font-size: 0.8rem;">Email</label><input type="email" name="email" style="width: 100%;"></div>
-            <div><label style="font-size: 0.8rem;">Login *</label><input type="text" name="login" required style="width: 100%;"></div>
-            <div><label style="font-size: 0.8rem;">Mot de passe *</label><input type="password" name="password" required style="width: 100%;"></div>
-        </div>
-        <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
-            <div>
-                <label style="font-size: 0.8rem;">Rôle</label>
-                <select name="role" onchange="toggleClasseField(this.value)">
-                    <option value="eleve">Élève</option>
-                    <option value="enseignant">Enseignant</option>
-                    <option value="magasinier">Magasinier</option>
-                    <option value="ddfpt">DDFPT</option>
-                </select>
-            </div>
-            <div id="classe_field">
-                <label style="font-size: 0.8rem;">Classe</label>
-                <select name="classe_id" id="classe_select" onchange="toggleNewClasse(this.value)">
-                    <option value="">-- Aucune --</option>
-                    <option value="__new__">+ Nouvelle classe</option>
-                    {% for c in classes %}
-                    <option value="{{ c.id }}">{{ c.nom }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div id="new_classe_field" style="display: none;">
-                <label style="font-size: 0.8rem;">Nouvelle classe</label>
-                <input type="text" name="new_classe" placeholder="Nom de la classe" style="width: 120px;">
-            </div>
-            <button type="submit" class="btn" style="margin-top: 1rem;">➕ Ajouter</button>
-        </div>
-    </form>
-    
-    <table>
-        <thead><tr><th>Nom</th><th>Prénom</th><th>Email</th><th>Login</th><th>Rôle</th><th>Classe</th><th>Actif</th><th>Actions</th></tr></thead>
-        <tbody id="users_table">
-        {% for u in users %}
-        <tr data-role="{{ u.role }}" data-classe="{% if u.classe %}{{ u.classe.nom }}{% endif %}" data-actif="{{ u.actif|int }}">
-            <td>{{ u.nom }}</td>
-            <td>{{ u.prenom }}</td>
-            <td title="{{ u.email }}">{% if u.email %}{{ u.email[:10] }}{% if u.email|length > 10 %}...{% endif %}{% else %}—{% endif %}</td>
-            <td>{{ u.login }}</td>
-            <td><span class="badge {% if u.role=='ddfpt' %}cloture{% elif u.role=='magasinier' %}termine{% elif u.role=='enseignant' %}en_cours{% else %}ouvert{% endif %}">{{ u.role }}</span></td>
-            <td>{% if u.classe %}{{ u.classe.nom }}{% else %}—{% endif %}</td>
-            <td>{% if u.actif %}✓{% else %}✗{% endif %}</td>
-            <td>
-                <button type="button" class="btn btn-secondary" style="padding: 0.2rem 0.5rem;" onclick="showEditUser('{{ u.id }}', '{{ u.nom }}', '{{ u.prenom }}', '{{ u.email or '' }}', '{{ u.login }}', '{{ u.role }}', '{% if u.classe %}{{ u.classe.id }}{% endif %}')">✏️</button>
-                {% if current_user.id != u.id %}
-                <form method="POST" style="display: inline;">
-                    <input type="hidden" name="action" value="toggle_user">
-                    <input type="hidden" name="id" value="{{ u.id }}">
-                    <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem;">{% if u.actif %}Désactiver{% else %}Activer{% endif %}</button>
-                </form>
-                {% if current_user.can_delete() %}
-                <form method="POST" style="display: inline;" onsubmit="return confirm('Supprimer?')">
-                    <input type="hidden" name="action" value="delete_user">
-                    <input type="hidden" name="id" value="{{ u.id }}">
-                    <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.5rem;">🗑️</button>
-                </form>
-                {% endif %}
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- CLASSES & ENSEIGNANTS -->
-<div class="card" style="margin-top: 1.5rem;" id="classes-enseignants">
-    <h3>🏫 Classes et Enseignants</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-        <div>
-            <h4>Enseignants</h4>
-            <p style="font-size: 0.9rem; color: #666;">Les enseignants sont les utilisateurs avec le rôle "enseignant"</p>
-            <ul>
-            {% for e in enseignants %}
-                <li>
-                    {{ e.prenom }} {{ e.nom }} (utilisateur) {% if not e.actif %}(inactif){% endif %}
-                </li>
-            {% endfor %}
-            {% if enseignants|length == 0 %}
-                <li>Aucun enseignant - créez un utilisateur avec le rôle "enseignant"</li>
-            {% endif %}
-            </ul>
-        </div>
-        <div>
-            <h4>Classes</h4>
-            <form method="POST" style="margin-bottom: 1rem;">
-                <input type="hidden" name="action" value="add_classe">
-                <div style="display: flex; gap: 0.5rem;">
-                    <input type="text" name="nom" placeholder="Nom classe" required>
-                    <button type="submit" class="btn">➕</button>
+        <div style="display:flex; flex-direction:column; gap:1.5rem;">
+            <div class="full-card" style="margin-bottom:0;">
+                <h3 style="margin:0 0 1rem 0;">💾 Sauvegardes</h3>
+                <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                    <a href="{{ url_for('data.backups') }}" class="btn" style="text-align:center;">Voir les sauvegardes</a>
+                    <a href="{{ url_for('data.backup_create') }}" class="btn btn-secondary" style="text-align:center;"
+                       onclick="return confirm('Créer une sauvegarde ?')">➕ Nouvelle sauvegarde</a>
                 </div>
-            </form>
-            <ul>
-            {% for c in classes %}
-                <li>
-                    {{ c.nom }} {% if not c.actif %}(inactif){% endif %}
-                    <form method="POST" style="display:inline; margin-left: 0.5rem;">
-                        <input type="hidden" name="action" value="toggle_classe">
-                        <input type="hidden" name="id" value="{{ c.id }}">
-                        <button type="submit" style="padding: 0.1rem 0.3rem; font-size: 0.8rem;">{% if c.actif %}✗{% else %}✓{% endif %}</button>
-                    </form>
-                    <form method="POST" style="display:inline; margin-left: 0.2rem;">
-                        <input type="hidden" name="action" value="delete_classe">
-                        <input type="hidden" name="id" value="{{ c.id }}">
-                        <button type="submit" style="padding: 0.1rem 0.3rem; font-size: 0.8rem;" onclick="return confirm('Supprimer?')">🗑️</button>
-                    </form>
-                </li>
-            {% endfor %}
-            </ul>
+            </div>
+
+            <div class="full-card" style="margin-bottom:0;">
+                <h3 style="margin:0 0 0.75rem 0;">📊 Statistiques</h3>
+                <a href="{{ url_for('data.stats') }}" class="btn" style="width:100%; text-align:center;">Voir les statistiques</a>
+            </div>
+
+            <div class="full-card" style="margin-bottom:0;">
+                <h3 style="margin:0 0 0.75rem 0;">📦 Archivage</h3>
+                <p style="color:#666; font-size:0.88rem; margin-bottom:0.75rem;">Archiver les OR clôturés avant une date donnée.</p>
+                <form method="POST" action="{{ url_for('data.archiver') }}">
+                    <input type="date" name="date_limit" required style="width:100%; margin-bottom:0.5rem;">
+                    <button type="submit" class="btn" style="width:100%;" onclick="return confirm('Confirmer l\'archivage ?')">Archiver</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- EMAIL SMTP -->
-<div class="card" style="margin-top: 1.5rem;">
-    <h3>📧 Configuration Email (SMTP)</h3>
-    <form method="POST">
-        <input type="hidden" name="action" value="save_smtp">
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-            <div class="form-group">
-                <label>Serveur SMTP</label>
-                <input type="text" name="smtp_host" value="{{ smtp_config.smtp_host or '' }}">
-            </div>
-            <div class="form-group">
-                <label>Port</label>
-                <input type="number" name="smtp_port" value="{{ smtp_config.smtp_port or '587' }}">
-            </div>
-            <div class="form-group">
-                <label>Utilisateur</label>
-                <input type="text" name="smtp_user" value="{{ smtp_config.smtp_user or '' }}">
-            </div>
-            <div class="form-group">
-                <label>Mot de passe</label>
-                <input type="password" name="smtp_password" value="{{ smtp_config.smtp_password or '' }}">
-            </div>
-            <div class="form-group">
-                <label>Email expéditeur</label>
-                <input type="email" name="smtp_from" value="{{ smtp_config.smtp_from or '' }}">
-            </div>
-            <div class="form-group">
-                <label>Emails de notification création OR (Magasinier)</label>
-                <input type="text" name="email_notifications" value="{{ smtp_config.email_notifications or '' }}" 
-                       placeholder="email1@exemple.com, email2@exemple.com">
-                <small style="color: #666;">Séparés par virgule. Reçoit un email avec PDF à chaque création d'OR.</small>
-            </div>
-            <div class="form-group">
-                <label>Email notification DDFPT</label>
-                <input type="text" name="email_ddfpt_notif" value="{{ smtp_config.email_ddfpt_notif or '' }}" 
-                       placeholder="email@exemple.com">
-                <small style="color: #666;">Le DDFPT reçoit aussi le mail avec PDF à chaque création d'OR.</small>
-            </div>
-        </div>
-        <button type="submit" class="btn">Enregistrer</button>
-    </form>
-</div>
-
-<!-- SÉCURITÉ -->
-<div class="card" style="margin-top: 1.5rem;">
-    <h3>🔒 Sécurité</h3>
-    <form method="POST">
-        <input type="hidden" name="action" value="save_security">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-                <label>Tentatives de connexion max</label>
-                <input type="number" name="max_login_attempts" value="{{ security_config.max_login_attempts if security_config else 3 }}" min="1" max="10">
-            </div>
-            <div class="form-group">
-                <label>Durée de verrouillage (minutes)</label>
-                <input type="number" name="lockout_duration" value="{{ security_config.lockout_duration if security_config else 15 }}" min="1" max="60">
-            </div>
-        </div>
-        <button type="submit" class="btn">Enregistrer</button>
-    </form>
-</div>
-
-<!-- ÉTABLISSEMENT -->
-<div class="card" style="margin-top: 1.5rem;">
-    <h3>🏫 Établissement</h3>
-    <form method="POST">
-        <input type="hidden" name="action" value="save_etablissement">
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-            <div class="form-group">
-                <label>Nom de l'établissement</label>
-                <input type="text" name="etab_nom" value="{{ etab_nom or '' }}">
-            </div>
-            <div class="form-group">
-                <label>Téléphone</label>
-                <input type="text" name="etab_tel" value="{{ etab_tel or '' }}">
-            </div>
-            <div class="form-group" style="grid-column: span 2;">
-                <label>Adresse</label>
-                <input type="text" name="etab_adresse" value="{{ etab_adresse or '' }}">
-            </div>
-        </div>
-        <button type="submit" class="btn">Enregistrer</button>
-    </form>
-</div>
-
-<!-- ARCHIVAGE -->
-<div class="card" style="margin-top: 1.5rem;">
-    <h3>📦 Archivage</h3>
-    <form method="POST" action="{{ url_for('data.archiver') }}">
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <label>Archiver les OR clôturés avant le:</label>
-            <input type="date" name="date_limit" required>
-            <button type="submit" class="btn" onclick="return confirm('Confirmer l\'archivage?')">Archiver</button>
-        </div>
-    </form>
-</div>
-
-<!-- FOURNITURES -->
-<div class="card" style="margin-top: 1.5rem;">
-    <h3 id="fournitures">🧴 Fournitures</h3>
-    <form method="POST" action="{{ url_for('settings.fourniture_new') }}" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-        <input type="text" name="nom" placeholder="Nom de la fourniture" required style="flex: 1;">
-        <input type="number" step="0.01" name="prix_unitaire" placeholder="Prix unitaire (€)" style="width: 150px;">
-        <button type="submit" class="btn">➕ Ajouter</button>
-    </form>
-    <table>
-        <thead><tr><th>Nom</th><th>Prix unitaire</th><th></th></tr></thead>
-        <tbody>
-        {% for f in fournitures %}
-        <tr>
-            <form method="POST" action="{{ url_for('settings.admin') }}">
-            <input type="hidden" name="action" value="edit_fourniture">
-            <input type="hidden" name="id" value="{{ f.id }}">
-            <td><input type="text" name="nom" value="{{ f.nom }}" style="width: 100%;"></td>
-            <td><input type="number" step="0.01" name="prix_unitaire" value="{{ f.prix_unitaire }}" style="width: 80px;"></td>
-            <td><button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.5rem;">✓</button></td>
+<!-- ===== SÉCURITÉ ===== -->
+<div class="admin-panel" id="panel-securite">
+    <div class="grid-2">
+        <div class="full-card" style="margin-bottom:0;">
+            <h3 style="margin:0 0 1.25rem 0;">🔒 Paramètres de connexion</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="save_security">
+                <div class="form-group">
+                    <label>Tentatives de connexion max</label>
+                    <input type="number" name="max_login_attempts"
+                           value="{{ security_config.max_login_attempts if security_config else 3 }}"
+                           min="1" max="10" style="width:100%;">
+                </div>
+                <div class="form-group">
+                    <label>Durée de verrouillage (minutes)</label>
+                    <input type="number" name="lockout_duration"
+                           value="{{ security_config.lockout_duration if security_config else 15 }}"
+                           min="1" max="60" style="width:100%;">
+                </div>
+                <button type="submit" class="btn">💾 Enregistrer</button>
             </form>
-            <td>
-                <form method="POST" action="{{ url_for('settings.admin') }}" style="display:inline;">
-                    <input type="hidden" name="action" value="delete_fourniture">
-                    <input type="hidden" name="id" value="{{ f.id }}">
-                    <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.5rem;" onclick="return confirm('Supprimer?')">✕</button>
+        </div>
+
+        <div class="full-card" style="margin-bottom:0;">
+            <h3 style="margin:0 0 1.25rem 0;">🔑 Changer mon mot de passe</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="change_password">
+                <div class="form-group">
+                    <label>Mot de passe actuel</label>
+                    <input type="password" name="current_password" required style="width:100%;">
+                </div>
+                <div class="form-group">
+                    <label>Nouveau mot de passe</label>
+                    <input type="password" name="new_password" required style="width:100%;">
+                </div>
+                <div class="form-group">
+                    <label>Confirmer le nouveau mot de passe</label>
+                    <input type="password" name="confirm_password" required style="width:100%;">
+                </div>
+                <button type="submit" class="btn">Changer</button>
+            </form>
+        </div>
+
+        <div class="full-card" style="margin-bottom:0;">
+            <h3 style="margin:0 0 0.75rem 0;">📋 Journaux d'activité</h3>
+            <p style="color:#666; margin-bottom:0.75rem;">Historique de toutes les actions effectuées dans le logiciel.</p>
+            <a href="{{ url_for('data.logs') }}" class="btn">Voir les logs</a>
+        </div>
+
+        <div class="full-card" style="margin-bottom:0; border-left: 4px solid #e57373;">
+            <h3 style="margin:0 0 0.75rem 0; color:#c62828;">🗑️ Suppression de données</h3>
+            <p style="color:#e57373; font-size:0.88rem; margin-bottom:1rem; font-weight:500;">⚠️ Actions irréversibles — à utiliser avec précaution.</p>
+            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                <form method="POST" onsubmit="return confirm('Supprimer ce client et ses données ?')">
+                    <input type="hidden" name="action" value="delete_client">
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="number" name="id" placeholder="ID client" style="width:130px;">
+                        <button type="submit" class="btn btn-danger">Supprimer client</button>
+                    </div>
                 </form>
-            </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="4" style="text-align: center; color: #666;">Aucune fourniture</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+                <form method="POST" onsubmit="return confirm('Supprimer ce véhicule ?')">
+                    <input type="hidden" name="action" value="delete_vehicule">
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="number" name="id" placeholder="ID véhicule" style="width:130px;">
+                        <button type="submit" class="btn btn-danger">Supprimer véhicule</button>
+                    </div>
+                </form>
+                <form method="POST" onsubmit="return confirm('Supprimer cet OR et toutes ses données ?')">
+                    <input type="hidden" name="action" value="delete_or">
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="number" name="id" placeholder="ID OR" style="width:130px;">
+                        <button type="submit" class="btn btn-danger">Supprimer OR</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- IMPORT ÉLÈVES -->
-<div class="card" style="margin-top: 1.5rem;">
-    <h3>📥 Import d'élèves</h3>
-    <p style="color: #666; font-size: 0.9rem;">Importer une liste d'élèves depuis un fichier CSV. Colonnes attendues: <strong>nom, prénom, date de naissance, classe, adresse email</strong></p>
-    <form method="POST" action="{{ url_for('settings.import_eleves') }}" enctype="multipart/form-data" style="display: flex; gap: 0.5rem; align-items: center;">
-        <input type="file" name="file" accept=".csv" required style="flex: 1;">
-        <button type="submit" class="btn">Importer</button>
-    </form>
-    <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">Le login: 3 premières lettres du prénom + 3 premières lettres du nom. Le mot de passe provisoire: date de naissance au format DDMMYYYY (ex: 15032006). Si pas de DDN, mot de passe = login.</p>
-</div>
-
+<!-- ===== JS ===== -->
 <script>
-function toggleClasseField(role) {
-    var champClasse = document.getElementById('classe_field');
-    champClasse.style.display = (role === 'eleve') ? 'block' : 'none';
-    document.getElementById('new_classe_field').style.display = 'none';
+function showTab(name) {
+    document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.admin-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('tab-' + name).classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+    location.hash = name;
 }
 
-// Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
+    var hash = location.hash.replace('#', '');
+    var valid = ['utilisateurs','etablissement','fournitures','email','donnees','securite'];
+    if (hash && valid.indexOf(hash) >= 0) showTab(hash);
     var roleSelect = document.querySelector('select[name="role"]');
-    if (roleSelect) {
-        toggleClasseField(roleSelect.value);
-    }
+    if (roleSelect) toggleClasseField(roleSelect.value);
 });
 
+function toggleClasseField(role) {
+    var el = document.getElementById('classe_field');
+    if (el) el.style.display = (role === 'eleve') ? '' : 'none';
+    var nf = document.getElementById('new_classe_field');
+    if (nf) nf.style.display = 'none';
+}
 function toggleNewClasse(value) {
-    var newClasseField = document.getElementById('new_classe_field');
-    newClasseField.style.display = (value === '__new__') ? 'block' : 'none';
+    var nf = document.getElementById('new_classe_field');
+    if (nf) nf.style.display = (value === '__new__') ? '' : 'none';
 }
 
 function filterUsers() {
-    var filterRole = document.getElementById('filter_role').value;
-    var filterClasse = document.getElementById('filter_classe').value;
-    var filterActif = document.getElementById('filter_actif').value;
+    var fRole   = document.getElementById('filter_role').value;
+    var fClasse = document.getElementById('filter_classe').value;
+    var fActif  = document.getElementById('filter_actif').value;
     var rows = document.querySelectorAll('#users_table tr');
     var visible = 0;
-    
     rows.forEach(function(row) {
-        var role = row.getAttribute('data-role');
-        var classe = row.getAttribute('data-classe');
-        var actif = row.getAttribute('data-actif');
-        
         var show = true;
-        if (filterRole && role !== filterRole) show = false;
-        if (filterClasse && classe !== filterClasse) show = false;
-        if (filterActif && actif !== filterActif) show = false;
-        
+        if (fRole   && row.getAttribute('data-role')   !== fRole)   show = false;
+        if (fClasse && row.getAttribute('data-classe')  !== fClasse) show = false;
+        if (fActif  && row.getAttribute('data-actif')   !== fActif)  show = false;
         row.style.display = show ? '' : 'none';
         if (show) visible++;
     });
-    
     document.getElementById('filter_count').textContent = visible + ' / ' + rows.length + ' utilisateurs';
 }
 
-// Edit User Modal
 function showEditUser(id, nom, prenom, email, login, role, classeId) {
-    document.getElementById('edit_user_id').value = id;
-    document.getElementById('edit_nom').value = nom;
-    document.getElementById('edit_prenom').value = prenom;
-    document.getElementById('edit_email').value = email;
-    document.getElementById('edit_login').value = login;
-    document.getElementById('edit_role').value = role;
-    
-    var classeSelect = document.getElementById('edit_classe_id');
-    classeSelect.value = classeId;
-    classeSelect.style.display = (role === 'eleve') ? 'block' : 'none';
-    
-    document.getElementById('edit_user_modal').style.display = 'block';
+    document.getElementById('edit_user_id').value   = id;
+    document.getElementById('edit_nom').value       = nom;
+    document.getElementById('edit_prenom').value    = prenom;
+    document.getElementById('edit_email').value     = email;
+    document.getElementById('edit_login').value     = login;
+    document.getElementById('edit_role').value      = role;
+    var cs = document.getElementById('edit_classe_id');
+    cs.value = classeId;
+    cs.parentElement.style.display = (role === 'eleve') ? '' : 'none';
+    document.getElementById('edit_user_modal').style.display = 'flex';
 }
-
-function hideEditUser() {
-    document.getElementById('edit_user_modal').style.display = 'none';
-}
+function hideEditUser() { document.getElementById('edit_user_modal').style.display = 'none'; }
 </script>
 
-<!-- Edit User Modal -->
-<div id="edit_user_modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-    <div style="background: white; margin: 10% auto; padding: 2rem; border-radius: 8px; max-width: 500px;">
-        <h3>Modifier l'utilisateur</h3>
+<!-- Modal édition utilisateur -->
+<div id="edit_user_modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:2rem; border-radius:10px; width:100%; max-width:460px; box-shadow:0 8px 30px rgba(0,0,0,.2);">
+        <h3 style="margin:0 0 1.25rem 0;">✏️ Modifier l'utilisateur</h3>
         <form method="POST">
             <input type="hidden" name="action" value="edit_user">
             <input type="hidden" name="id" id="edit_user_id">
-            
-            <div class="form-group">
-                <label>Nom</label>
-                <input type="text" name="nom" id="edit_nom" required>
+            <div class="grid-2">
+                <div class="form-group" style="margin:0 0 0.75rem 0;"><label>Nom</label><input type="text" name="nom" id="edit_nom" required style="width:100%;"></div>
+                <div class="form-group" style="margin:0 0 0.75rem 0;"><label>Prénom</label><input type="text" name="prenom" id="edit_prenom" required style="width:100%;"></div>
             </div>
-            <div class="form-group">
-                <label>Prénom</label>
-                <input type="text" name="prenom" id="edit_prenom" required>
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email" id="edit_email">
-            </div>
-            <div class="form-group">
-                <label>Login</label>
-                <input type="text" name="login" id="edit_login" required>
-            </div>
-            <div class="form-group">
+            <div class="form-group" style="margin:0 0 0.75rem 0;"><label>Email</label><input type="email" name="email" id="edit_email" style="width:100%;"></div>
+            <div class="form-group" style="margin:0 0 0.75rem 0;"><label>Login</label><input type="text" name="login" id="edit_login" required style="width:100%;"></div>
+            <div class="form-group" style="margin:0 0 0.75rem 0;">
                 <label>Rôle</label>
-                <select name="role" id="edit_role" onchange="var c=document.getElementById('edit_classe_id');c.style.display=(this.value==='eleve')?'block':'none';">
+                <select name="role" id="edit_role" style="width:100%;"
+                    onchange="var c=this.form.querySelector('#edit_classe_id').parentElement; c.style.display=(this.value==='eleve')?'':'none';">
                     <option value="eleve">Élève</option>
                     <option value="enseignant">Enseignant</option>
                     <option value="magasinier">Magasinier</option>
                     <option value="ddfpt">DDFPT</option>
                 </select>
             </div>
-            <div class="form-group" id="edit_classe_id_container" style="display: none;">
+            <div class="form-group" style="margin:0 0 1rem 0;">
                 <label>Classe</label>
-                <select name="classe_id" id="edit_classe_id">
+                <select name="classe_id" id="edit_classe_id" style="width:100%;">
                     <option value="">-- Aucune --</option>
-                    {% for c in classes %}
-                    <option value="{{ c.id }}">{{ c.nom }}</option>
-                    {% endfor %}
+                    {% for c in classes %}<option value="{{ c.id }}">{{ c.nom }}</option>{% endfor %}
                 </select>
             </div>
-            
-            <div style="margin-top: 1rem;">
+            <div style="display:flex; gap:0.5rem;">
                 <button type="submit" class="btn">Enregistrer</button>
                 <button type="button" onclick="hideEditUser()" class="btn btn-secondary">Annuler</button>
             </div>

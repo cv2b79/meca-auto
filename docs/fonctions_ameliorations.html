@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fonctions & Améliorations – MEC AUTO</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #222; background: #fff; }
+  .page { max-width: 820px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+  .cover { text-align: center; padding: 3.5rem 2rem; border-bottom: 3px solid #1976d2; margin-bottom: 2rem; }
+  .cover h1 { font-size: 2rem; color: #1976d2; margin-bottom: 0.4rem; }
+  .cover .sub { font-size: 1rem; color: #555; margin-bottom: 1.5rem; }
+  .cover .badge { display: inline-block; background: #1976d2; color: white; padding: 0.4rem 1.2rem; border-radius: 20px; font-size: 0.93rem; margin: 0.2rem; }
+  .cover .badge.green { background: #2e7d32; }
+
+  h2 { font-size: 1.2rem; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 0.75rem;
+       margin: 2rem 0 1rem 0; page-break-after: avoid; }
+  h3 { font-size: 0.98rem; color: #333; margin: 1.1rem 0 0.4rem 0; font-weight: 700; page-break-after: avoid; }
+  p  { margin-bottom: 0.6rem; line-height: 1.6; }
+  ul { margin: 0.4rem 0 0.75rem 1.5rem; line-height: 1.7; }
+
+  /* CARTE FONCTION */
+  .fn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .fn-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.75rem; background: #fafafa; }
+  .fn-card .fn-title { font-weight: 700; font-size: 0.93rem; margin-bottom: 0.3rem; }
+  .fn-card p { font-size: 0.88rem; color: #555; margin: 0; }
+
+  /* AMÉLIORATION */
+  .ameli { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.6rem 0.75rem;
+           border-left: 3px solid #1976d2; background: #f0f7ff; border-radius: 0 6px 6px 0;
+           margin-bottom: 0.5rem; }
+  .ameli.fix  { border-color: #f57c00; background: #fff8f0; }
+  .ameli.new  { border-color: #388e3c; background: #f0fff4; }
+  .ameli.sec  { border-color: #7b1fa2; background: #fdf4ff; }
+  .ameli .tag { min-width: 70px; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.4rem;
+                border-radius: 4px; text-align: center; color: white; background: #1976d2; }
+  .ameli.fix .tag  { background: #f57c00; }
+  .ameli.new .tag  { background: #388e3c; }
+  .ameli.sec .tag  { background: #7b1fa2; }
+  .ameli .body     { font-size: 0.9rem; line-height: 1.5; }
+  .ameli .body strong { display: block; margin-bottom: 0.1rem; }
+
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.9rem; }
+  th { background: #1976d2; color: white; padding: 0.45rem 0.75rem; text-align: left; }
+  td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #eee; }
+  tr:nth-child(even) td { background: #f8f8f8; }
+  td:first-child { font-weight: 600; }
+
+  .sep { border: none; border-top: 2px dashed #e0e0e0; margin: 2rem 0; }
+
+  .toc { background: #f5f9ff; border: 1px solid #bbdefb; border-radius: 6px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .toc h3 { margin-bottom: 0.5rem; color: #1976d2; font-size: 1rem; }
+  .toc ol { margin-left: 1.2rem; }
+  .toc li { margin-bottom: 0.2rem; font-size: 0.93rem; }
+
+  @media print {
+    body { font-size: 10pt; }
+    .page { padding: 1rem; }
+    .fn-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- COUVERTURE -->
+<div class="cover">
+  <div style="font-size: 3rem; margin-bottom: 0.75rem;">⚙️</div>
+  <h1>MEC AUTO</h1>
+  <p class="sub">Logiciel de gestion de l'atelier mécanique</p>
+  <div style="margin-top: 1rem;">
+    <span class="badge">📋 Fonctions disponibles</span>
+    <span class="badge green">🚀 Améliorations apportées</span>
+  </div>
+  <p style="color: #888; font-size: 0.88rem; margin-top: 1.25rem;">Document technique – Lycée professionnel</p>
+</div>
+
+<!-- SOMMAIRE -->
+<div class="toc">
+  <h3>📋 Sommaire</h3>
+  <ol>
+    <li>Vue d'ensemble des fonctions principales</li>
+    <li>Gestion des ordres de réparation</li>
+    <li>Gestion des clients et véhicules</li>
+    <li>Notifications email</li>
+    <li>Administration</li>
+    <li>Améliorations et corrections apportées</li>
+    <li>Corrections de bugs</li>
+  </ol>
+</div>
+
+<!-- 1. VUE D'ENSEMBLE -->
+<h2>1. Vue d'ensemble des fonctions principales</h2>
+
+<div class="fn-grid">
+  <div class="fn-card">
+    <div class="fn-title">📋 Ordres de réparation</div>
+    <p>Création, suivi et clôture des OR. Numérotation automatique, affectation classe/élève, gestion du cycle de vie complet.</p>
+  </div>
+  <div class="fn-card">
+    <div class="fn-title">👤 Clients & véhicules</div>
+    <p>Base de données clients et véhicules avec historique des propriétaires et traçabilité complète des interventions.</p>
+  </div>
+  <div class="fn-card">
+    <div class="fn-title">👨‍🔧 Interventions élèves</div>
+    <p>Saisie des heures, fournitures utilisées et descriptions par élève. Suivi pédagogique intégré.</p>
+  </div>
+  <div class="fn-card">
+    <div class="fn-title">📷 États des lieux</div>
+    <p>Formulaires d'état des lieux entrée/sortie avec kilométrage, carburant, dommages et observations.</p>
+  </div>
+  <div class="fn-card">
+    <div class="fn-title">🧾 Facturation</div>
+    <p>Génération de factures PDF, envoi par email, gestion des modes de tarification (forfait, taux horaire…).</p>
+  </div>
+  <div class="fn-card">
+    <div class="fn-title">📧 Notifications email</div>
+    <p>Alertes automatiques au personnel et aux clients selon les événements (OR créé, en cours, clôturé, facturé).</p>
+  </div>
+  <div class="fn-card">
+    <div class="fn-title">📅 Agenda</div>
+    <p>Planification des rendez-vous liés aux OR, vue calendrier.</p>
+  </div>
+  <div class="fn-card">
+    <div class="fn-title">📊 Statistiques</div>
+    <p>Tableau de bord avec indicateurs clés : OR par statut, heures élèves, chiffre d'affaires.</p>
+  </div>
+  <div class="fn-card">
+    <div class="fn-title">✅ Checklist de clôture</div>
+    <p>Points de vérification configurables à valider avant de clôturer un OR.</p>
+  </div>
+  <div class="fn-card">
+    <div class="fn-title">💾 Sauvegardes</div>
+    <p>Export et sauvegarde de la base de données. Import/export CSV des données.</p>
+  </div>
+</div>
+
+<!-- 2. ORDRES DE RÉPARATION -->
+<hr class="sep">
+<h2>2. Gestion des ordres de réparation</h2>
+
+<table>
+  <tr><th>Fonctionnalité</th><th>Détail</th></tr>
+  <tr><td>Création d'OR</td><td>Formulaire complet avec recherche automatique du véhicule par immatriculation</td></tr>
+  <tr><td>Informations véhicule</td><td>Immatriculation, marque, modèle, VIN, type d'énergie, CT valide, assurance valide</td></tr>
+  <tr><td>Informations client</td><td>Nom, prénom, téléphone (obligatoire, 10 chiffres), email</td></tr>
+  <tr><td>Affectation pédagogique</td><td>Classe responsable + élève référent sélectionnables</td></tr>
+  <tr><td>Rendez-vous</td><td>Prise de RDV intégrée à la création, synchronisée avec l'agenda</td></tr>
+  <tr><td>Statuts</td><td>Ouvert → En cours → Terminé → Clôturé → Archivé</td></tr>
+  <tr><td>Interventions élèves</td><td>Ajout, modification et suppression par les enseignants tant que l'OR n'est pas clôturé</td></tr>
+  <tr><td>État des lieux entrée</td><td>Km, carburant, dommages, observations, responsable</td></tr>
+  <tr><td>État des lieux sortie</td><td>Idem + checklist de contrôle. Km pré-rempli depuis l'entrée</td></tr>
+  <tr><td>Impression PDF</td><td>Fiche OR complète imprimable avec récapitulatif des interventions</td></tr>
+  <tr><td>Archivage</td><td>Archivage automatique des OR clôturés antérieurs à une date donnée</td></tr>
+</table>
+
+<!-- 3. CLIENTS ET VÉHICULES -->
+<hr class="sep">
+<h2>3. Gestion des clients et véhicules</h2>
+
+<table>
+  <tr><th>Fonctionnalité</th><th>Détail</th></tr>
+  <tr><td>Fiche client</td><td>Coordonnées, historique des véhicules et OR associés</td></tr>
+  <tr><td>Fiche véhicule</td><td>Données techniques (VIN, énergie, km), historique des propriétaires daté</td></tr>
+  <tr><td>Traçabilité complète</td><td>Tous les OR, interventions, états des lieux et montants facturés par véhicule</td></tr>
+  <tr><td>Recherche rapide</td><td>Recherche par immatriculation (partielle), marque, modèle, VIN</td></tr>
+  <tr><td>ID visible</td><td>Identifiant numérique affiché dans les tableaux pour référence rapide</td></tr>
+  <tr><td>Historique propriétaires</td><td>Suivi des changements de propriétaire avec dates de début et fin</td></tr>
+  <tr><td>Type d'énergie</td><td>Essence, Diesel, Électrique, Hybride, GPL, Autre</td></tr>
+</table>
+
+<!-- 4. NOTIFICATIONS EMAIL -->
+<hr class="sep">
+<h2>4. Notifications email</h2>
+
+<table>
+  <tr><th>Déclencheur</th><th>Destinataire</th><th>Contenu</th></tr>
+  <tr><td>OR créé</td><td>Magasinier + DDFPT</td><td>Récapitulatif complet + PDF joint (fiche OR + état des lieux d'entrée)</td></tr>
+  <tr><td>OR créé</td><td>Client</td><td>Confirmation de prise en charge du véhicule (si activé)</td></tr>
+  <tr><td>OR → En cours</td><td>Client</td><td>Notification démarrage des travaux (si activé)</td></tr>
+  <tr><td>OR clôturé</td><td>Client</td><td>Véhicule prêt à récupérer (si activé)</td></tr>
+  <tr><td>Facture créée</td><td>Client</td><td>Facture PDF en pièce jointe (si activé)</td></tr>
+</table>
+<p style="font-size: 0.88rem; color: #666;">Chaque type de notification client peut être activé ou désactivé indépendamment depuis l'administration (onglet Email).</p>
+
+<!-- 5. ADMINISTRATION -->
+<hr class="sep">
+<h2>5. Administration</h2>
+
+<table>
+  <tr><th>Onglet</th><th>Fonctionnalités</th><th>Accès</th></tr>
+  <tr><td>👥 Utilisateurs</td><td>Création, modification, activation/désactivation des comptes. Gestion des classes. Import CSV d'élèves.</td><td>DDFPT</td></tr>
+  <tr><td>🏫 Établissement</td><td>Nom, adresse, téléphone, email, SIRET/UAI de l'établissement.</td><td>DDFPT</td></tr>
+  <tr><td>🧴 Fournitures</td><td>Gestion du catalogue de fournitures avec prix unitaires.</td><td>DDFPT + Magasinier</td></tr>
+  <tr><td>📧 Email</td><td>Configuration SMTP, adresses de notification internes, activation des notifications clients.</td><td>DDFPT</td></tr>
+  <tr><td>💾 Données</td><td>Export/import CSV, sauvegardes, statistiques, archivage.</td><td>DDFPT</td></tr>
+  <tr><td>🔒 Sécurité</td><td>Tentatives de connexion max, durée de verrouillage, journaux d'activité, suppression de données.</td><td>DDFPT</td></tr>
+</table>
+
+<!-- 6. AMÉLIORATIONS APPORTÉES -->
+<hr class="sep">
+<h2>6. Améliorations apportées</h2>
+
+<h3>🔒 Sécurité et validation</h3>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Validation du numéro de téléphone</strong>Contrôle côté navigateur (message d'erreur en temps réel) et côté serveur. La création d'OR est bloquée si le numéro est incomplet ou absent (10 chiffres requis).</div>
+</div>
+
+<h3>📧 Système de notifications email</h3>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Notifications au personnel (Magasinier + DDFPT)</strong>Envoi automatique d'un email avec PDF récapitulatif à chaque création d'OR. Le PDF inclut la fiche OR complète et l'état des lieux d'entrée si disponible.</div>
+</div>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Notifications au client — 4 événements distincts</strong>OR créé, OR en cours, OR clôturé (véhicule prêt), Facture créée (avec PDF joint). Chaque type activable indépendamment depuis l'admin.</div>
+</div>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Envoi en arrière-plan (thread)</strong>L'envoi d'email ne bloque plus la navigation — la création d'OR répond immédiatement, l'email part en parallèle.</div>
+</div>
+
+<h3>📋 Ordres de réparation</h3>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Champs VIN et Énergie sur le formulaire de création</strong>Saisissables directement à la création de l'OR, automatiquement enregistrés sur la fiche véhicule.</div>
+</div>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Cases CT et Assurance valides</strong>Deux cases à cocher sur la fiche de création, visibles sur le PDF et la fiche OR.</div>
+</div>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Modification et suppression des interventions par les enseignants</strong>Boutons ✏️ et 🗑️ sur chaque ligne d'intervention, disponibles jusqu'à la clôture de l'OR.</div>
+</div>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Kilométrage pré-rempli à la sortie</strong>L'état des lieux de sortie reprend automatiquement le kilométrage saisi à l'entrée.</div>
+</div>
+
+<h3>🚗 Véhicules</h3>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Remplacement du champ Couleur par Énergie</strong>Type d'énergie (Essence, Diesel, Électrique, Hybride, GPL, Autre) avec sélecteur déroulant. Migration de la base de données effectuée.</div>
+</div>
+
+<h3>⚙️ Administration</h3>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Page admin réorganisée en 6 onglets thématiques</strong>Utilisateurs, Établissement, Fournitures, Email, Données, Sécurité. Navigation par onglet avec mémorisation dans l'URL.</div>
+</div>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Onglet Fournitures dédié accessible aux Magasiniers</strong>Page autonome accessible depuis la navigation pour les magasiniers, sans passer par l'admin DDFPT.</div>
+</div>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Tableau récapitulatif des adresses email actives</strong>Résumé visuel des adresses configurées (Magasinier / DDFPT) avec indicateur d'état dans la section Email.</div>
+</div>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>ID client et véhicule dans les tableaux</strong>Colonne ID (#1, #2…) affichée dans les listes clients et véhicules pour référence rapide. Absent des documents imprimés.</div>
+</div>
+
+<h3>🖨️ Génération PDF</h3>
+<div class="ameli new">
+  <span class="tag">NOUVEAU</span>
+  <div class="body"><strong>Migration WeasyPrint → xhtml2pdf</strong>Remplacement de la librairie PDF pour compatibilité Windows (WeasyPrint nécessitait GTK, non disponible). Nouveau template PDF optimisé pour l'email.</div>
+</div>
+
+<!-- 7. CORRECTIONS DE BUGS -->
+<hr class="sep">
+<h2>7. Corrections de bugs</h2>
+
+<div class="ameli fix">
+  <span class="tag">CORRIGÉ</span>
+  <div class="body"><strong>Création d'OR bloquée silencieusement</strong>Des champs cachés marqués "required" empêchaient la soumission du formulaire sans afficher d'erreur visible.</div>
+</div>
+<div class="ameli fix">
+  <span class="tag">CORRIGÉ</span>
+  <div class="body"><strong>Page d'erreur navigateur lors de la création d'OR</strong>L'envoi SMTP synchrone pouvait dépasser le délai HTTP. Résolu par l'envoi en thread séparé avec contexte Flask propre.</div>
+</div>
+<div class="ameli fix">
+  <span class="tag">CORRIGÉ</span>
+  <div class="body"><strong>Modifications utilisateur non enregistrées dans l'admin</strong>Le handler edit_user était absent de la route /admin — le formulaire postait dans le vide.</div>
+</div>
+<div class="ameli fix">
+  <span class="tag">CORRIGÉ</span>
+  <div class="body"><strong>Configuration email non sauvegardée</strong>L'action save_smtp n'était pas traitée dans la route admin.</div>
+</div>
+<div class="ameli fix">
+  <span class="tag">CORRIGÉ</span>
+  <div class="body"><strong>Conflit de nom list() avec la liste Python</strong>La fonction de route nommée list() masquait le built-in Python et provoquait des erreurs dans plusieurs routes. Renommée liste().</div>
+</div>
+<div class="ameli fix">
+  <span class="tag">CORRIGÉ</span>
+  <div class="body"><strong>Erreur date_creation sur les OR</strong>Attribut inexistant, le modèle utilise date_ouverture.</div>
+</div>
+<div class="ameli fix">
+  <span class="tag">CORRIGÉ</span>
+  <div class="body"><strong>Export CSV véhicules</strong>Le champ couleur était référencé au lieu de energie après la migration.</div>
+</div>
+<div class="ameli fix">
+  <span class="tag">CORRIGÉ</span>
+  <div class="body"><strong>Export CSV statistiques</strong>Faute de frappe i.orde au lieu de i.ordre provoquait un crash à l'export.</div>
+</div>
+
+<hr class="sep">
+<p style="text-align:center; color:#999; font-size:0.85rem; margin-top:2rem;">
+  MEC AUTO – Fonctions &amp; Améliorations – v1.0 – Mai 2026<br>
+  Document technique interne
+</p>
+
+</div>
+</body>
+</html>

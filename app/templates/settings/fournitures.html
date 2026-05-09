@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Fournitures{% endblock %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="margin: 0;">🧴 Gestion des fournitures</h2>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h3 style="margin: 0;">Fournitures ({{ fournitures|length }})</h3>
+        <form method="POST" style="display: flex; gap: 0.5rem; align-items: center;">
+            <input type="hidden" name="action" value="new">
+            <input type="text" name="nom" placeholder="Nom de la fourniture" required style="width: 220px;">
+            <input type="number" step="0.01" min="0" name="prix_unitaire" placeholder="Prix unitaire (€)" style="width: 150px;">
+            <button type="submit" class="btn">➕ Ajouter</button>
+        </form>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th style="width: 55%;">Nom</th>
+                    <th style="width: 20%; text-align: right;">Prix unitaire (€)</th>
+                    <th style="width: 25%; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for f in fournitures %}
+            <tr>
+                <form method="POST">
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="id" value="{{ f.id }}">
+                <td><input type="text" name="nom" value="{{ f.nom }}" style="width: 100%;"></td>
+                <td style="text-align: right;">
+                    <input type="number" step="0.01" min="0" name="prix_unitaire" value="{{ f.prix_unitaire }}" style="width: 110px; text-align: right;">
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                    <button type="submit" class="btn btn-secondary" style="padding: 0.2rem 0.6rem;">💾 Sauver</button>
+                </td>
+                </form>
+                <td style="text-align: right;">
+                    <form method="POST" style="display: inline;" onsubmit="return confirm('Supprimer cette fourniture ?')">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id" value="{{ f.id }}">
+                        <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.6rem;">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: #999; padding: 2rem;">Aucune fourniture enregistrée</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

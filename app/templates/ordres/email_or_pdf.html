@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+    @page { size: A4 portrait; margin: 1.8cm 1.5cm; }
+    body { font-family: Arial, sans-serif; font-size: 10pt; color: #222; margin: 0; padding: 0; }
+
+    /* ── HEADER ── */
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12pt; border-bottom: 3px solid #1E3A5F; padding-bottom: 6pt; }
+    .header-etab { font-size: 11pt; font-weight: bold; color: #1E3A5F; }
+    .header-etab-sub { font-size: 8pt; color: #666; margin-top: 2pt; }
+    .header-or { text-align: right; }
+    .or-numero { font-size: 18pt; font-weight: bold; color: #1E3A5F; }
+    .or-badge { display: inline-block; background: #e8f0fb; color: #1E3A5F; font-size: 8pt; padding: 2pt 6pt; border-radius: 3pt; margin-top: 2pt; }
+
+    /* ── SECTION TITLES ── */
+    .section-title { background: #1E3A5F; color: white; font-size: 9pt; font-weight: bold; padding: 4pt 8pt; margin-top: 10pt; margin-bottom: 0; }
+
+    /* ── INFO BOXES (2 colonnes via table) ── */
+    .info-table { width: 100%; border-collapse: collapse; margin-top: 0; }
+    .info-table td { vertical-align: top; padding: 5pt 8pt; font-size: 9pt; border: 1px solid #ddd; }
+    .info-table td.label { font-weight: bold; color: #444; width: 38%; background: #f8f8f8; }
+
+    /* ── DEUX COLONNES ── */
+    .cols-table { width: 100%; border-collapse: collapse; margin-top: 10pt; }
+    .cols-table td { vertical-align: top; width: 50%; }
+    .cols-table td:first-child { padding-right: 6pt; }
+    .cols-table td:last-child { padding-left: 6pt; }
+
+    /* ── DESCRIPTION ── */
+    .desc-box { border: 1px solid #ddd; padding: 6pt 8pt; font-size: 9pt; min-height: 30pt; background: #fafafa; margin-top: 0; }
+
+    /* ── BADGES ── */
+    .badge { font-size: 8pt; font-weight: bold; padding: 2pt 6pt; border-radius: 3pt; }
+    .badge-ok  { background: #d4edda; color: #155724; }
+    .badge-ko  { background: #f8d7da; color: #721c24; }
+    .badge-nc  { background: #e2e3e5; color: #383d41; }
+    .badge-ouvert   { background: #cce5ff; color: #004085; }
+    .badge-en_cours { background: #fff3cd; color: #856404; }
+    .badge-cloture  { background: #d4edda; color: #155724; }
+
+    /* ── ÉTAT DES LIEUX ── */
+    .page-break { page-break-before: always; }
+    .etat-header { background: #17a2b8; color: white; font-size: 11pt; font-weight: bold; padding: 6pt 10pt; margin-bottom: 8pt; }
+
+    /* ── FOOTER ── */
+    .footer { margin-top: 20pt; border-top: 1px solid #ccc; padding-top: 5pt; font-size: 7.5pt; color: #888; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!--  PAGE 1 — RÉCAPITULATIF DE L'ORDRE DE RÉPARATION  -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<!-- HEADER -->
+<table class="header-table">
+    <tr>
+        <td style="vertical-align:top;">
+            <div class="header-etab">{{ etab_nom or 'MEC AUTO' }}</div>
+            {% if etab_adresse %}<div class="header-etab-sub">{{ etab_adresse }}</div>{% endif %}
+            {% if etab_tel %}<div class="header-etab-sub">Tél : {{ etab_tel }}</div>{% endif %}
+        </td>
+        <td class="header-or">
+            <div class="or-numero">OR n° {{ or_obj.numero }}</div>
+            <div class="or-badge">
+                {% if or_obj.statut == 'ouvert' %}Ouvert
+                {% elif or_obj.statut == 'en_cours' %}En cours
+                {% elif or_obj.statut == 'cloture' %}Clôturé
+                {% else %}{{ or_obj.statut }}{% endif %}
+            </div><br/>
+            <span style="font-size:8pt; color:#666;">
+                Créé le {{ or_obj.date_ouverture.strftime('%d/%m/%Y à %H:%M') if or_obj.date_ouverture else '-' }}
+            </span>
+        </td>
+    </tr>
+</table>
+
+<!-- VÉHICULE & CLIENT -->
+<table class="cols-table">
+    <tr>
+        <!-- Véhicule -->
+        <td>
+            <div class="section-title">&#128663; Véhicule</div>
+            <table class="info-table">
+                <tr><td class="label">Immatriculation</td><td><b>{{ vehicule.immatriculation }}</b></td></tr>
+                <tr><td class="label">Marque / Modèle</td><td>{{ vehicule.marque or '-' }} {{ vehicule.modele or '' }}</td></tr>
+                <tr><td class="label">Année</td><td>{{ vehicule.annee or '-' }}</td></tr>
+                {% if vehicule.kilometrage %}<tr><td class="label">Kilométrage</td><td>{{ vehicule.kilometrage }} km</td></tr>{% endif %}
+                <tr>
+                    <td class="label">CT</td>
+                    <td>
+                        {% if or_obj.ct_valide %}<span class="badge badge-ok">&#10003; Valide</span>
+                        {% else %}<span class="badge badge-ko">&#10007; Non valide</span>{% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Assurance</td>
+                    <td>
+                        {% if or_obj.assurance_valide %}<span class="badge badge-ok">&#10003; Valide</span>
+                        {% else %}<span class="badge badge-ko">&#10007; Non valide</span>{% endif %}
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <!-- Client -->
+        <td>
+            <div class="section-title">&#128100; Client</div>
+            <table class="info-table">
+                <tr><td class="label">Nom</td><td><b>{{ client.prenom }} {{ client.nom }}</b></td></tr>
+                <tr><td class="label">Téléphone</td><td>{{ client.telephone or '-' }}</td></tr>
+                <tr><td class="label">Email</td><td>{{ client.email or '-' }}</td></tr>
+                {% if client.adresse %}<tr><td class="label">Adresse</td><td>{{ client.adresse }}</td></tr>{% endif %}
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- TRAVAUX -->
+<div class="section-title">&#128295; Travaux demandés</div>
+<div class="desc-box">{{ or_obj.description or 'Aucune description renseignée.' }}</div>
+
+<!-- AFFECTATION -->
+<div class="section-title">&#127979; Affectation</div>
+<table class="info-table">
+    <tr>
+        <td class="label" style="width:20%;">Classe</td>
+        <td style="width:30%;">{{ or_obj.classe_nom or '-' }}</td>
+        <td class="label" style="width:20%;">Élève responsable</td>
+        <td style="width:30%;">{{ or_obj.eleve_nom or '-' }}</td>
+    </tr>
+    <tr>
+        <td class="label">Créé par</td>
+        <td>{% if or_obj.created_by_user %}{{ or_obj.created_by_user.prenom }} {{ or_obj.created_by_user.nom }}{% else %}-{% endif %}</td>
+        <td class="label">RDV planifié</td>
+        <td>{% if or_obj.rdv_date_heure %}{{ or_obj.rdv_date_heure.strftime('%d/%m/%Y %H:%M') }}{% else %}-{% endif %}</td>
+    </tr>
+</table>
+
+{% if interventions %}
+<!-- INTERVENTIONS -->
+<div class="section-title">&#9997; Interventions élèves</div>
+<table style="width:100%; border-collapse:collapse; font-size:8.5pt; margin-top:0;">
+    <thead>
+        <tr style="background:#f0f0f0;">
+            <th style="border:1px solid #ccc; padding:4pt 6pt; text-align:left;">Élève</th>
+            <th style="border:1px solid #ccc; padding:4pt 6pt; text-align:left;">Description</th>
+            <th style="border:1px solid #ccc; padding:4pt 6pt; text-align:center;">Heures</th>
+            <th style="border:1px solid #ccc; padding:4pt 6pt; text-align:left;">Fourniture</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for i in interventions %}
+        <tr>
+            <td style="border:1px solid #ccc; padding:3pt 6pt;">
+                {% if i.eleve %}{{ i.eleve.prenom }} {{ i.eleve.nom }}{% else %}-{% endif %}
+            </td>
+            <td style="border:1px solid #ccc; padding:3pt 6pt;">{{ i.description or '-' }}</td>
+            <td style="border:1px solid #ccc; padding:3pt 6pt; text-align:center;">{{ i.heures or '-' }}</td>
+            <td style="border:1px solid #ccc; padding:3pt 6pt;">
+                {% if i.fourniture %}{{ i.fourniture.nom }} {% if i.quantite %}(x{{ i.quantite }}){% endif %}{% else %}-{% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<div class="footer">
+    Document généré automatiquement par MEC AUTO — {{ print_date }}
+</div>
+
+{% if etat_entree %}
+<!-- ═══════════════════════════════════════════ -->
+<!--  PAGE 2 — ÉTAT DES LIEUX D'ENTRÉE         -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="page-break"></div>
+
+<table class="header-table">
+    <tr>
+        <td style="vertical-align:top;">
+            <div class="header-etab">{{ etab_nom or 'MEC AUTO' }}</div>
+        </td>
+        <td class="header-or">
+            <div class="or-numero">État des lieux — ENTRÉE</div>
+            <span style="font-size:8pt; color:#666;">OR n° {{ or_obj.numero }}</span>
+        </td>
+    </tr>
+</table>
+
+<div class="etat-header">État des lieux d'entrée du véhicule</div>
+
+<table class="cols-table">
+    <tr>
+        <td>
+            <div class="section-title">&#128663; Véhicule</div>
+            <table class="info-table">
+                <tr><td class="label">Immatriculation</td><td><b>{{ vehicule.immatriculation }}</b></td></tr>
+                <tr><td class="label">Marque / Modèle</td><td>{{ vehicule.marque or '-' }} {{ vehicule.modele or '' }}</td></tr>
+                <tr><td class="label">Kilométrage entrée</td><td>{{ etat_entree.kilometrage or '-' }} km</td></tr>
+                <tr><td class="label">Niveau carburant</td><td>{{ etat_entree.niveau_carburant or '-' }}</td></tr>
+            </table>
+        </td>
+        <td>
+            <div class="section-title">&#128100; Client</div>
+            <table class="info-table">
+                <tr><td class="label">Nom</td><td><b>{{ client.prenom }} {{ client.nom }}</b></td></tr>
+                <tr><td class="label">Téléphone</td><td>{{ client.telephone or '-' }}</td></tr>
+                <tr><td class="label">Date entrée</td><td>{{ etat_entree.created_at.strftime('%d/%m/%Y à %H:%M') if etat_entree.created_at else '-' }}</td></tr>
+                <tr><td class="label">Responsable</td><td>{{ etat_entree.responsable or '-' }}</td></tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<div class="section-title">&#9888; Dommages constatés</div>
+<div class="desc-box">{{ etat_entree.dommages or 'Aucun dommage constaté.' }}</div>
+
+<div class="section-title">&#128221; Observations</div>
+<div class="desc-box">{{ etat_entree.observations or 'Aucune observation.' }}</div>
+
+<!-- Signatures -->
+<table style="width:100%; margin-top:30pt; border-collapse:collapse;">
+    <tr>
+        <td style="width:45%; text-align:center; padding-top:40pt; border-top:1px solid #333; font-size:8.5pt;">Signature client</td>
+        <td style="width:10%;"></td>
+        <td style="width:45%; text-align:center; padding-top:40pt; border-top:1px solid #333; font-size:8.5pt;">Signature responsable atelier</td>
+    </tr>
+</table>
+
+<div class="footer">
+    Document généré automatiquement par MEC AUTO — {{ print_date }}
+</div>
+{% endif %}
+
+</body>
+</html>

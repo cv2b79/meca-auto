@@ -21,6 +21,7 @@
 <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
     <thead>
         <tr style="background: #388e3c; color: white;">
+            <th style="padding: 0.75rem; text-align: center; width: 60px;">ID</th>
             <th style="padding: 0.75rem; text-align: left;">Immat</th>
             <th style="padding: 0.75rem; text-align: left;">Marque</th>
             <th style="padding: 0.75rem; text-align: left;">Modèle</th>
@@ -32,6 +33,7 @@
     <tbody>
     {% for v in vehicules %}
     <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 0.75rem; text-align: center; color: #999; font-size: 0.82rem; font-family: monospace;">#{{ v.id }}</td>
         <td style="padding: 0.75rem;"><a href="{{ url_for('vehicules.view', id=v.id) }}" style="color: #388e3c; font-weight: 600;">{{ v.immatriculation }}</a></td>
         <td style="padding: 0.75rem;">{{ v.marque }}</td>
         <td style="padding: 0.75rem;">{{ v.modele }}</td>

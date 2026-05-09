@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Guide utilisateur – Enseignants – MEC AUTO</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #222; background: #fff; }
+  .page { max-width: 800px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+  /* COUVERTURE */
+  .cover { text-align: center; padding: 4rem 2rem; border-bottom: 3px solid #1976d2; margin-bottom: 2rem; }
+  .cover h1 { font-size: 2.2rem; color: #1976d2; margin-bottom: 0.5rem; }
+  .cover .sub { font-size: 1.1rem; color: #555; margin-bottom: 2rem; }
+  .cover .badge { display: inline-block; background: #1976d2; color: white; padding: 0.4rem 1.2rem; border-radius: 20px; font-size: 0.95rem; }
+
+  /* TITRES */
+  h2 { font-size: 1.25rem; color: #1976d2; border-left: 4px solid #1976d2; padding-left: 0.75rem;
+       margin: 2rem 0 1rem 0; page-break-after: avoid; }
+  h3 { font-size: 1rem; color: #333; margin: 1.25rem 0 0.5rem 0; font-weight: 600; page-break-after: avoid; }
+  p  { margin-bottom: 0.65rem; line-height: 1.6; }
+  ul, ol { margin: 0.5rem 0 0.75rem 1.5rem; line-height: 1.7; }
+
+  /* ÉTAPES NUMÉROTÉES */
+  .steps { counter-reset: step; list-style: none; margin-left: 0; }
+  .steps li { counter-increment: step; display: flex; gap: 0.75rem; margin-bottom: 0.6rem; }
+  .steps li::before { content: counter(step); min-width: 1.6rem; height: 1.6rem; background: #1976d2;
+                       color: white; border-radius: 50%; font-size: 0.8rem; font-weight: bold;
+                       display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 0.1rem; }
+
+  /* ASTUCES / ALERTES */
+  .tip   { background: #e3f2fd; border-left: 4px solid #1976d2; padding: 0.6rem 0.9rem; border-radius: 0 4px 4px 0; margin: 0.75rem 0; font-size: 0.93rem; }
+  .warn  { background: #fff3e0; border-left: 4px solid #f57c00; padding: 0.6rem 0.9rem; border-radius: 0 4px 4px 0; margin: 0.75rem 0; font-size: 0.93rem; }
+  .ok    { background: #e8f5e9; border-left: 4px solid #388e3c; padding: 0.6rem 0.9rem; border-radius: 0 4px 4px 0; margin: 0.75rem 0; font-size: 0.93rem; }
+
+  /* TABLEAU */
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.93rem; }
+  th { background: #1976d2; color: white; padding: 0.5rem 0.75rem; text-align: left; }
+  td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #e0e0e0; }
+  tr:nth-child(even) td { background: #f5f5f5; }
+
+  /* RÔLES */
+  .role { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 4px; font-size: 0.82rem; font-weight: 600; }
+  .role-enseignant { background: #cfe2ff; color: #0a58ca; }
+  .role-eleve      { background: #d1e7dd; color: #0f5132; }
+  .role-magasinier { background: #fff3cd; color: #664d03; }
+  .role-ddfpt      { background: #f8d7da; color: #842029; }
+
+  /* BOUTON EXEMPLE */
+  .btn-ex { display: inline-block; background: #1976d2; color: white; padding: 0.2rem 0.7rem;
+            border-radius: 4px; font-size: 0.85rem; font-weight: 500; }
+  .btn-ex.green { background: #2e7d32; }
+  .btn-ex.grey  { background: #555; }
+
+  /* SÉPARATEUR DE SECTION */
+  .section-sep { border: none; border-top: 2px dashed #e0e0e0; margin: 2rem 0; }
+
+  /* TOC */
+  .toc { background: #f5f9ff; border: 1px solid #bbdefb; border-radius: 6px; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .toc h3 { margin-bottom: 0.5rem; color: #1976d2; }
+  .toc ol { margin-left: 1.2rem; }
+  .toc li { margin-bottom: 0.2rem; }
+
+  @media print {
+    body { font-size: 10pt; }
+    .page { padding: 1rem; }
+    h2 { page-break-before: auto; }
+    .cover { padding: 2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- COUVERTURE -->
+<div class="cover">
+  <div style="font-size: 3rem; margin-bottom: 1rem;">🔧</div>
+  <h1>MEC AUTO</h1>
+  <p class="sub">Logiciel de gestion de l'atelier</p>
+  <div style="margin: 1.5rem 0;">
+    <span class="badge">Guide utilisateur – Enseignants</span>
+  </div>
+  <p style="color: #888; font-size: 0.9rem;">Lycée professionnel – Atelier mécanique</p>
+</div>
+
+<!-- SOMMAIRE -->
+<div class="toc">
+  <h3>📋 Sommaire</h3>
+  <ol>
+    <li>Connexion et présentation générale</li>
+    <li>Tableau de bord</li>
+    <li>Créer un ordre de réparation (OR)</li>
+    <li>Gérer un OR en cours</li>
+    <li>Interventions élèves</li>
+    <li>États des lieux</li>
+    <li>Changer le statut d'un OR</li>
+    <li>Clients et véhicules</li>
+    <li>Agenda</li>
+    <li>Droits et rôles</li>
+  </ol>
+</div>
+
+<!-- 1. CONNEXION -->
+<h2>1. Connexion et présentation générale</h2>
+
+<p>Ouvrez votre navigateur et accédez à l'adresse du logiciel communiquée par votre établissement. Sur la page de connexion, saisissez votre <strong>login</strong> et votre <strong>mot de passe</strong>.</p>
+
+<div class="tip">💡 En cas d'oubli de mot de passe, contactez le DDFPT qui pourra vous en attribuer un nouveau depuis l'administration.</div>
+
+<p>Une fois connecté, vous accédez à la barre de navigation en haut de page. En tant qu'enseignant, vous disposez des accès suivants :</p>
+
+<table>
+  <tr><th>Menu</th><th>Description</th></tr>
+  <tr><td>Tableau de bord</td><td>Vue d'ensemble de l'activité de l'atelier</td></tr>
+  <tr><td>Ordres de réparation</td><td>Liste de tous les OR, création et suivi</td></tr>
+  <tr><td>Clients</td><td>Gestion des clients (ajout, modification)</td></tr>
+  <tr><td>Véhicules</td><td>Gestion des véhicules (ajout, modification)</td></tr>
+  <tr><td>Agenda</td><td>Rendez-vous et planification</td></tr>
+  <tr><td>Mon compte</td><td>Modifier votre mot de passe</td></tr>
+</table>
+
+<!-- 2. TABLEAU DE BORD -->
+<hr class="section-sep">
+<h2>2. Tableau de bord</h2>
+
+<p>Le tableau de bord affiche un résumé de l'activité en temps réel :</p>
+<ul>
+  <li><strong>Nombre d'OR ouverts</strong> par statut (ouvert, en cours, terminé, clôturé)</li>
+  <li><strong>Derniers OR créés</strong> avec accès direct</li>
+  <li><strong>Statistiques</strong> de la période en cours</li>
+</ul>
+
+<!-- 3. CRÉER UN OR -->
+<hr class="section-sep">
+<h2>3. Créer un ordre de réparation (OR)</h2>
+
+<p>Cliquez sur <span class="btn-ex green">✅ Nouvel OR</span> depuis la liste des ordres ou le tableau de bord.</p>
+
+<h3>3.1 Identifier le véhicule</h3>
+<ol class="steps">
+  <li>Saisissez l'immatriculation dans le champ prévu (format : AB-123-CD). Le logiciel recherche automatiquement le véhicule dans la base.</li>
+  <li>Si le véhicule est <strong>connu</strong> : les informations du propriétaire sont pré-remplies automatiquement.</li>
+  <li>Si le véhicule est <strong>nouveau</strong> : un formulaire apparaît pour saisir la marque et le modèle. Vous renseignez également les informations client.</li>
+</ol>
+
+<div class="tip">💡 Le VIN et le type d'énergie (Essence, Diesel, Électrique…) peuvent être saisis directement sur la fiche OR. Ils seront automatiquement enregistrés sur la fiche du véhicule.</div>
+
+<h3>3.2 Informations client</h3>
+<p>Renseignez le nom, prénom, téléphone et email du client. <strong>Le numéro de téléphone est obligatoire</strong> et doit comporter 10 chiffres.</p>
+<div class="warn">⚠️ Sans numéro de téléphone complet, la création de l'OR est bloquée.</div>
+
+<h3>3.3 CT et Assurance</h3>
+<p>Deux cases à cocher permettent d'indiquer si le contrôle technique et l'assurance sont valides. Ces informations sont affichées sur la fiche OR et le PDF.</p>
+
+<h3>3.4 Description des travaux</h3>
+<p>Décrivez les travaux demandés dans la zone de texte. Sélectionnez ensuite :</p>
+<ul>
+  <li><strong>La classe</strong> responsable des travaux</li>
+  <li><strong>L'élève référent</strong> pour cet OR</li>
+</ul>
+
+<h3>3.5 Prise de rendez-vous</h3>
+<p>Cochez la case <em>Prise de rendez-vous</em> pour planifier directement une date et une heure. Le rendez-vous apparaîtra dans l'agenda.</p>
+
+<h3>3.6 État des lieux d'entrée</h3>
+<p>Cochez <em>Faire l'état des lieux d'entrée après création</em> pour être redirigé automatiquement vers le formulaire d'état des lieux dès la création de l'OR.</p>
+
+<div class="ok">✅ Cliquez sur <span class="btn-ex green">✅ Créer l'OR</span> pour valider. Un numéro d'OR est attribué automatiquement et les notifications email sont envoyées aux destinataires configurés.</div>
+
+<!-- 4. GÉRER UN OR -->
+<hr class="section-sep">
+<h2>4. Gérer un OR en cours</h2>
+
+<p>Cliquez sur le numéro d'un OR dans la liste pour accéder à sa fiche complète. Vous y trouvez :</p>
+<ul>
+  <li>Les informations du véhicule et du client</li>
+  <li>La description des travaux</li>
+  <li>Le tableau des interventions élèves</li>
+  <li>Les états des lieux (entrée et sortie)</li>
+  <li>Le statut actuel et les boutons de changement de statut</li>
+</ul>
+
+<!-- 5. INTERVENTIONS ÉLÈVES -->
+<hr class="section-sep">
+<h2>5. Interventions élèves</h2>
+
+<h3>5.1 Ajouter une intervention</h3>
+<p>En bas de la fiche OR, un formulaire permet d'ajouter une intervention :</p>
+<ol class="steps">
+  <li>Sélectionnez l'élève concerné</li>
+  <li>Indiquez le nombre d'heures effectuées</li>
+  <li>Choisissez une fourniture si applicable (pièce, consommable…)</li>
+  <li>Décrivez le travail réalisé</li>
+  <li>Cliquez sur <span class="btn-ex">Ajouter</span></li>
+</ol>
+
+<h3>5.2 Modifier ou supprimer une intervention</h3>
+<p>Chaque ligne du tableau d'interventions dispose de deux boutons :</p>
+<ul>
+  <li><strong>✏️</strong> — Modifier les détails de l'intervention (élève, heures, fourniture, description)</li>
+  <li><strong>🗑️</strong> — Supprimer l'intervention (confirmation demandée)</li>
+</ul>
+<div class="warn">⚠️ Ces actions ne sont disponibles que tant que l'OR n'est pas clôturé. Une fois clôturé, les interventions sont figées.</div>
+
+<!-- 6. ÉTATS DES LIEUX -->
+<hr class="section-sep">
+<h2>6. États des lieux</h2>
+
+<h3>6.1 État des lieux d'entrée</h3>
+<p>L'état des lieux d'entrée documente l'état du véhicule à sa réception. Il comprend :</p>
+<ul>
+  <li>Le kilométrage à l'entrée</li>
+  <li>Le niveau de carburant</li>
+  <li>Les dommages existants et observations</li>
+  <li>Le responsable de la réception</li>
+</ul>
+
+<h3>6.2 État des lieux de sortie</h3>
+<p>L'état des lieux de sortie est réalisé avant la restitution du véhicule. Le <strong>kilométrage est automatiquement pré-rempli</strong> avec la valeur saisie à l'entrée pour faciliter la saisie — modifiez-le si nécessaire.</p>
+
+<div class="tip">💡 Pour les rôles DDFPT, l'état des lieux de sortie est obligatoire avant de pouvoir clôturer l'OR.</div>
+
+<!-- 7. CHANGER LE STATUT -->
+<hr class="section-sep">
+<h2>7. Changer le statut d'un OR</h2>
+
+<p>Les OR suivent un cycle de vie précis :</p>
+
+<table>
+  <tr><th>Statut</th><th>Signification</th><th>Action suivante</th></tr>
+  <tr><td>🟡 Ouvert</td><td>OR créé, travaux non démarrés</td><td>Passer en cours</td></tr>
+  <tr><td>🔵 En cours</td><td>Travaux en cours de réalisation</td><td>Passer à terminé</td></tr>
+  <tr><td>🔷 Terminé</td><td>Travaux achevés, en attente de validation</td><td>Clôturer (DDFPT)</td></tr>
+  <tr><td>🟢 Clôturé</td><td>OR validé et fermé</td><td>Facturation possible</td></tr>
+</table>
+
+<div class="tip">💡 Le client reçoit automatiquement un email à chaque changement de statut si son adresse est renseignée et si les notifications sont activées par l'administration.</div>
+
+<!-- 8. CLIENTS ET VÉHICULES -->
+<hr class="section-sep">
+<h2>8. Clients et véhicules</h2>
+
+<h3>8.1 Fiche client</h3>
+<p>Depuis le menu <strong>Clients</strong>, vous pouvez consulter, ajouter ou modifier les informations d'un client. La fiche affiche l'historique de tous les OR associés.</p>
+
+<h3>8.2 Fiche véhicule</h3>
+<p>La fiche véhicule centralise toute la traçabilité :</p>
+<ul>
+  <li>Informations techniques (immatriculation, marque, modèle, année, VIN, énergie, kilométrage)</li>
+  <li>Historique des propriétaires avec les dates de détention</li>
+  <li>Tous les OR liés, avec les interventions élèves et les états des lieux</li>
+  <li>Statistiques : nombre d'OR, heures élèves, montant facturé</li>
+</ul>
+
+<!-- 9. AGENDA -->
+<hr class="section-sep">
+<h2>9. Agenda</h2>
+
+<p>L'agenda centralise tous les rendez-vous planifiés lors de la création des OR. Vous pouvez :</p>
+<ul>
+  <li>Visualiser les rendez-vous par jour, semaine ou mois</li>
+  <li>Ajouter un rendez-vous manuellement</li>
+  <li>Accéder directement à l'OR associé à un rendez-vous</li>
+</ul>
+
+<!-- 10. DROITS ET RÔLES -->
+<hr class="section-sep">
+<h2>10. Droits et rôles</h2>
+
+<table>
+  <tr><th>Action</th><th class="role role-enseignant">Enseignant</th><th class="role role-magasinier">Magasinier</th><th class="role role-ddfpt">DDFPT</th><th class="role role-eleve">Élève</th></tr>
+  <tr><td>Créer un OR</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+  <tr><td>Modifier un OR</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+  <tr><td>Ajouter / modifier une intervention</td><td style="text-align:center">✅</td><td style="text-align:center">—</td><td style="text-align:center">✅</td><td style="text-align:center">✅*</td></tr>
+  <tr><td>État des lieux</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+  <tr><td>Clôturer un OR</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+  <tr><td>Facturer</td><td style="text-align:center">—</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+  <tr><td>Gérer clients / véhicules</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+  <tr><td>Administration</td><td style="text-align:center">—</td><td style="text-align:center">Partiel</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+</table>
+<p style="font-size:0.85rem; color:#666; margin-top:0.25rem;">* L'élève ne peut modifier que ses propres interventions.</p>
+
+<hr class="section-sep">
+<p style="text-align:center; color:#999; font-size:0.85rem; margin-top:2rem;">
+  MEC AUTO – Guide enseignant – v1.0 – {{ date }}<br>
+  Document généré automatiquement
+</p>
+
+</div>
+</body>
+</html>

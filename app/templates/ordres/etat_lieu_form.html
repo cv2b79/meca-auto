@@ -40,7 +40,11 @@
 
         <div class="form-group">
             <label>Kilométrage *</label>
-            <input type="number" name="kilometrage" required placeholder="Ex: 50000">
+            <input type="number" name="kilometrage" required placeholder="Ex: 50000"
+                   value="{{ km_entree if km_entree else '' }}">
+            {% if type_etat == 'sortie' and km_entree %}
+            <small style="color: #1976d2;">📥 Pré-rempli avec le km d'entrée ({{ km_entree }} km) — modifiez si nécessaire</small>
+            {% endif %}
         </div>
 
         <div class="form-group">

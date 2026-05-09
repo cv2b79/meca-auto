@@ -27,8 +27,8 @@
                 
 <div id="new_vehicle" style="display: none; padding: 0.75rem; background: #fff3e0; border-radius: 4px; margin-top: 0.5rem;">
                 <p style="margin: 0 0 0.5rem 0; font-weight: 500; color: #e65100; font-size: 0.9rem;">➕ Nouveau véhicule</p>
-                <input type="text" name="marque" placeholder="Marque *" required style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem; font-size: 0.9rem;">
-                <input type="text" name="modele" placeholder="Modèle *" required style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem; font-size: 0.9rem;">
+                <input type="text" name="marque" placeholder="Marque *" style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem; font-size: 0.9rem;">
+                <input type="text" name="modele" placeholder="Modèle *" style="width: 100%; padding: 0.4rem; margin-bottom: 0.3rem; font-size: 0.9rem;">
                 <input type="number" name="annee" placeholder="Année" style="width: 100%; padding: 0.4rem; font-size: 0.9rem;">
             </div>
             
@@ -41,6 +41,26 @@
                     <input type="checkbox" name="assurance_valide" style="width: 18px; height: 18px;">
                     ✅ Assurance valide
                 </label>
+                <div style="margin-top: 0.75rem; border-top: 1px solid #c8e6c9; padding-top: 0.6rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <div style="flex: 2; min-width: 140px;">
+                        <label style="font-size: 0.78rem; color: #555; font-weight: 600; display: block; margin-bottom: 0.2rem;">VIN</label>
+                        <input type="text" name="vin" id="vin_hidden" placeholder="Ex: VF1RFD00063829274"
+                               style="width: 100%; padding: 0.35rem 0.5rem; font-size: 0.85rem; font-family: monospace; border: 1px solid #c8e6c9; border-radius: 4px; background: #fff;">
+                    </div>
+                    <div style="flex: 1; min-width: 110px;">
+                        <label style="font-size: 0.78rem; color: #555; font-weight: 600; display: block; margin-bottom: 0.2rem;">Énergie</label>
+                        <select name="energie" id="energie_select"
+                                style="width: 100%; padding: 0.35rem 0.5rem; font-size: 0.85rem; border: 1px solid #c8e6c9; border-radius: 4px; background: #fff;">
+                            <option value="">—</option>
+                            <option value="Essence">Essence</option>
+                            <option value="Diesel">Diesel</option>
+                            <option value="Électrique">Électrique</option>
+                            <option value="Hybride">Hybride</option>
+                            <option value="GPL">GPL</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
             
@@ -55,8 +75,11 @@
                 <input type="text" name="client_prenom" id="client_prenom" required placeholder="Prénom du client" style="width: 100%; padding: 0.6rem;">
             </div>
             <div class="form-group">
-                <label style="font-weight: 500;">Téléphone</label>
-                <input type="tel" name="client_tel" id="client_tel" placeholder="06 12 34 56 78" maxlength="14" style="width: 100%; padding: 0.6rem;" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^(\d{2})(\d{0,2})(\d{0,2})(\d{0,2})(\d{0,2})$/, '$1 $2 $3 $4 $5').replace(/\s+/g, ' ').trim();">
+                <label style="font-weight: 500;">Téléphone <span style="color: red;">*</span></label>
+                <input type="tel" name="client_tel" id="client_tel" required placeholder="06 12 34 56 78" maxlength="14"
+                       style="width: 100%; padding: 0.6rem;"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^(\d{2})(\d{0,2})(\d{0,2})(\d{0,2})(\d{0,2})$/, '$1 $2 $3 $4 $5').replace(/\s+/g, ' ').trim(); validateTel(this);">
+                <small id="tel_error" style="color: red; display: none;">Numéro incomplet (10 chiffres requis)</small>
             </div>
             <div class="form-group">
                 <label style="font-weight: 500;">Email</label>
@@ -132,7 +155,7 @@
         <button type="submit" class="btn" style="padding: 0.8rem 2rem; font-size: 1.1rem; background: #2e7d32;">
             ✅ Créer l'OR
         </button>
-        <a href="{{ url_for('ordres.list') }}" class="btn btn-secondary" style="padding: 0.8rem 2rem;">
+        <a href="{{ url_for('ordres.liste') }}" class="btn btn-secondary" style="padding: 0.8rem 2rem;">
             Annuler
         </a>
     </div>
@@ -177,6 +200,8 @@ function searchVehicle() {
                     vehiculeIdInput.value = v.id;
                     resultDiv.innerHTML = '<span style="color:green;">✓ Véhicule trouvé: ' + v.marque + ' ' + v.modele + '</span>';
                     newVehicleDiv.style.display = 'none';
+                    document.getElementById('vin_hidden').value = v.vin || '';
+                    document.getElementById('energie_select').value = v.energie || '';
                     if (v.proprietaire) {
                         document.getElementById('client_nom').value = v.proprietaire.nom || '';
                         document.getElementById('client_prenom').value = v.proprietaire.prenom || '';
@@ -187,6 +212,8 @@ function searchVehicle() {
                     vehiculeIdInput.value = '';
                     resultDiv.innerHTML = '<span style="color:orange;">⚠ Nouveau véhicule - à créer</span>';
                     newVehicleDiv.style.display = 'block';
+                    document.getElementById('vin_hidden').value = '';
+                    document.getElementById('energie_select').value = '';
                     document.getElementById('client_nom').value = '';
                     document.getElementById('client_prenom').value = '';
                     document.getElementById('client_tel').value = '';
@@ -197,6 +224,30 @@ function searchVehicle() {
     };
     xhr.send();
 }
+
+function validateTel(input) {
+    var digits = input.value.replace(/\D/g, '');
+    var err = document.getElementById('tel_error');
+    if (digits.length > 0 && digits.length < 10) {
+        input.style.borderColor = 'red';
+        err.style.display = 'block';
+    } else {
+        input.style.borderColor = '';
+        err.style.display = 'none';
+    }
+}
+
+document.querySelector('form').addEventListener('submit', function(e) {
+    var tel = document.getElementById('client_tel');
+    var digits = tel.value.replace(/\D/g, '');
+    if (digits.length !== 10) {
+        e.preventDefault();
+        tel.style.borderColor = 'red';
+        document.getElementById('tel_error').style.display = 'block';
+        tel.focus();
+        tel.scrollIntoView({behavior: 'smooth', block: 'center'});
+    }
+});
 
 // Auto-fill eleve_nom from selected eleve
 document.querySelector('select[name="eleve_id"]').addEventListener('change', function() {

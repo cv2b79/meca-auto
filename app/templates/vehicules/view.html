@@ -7,7 +7,7 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
         <div><strong>Année:</strong> {{ vehicule.annee or '-' }}</div>
         <div><strong>VIN:</strong> {{ vehicule.vin or '-' }}</div>
-        <div><strong>Couleur:</strong> {{ vehicule.couleur or '-' }}</div>
+        <div><strong>Énergie:</strong> {{ vehicule.energie or '-' }}</div>
         <div><strong>Kilométrage:</strong> {{ vehicule.kilometrage or '-' }} km</div>
         <div><strong>Propriétaire actuel:</strong> {% if vehicule.proprietaire %}{{ vehicule.proprietaire.prenom }} {{ vehicule.proprietaire.nom }}{% else %}Aucun{% endif %}</div>
     </div>

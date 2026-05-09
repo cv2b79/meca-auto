@@ -264,13 +264,52 @@ def forfait_delete(id):
     return redirect(url_for('settings.index'))
 
 # === FOURNITURES ===
+def _fournitures_redirect():
+    if current_user.role == 'ddfpt':
+        return redirect(url_for('settings.admin') + '#fournitures')
+    return redirect(url_for('settings.fournitures'))
+
+
+@settings_bp.route('/fournitures', methods=['GET', 'POST'])
+@login_required
+def fournitures():
+    if not current_user.can_manage_settings():
+        flash('Accès refusé', 'error')
+        return redirect(url_for('main.index'))
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'new':
+            f = Fourniture(
+                nom=request.form.get('nom'),
+                prix_unitaire=request.form.get('prix_unitaire') or 0
+            )
+            db.session.add(f)
+            db.session.commit()
+            flash('Fourniture créée', 'success')
+        elif action == 'edit':
+            f = Fourniture.query.get_or_404(request.form.get('id'))
+            f.nom = request.form.get('nom')
+            f.prix_unitaire = request.form.get('prix_unitaire') or 0
+            db.session.commit()
+            flash('Fourniture modifiée', 'success')
+        elif action == 'delete':
+            f = Fourniture.query.get_or_404(request.form.get('id'))
+            f.actif = False
+            db.session.commit()
+            flash('Fourniture supprimée', 'success')
+        return redirect(url_for('settings.fournitures'))
+
+    fournitures_list = Fourniture.query.order_by(Fourniture.nom).all()
+    return render_template('settings/fournitures.html', fournitures=fournitures_list)
+
+
 @settings_bp.route('/fourniture/new', methods=['POST'])
 @login_required
 def fourniture_new():
     if not current_user.can_manage_settings():
         flash('Accès refusé', 'error')
         return redirect(url_for('main.index'))
-    
     fourniture = Fourniture(
         nom=request.form.get('nom'),
         prix_unitaire=request.form.get('prix_unitaire') or 0
@@ -278,7 +317,7 @@ def fourniture_new():
     db.session.add(fourniture)
     db.session.commit()
     flash('Fourniture créée', 'success')
-    return redirect(url_for('settings.admin', tab='fournitures') + '#fournitures')
+    return _fournitures_redirect()
 
 @settings_bp.route('/fourniture/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -286,16 +325,13 @@ def fourniture_edit(id):
     if not current_user.can_manage_settings():
         flash('Accès refusé', 'error')
         return redirect(url_for('main.index'))
-    
     fourniture = Fourniture.query.get_or_404(id)
-    
     if request.method == 'POST':
         fourniture.nom = request.form.get('nom')
         fourniture.prix_unitaire = request.form.get('prix_unitaire') or 0
         db.session.commit()
         flash('Fourniture modifiée', 'success')
-        return redirect(url_for('settings.admin', tab='fournitures') + '#fournitures')
-    
+        return _fournitures_redirect()
     return render_template('settings/fourniture_edit.html', fourniture=fourniture)
 
 @settings_bp.route('/fourniture/<int:id>/delete', methods=['POST'])
@@ -304,12 +340,11 @@ def fourniture_delete(id):
     if not current_user.can_manage_settings():
         flash('Accès refusé', 'error')
         return redirect(url_for('main.index'))
-    
     fourniture = Fourniture.query.get_or_404(id)
     fourniture.actif = False
     db.session.commit()
     flash('Fourniture supprimée', 'success')
-    return redirect(url_for('settings.admin', tab='fournitures') + '#fournitures')
+    return _fournitures_redirect()
 
 # === IMPORT ÉLÈVES ===
 @settings_bp.route('/import_eleves', methods=['POST'])
@@ -536,6 +571,32 @@ def admin():
     if request.method == 'POST':
         action = request.form.get('action')
         
+        # === CONFIGURATION EMAIL ===
+        if action == 'save_smtp':
+            smtp_settings = {
+                'smtp_host': request.form.get('smtp_host', ''),
+                'smtp_port': request.form.get('smtp_port', '587'),
+                'smtp_user': request.form.get('smtp_user', ''),
+                'smtp_password': request.form.get('smtp_password', ''),
+                'smtp_from': request.form.get('smtp_from', ''),
+                'email_notifications': request.form.get('email_notifications', ''),
+                'email_ddfpt_notif': request.form.get('email_ddfpt_notif', ''),
+                'notif_client_cree':     '1' if request.form.get('notif_client_cree') else '0',
+                'notif_client_en_cours': '1' if request.form.get('notif_client_en_cours') else '0',
+                'notif_client_cloture':  '1' if request.form.get('notif_client_cloture') else '0',
+                'notif_client_facture':  '1' if request.form.get('notif_client_facture') else '0',
+            }
+            for key, value in smtp_settings.items():
+                param = Parametre.query.filter_by(cle=key).first()
+                if param:
+                    param.valeur = value
+                else:
+                    param = Parametre(cle=key, valeur=value)
+                    db.session.add(param)
+            db.session.commit()
+            flash('Configuration email enregistrée', 'success')
+            return redirect(url_for('settings.admin'))
+
         # Save etablissement info
         if action == 'save_etablissement':
             for key in ['etab_nom', 'etab_adresse', 'etab_tel', 'etab_email', 'etab_siren']:
@@ -612,6 +673,22 @@ def admin():
                     db.session.commit()
                     flash('Utilisateur créé: ' + login, 'success')
         
+        elif action == 'edit_user':
+            user = User.query.get(request.form.get('id'))
+            if user:
+                user.nom = request.form.get('nom')
+                user.prenom = request.form.get('prenom')
+                user.email = request.form.get('email') or None
+                user.login = request.form.get('login')
+                user.role = request.form.get('role')
+                classe_id = request.form.get('classe_id')
+                user.classe_id = int(classe_id) if classe_id else None
+                db.session.commit()
+                Log.log(current_user, 'edit_user', f'Utilisateur modifié: {user.prenom} {user.nom} ({user.role})', 'User', user.id)
+                db.session.commit()
+                flash('Utilisateur modifié', 'success')
+            return redirect(url_for('settings.admin') + '#utilisateurs')
+
         elif action == 'save_permissions':
             new_perms = {}
             for role in ['ddfpt', 'magasinier', 'enseignant', 'eleve']:
@@ -734,10 +811,11 @@ def admin():
     ordres = OrdreReparation.query.all()
     
     smtp_config = {}
-    for key in ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from']:
+    for key in ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from', 'email_notifications', 'email_ddfpt_notif',
+                'notif_client_cree', 'notif_client_en_cours', 'notif_client_cloture', 'notif_client_facture']:
         param = Parametre.query.filter_by(cle=key).first()
         smtp_config[key] = param.valeur if param else ''
-    
+
     security_config = {
         'max_login_attempts': Parametre.get('max_login_attempts', '3'),
         'lockout_duration': Parametre.get('lockout_duration', '15')

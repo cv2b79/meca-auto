@@ -116,7 +116,7 @@ class Vehicule(db.Model):
     modele = db.Column(db.String(50))
     annee = db.Column(db.Integer)
     vin = db.Column(db.String(17))
-    couleur = db.Column(db.String(30))
+    energie = db.Column(db.String(20))
     kilometrage = db.Column(db.Integer)
     proprietaire_id = db.Column(db.Integer, db.ForeignKey('clients.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -35,7 +35,7 @@ def view(id):
 def create(or_id):
     if not current_user.can_facturer():
         flash('Accès refusé', 'error')
-        return redirect(url_for('ordres.list'))
+        return redirect(url_for('ordres.liste'))
 
     or_obj = OrdreReparation.query.get_or_404(or_id)
 
@@ -96,6 +96,22 @@ def create(or_id):
         db.session.add(facture)
         db.session.commit()
         Log.log(current_user, 'create_facture', f'Facture {facture.numero} créée - OR {or_obj.numero}', 'Facture', facture.id)
+
+        # Notification client en arrière-plan
+        import threading
+        from flask import current_app
+        app = current_app._get_current_object()
+        facture_id = facture.id
+        def _send_facture_notif():
+            with app.app_context():
+                from app.models import Facture, OrdreReparation
+                from app.routes.ordres import send_client_email
+                _facture = Facture.query.get(facture_id)
+                if _facture:
+                    _or = _facture.ordre
+                    _client = _or.client or (_or.vehicule.proprietaire if _or.vehicule else None)
+                    send_client_email(_or, _client, _or.vehicule, 'facture', facture=_facture)
+        threading.Thread(target=_send_facture_notif, daemon=True).start()
 
         flash(f'Facture {facture.numero} créée', 'success')
         return redirect(url_for('factures.view', id=facture.id))

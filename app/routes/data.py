@@ -59,9 +59,9 @@ def export_csv(type):
         filename = f'clients_{datetime.now().strftime("%Y%m%d")}.csv'
     
     elif type == 'vehicules':
-        writer.writerow(['ID', 'Immatriculation', 'Marque', 'Modèle', 'Année', 'VIN', 'Énergie'])
+        writer.writerow(['ID', 'Immatriculation', 'Marque', 'Modèle', 'Année', 'VIN', 'Énergie', 'Kilométrage'])
         for v in Vehicule.query.all():
-            writer.writerow([v.id, v.immatriculation, v.marque, v.modele, v.annee or '', v.vin or '', v.energie or ''])
+            writer.writerow([v.id, v.immatriculation, v.marque, v.modele, v.annee or '', v.vin or '', v.energie or '', v.kilometrage or ''])
         filename = f'vehicules_{datetime.now().strftime("%Y%m%d")}.csv'
     
     elif type == 'ordres':
@@ -117,6 +117,7 @@ def import_csv():
                     vehicule.annee = int(row[4]) if len(row) > 4 and row[4].isdigit() else None
                     vehicule.vin = row[5] if len(row) > 5 else None
                     vehicule.energie = row[6] if len(row) > 6 else None
+                    vehicule.kilometrage = int(row[7]) if len(row) > 7 and row[7].isdigit() else None
                     db.session.add(vehicule)
                     count += 1
         

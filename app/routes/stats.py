@@ -124,7 +124,7 @@ def export_interventions():
             i.created_at.strftime('%d/%m/%Y') if i.created_at else '',
             i.ordre.numero if i.ordre else '',
             f"{i.eleve.prenom} {i.eleve.nom}" if i.eleve else '',
-            f"{i.ordre.vehicule.immatriculation}" if i.orde and i.orde.vehicule else '',
+            f"{i.ordre.vehicule.immatriculation}" if i.ordre and i.ordre.vehicule else '',
             i.description or '',
             str(i.heures) if i.heures else '0',
             i.fourniture.nom if i.fourniture else '',

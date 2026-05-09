@@ -107,7 +107,7 @@
     </div>
     <div class="nav">
         <a href="{{ url_for('main.index') }}" {% if request.endpoint=='main.index' %}class="active"{% endif %}>Tableau de bord</a>
-        <a href="{{ url_for('ordres.list') }}" {% if request.endpoint and 'ordres' in request.endpoint %}class="active"{% endif %}>Ordres de réparation</a>
+        <a href="{{ url_for('ordres.liste') }}" {% if request.endpoint and 'ordres' in request.endpoint %}class="active"{% endif %}>Ordres de réparation</a>
         {% if current_user.can_manage_clients() %}
         <a href="{{ url_for('clients.list') }}" {% if request.endpoint and 'clients' in request.endpoint %}class="active"{% endif %}>Clients</a>
         {% endif %}
@@ -128,6 +128,9 @@
         {% endif %}
         {% if current_user.role == 'ddfpt' %}
         <a href="{{ url_for('settings.admin', tab='users') }}" {% if request.endpoint == 'settings.admin' %}class="active"{% endif %}>Admin</a>
+        {% endif %}
+        {% if current_user.role == 'magasinier' %}
+        <a href="{{ url_for('settings.fournitures') }}" {% if request.endpoint == 'settings.fournitures' %}class="active"{% endif %}>🧴 Fournitures</a>
         {% endif %}
         {% if current_user.role == 'enseignant' %}
         <a href="{{ url_for('settings.checklist') }}" {% if request.endpoint == 'settings.checklist' %}class="active"{% endif %}>Checklist</a>

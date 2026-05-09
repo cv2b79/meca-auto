@@ -57,6 +57,8 @@ def search():
                 'marque': vehicule.marque,
                 'modele': vehicule.modele,
                 'annee': vehicule.annee,
+                'vin': vehicule.vin or '',
+                'energie': vehicule.energie or '',
                 'proprietaire': {
                     'id': vehicule.proprietaire.id,
                     'nom': vehicule.proprietaire.nom,
@@ -100,7 +102,7 @@ def new():
             modele=request.form.get('modele'),
             annee=request.form.get('annee'),
             vin=request.form.get('vin'),
-            couleur=request.form.get('couleur'),
+            energie=request.form.get('energie'),
             kilometrage=request.form.get('kilometrage'),
             proprietaire_id=proprietaire_id
         )
@@ -145,7 +147,7 @@ def edit(id):
         vehicule.modele = request.form.get('modele')
         vehicule.annee = request.form.get('annee')
         vehicule.vin = request.form.get('vin')
-        vehicule.couleur = request.form.get('couleur')
+        vehicule.energie = request.form.get('energie')
         vehicule.kilometrage = request.form.get('kilometrage')
 
         new_proprio_id = request.form.get('proprietaire_id')
