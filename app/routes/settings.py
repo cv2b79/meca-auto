@@ -6,6 +6,45 @@ from app.models import Forfait, RecupSurcharge, Consumable, Parametre, Enseignan
 
 settings_bp = Blueprint('settings', __name__)
 
+
+def _cascade_delete_user(user):
+    """
+    Supprime un utilisateur en nettoyant toutes les FK PostgreSQL d'abord.
+    - Nullifie eleve_id / created_by dans les OR
+    - Supprime les interventions élève de cet utilisateur
+    - Supprime les logs de cet utilisateur
+    - Nullifie les autres références (controles, checklist, rdv)
+    """
+    from app.models import EleveIntervention, ControleVisuel, ChecklistVerification, RendezVous
+    uid = user.id
+
+    # 1. Interventions élève → suppression (eleve_id NOT NULL)
+    EleveIntervention.query.filter_by(eleve_id=uid).delete()
+
+    # 2. OR : nullifier eleve_id et created_by
+    OrdreReparation.query.filter_by(eleve_id=uid).update({'eleve_id': None, 'eleve_nom': None})
+    OrdreReparation.query.filter_by(created_by=uid).update({'created_by': None})
+
+    # 3. Logs → suppression (user_id NOT NULL)
+    Log.query.filter_by(user_id=uid).delete()
+
+    # 4. Autres tables nullable
+    try:
+        ControleVisuel.query.filter_by(created_by=uid).update({'created_by': None})
+    except Exception:
+        pass
+    try:
+        ChecklistVerification.query.filter_by(verified_by=uid).update({'verified_by': None})
+    except Exception:
+        pass
+    try:
+        RendezVous.query.filter_by(created_by=uid).update({'created_by': None})
+    except Exception:
+        pass
+
+    db.session.delete(user)
+    db.session.commit()
+
 @settings_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -81,10 +120,11 @@ def index():
             user = User.query.get(request.form.get('id'))
             if user and user.id != current_user.id:
                 user_name = f"{user.prenom} {user.nom}"
-                db.session.delete(user)
-                Log.log(current_user, 'delete_user', f'Utilisateur supprimé: {user_name}', 'User', user.id)
-                flash('Utilisateur supprimé', 'success')
-        
+                user_id_log = user.id
+                _cascade_delete_user(user)
+                Log.log(current_user, 'delete_user', f'Utilisateur supprimé: {user_name}', 'User', user_id_log)
+                flash(f'Utilisateur « {user_name} » supprimé', 'success')
+
         # === ENSEIGNANTS ===
         elif action == 'add_enseignant':
             nom = request.form.get('nom')
@@ -715,9 +755,11 @@ def admin():
         elif action == 'delete_user':
             user = User.query.get(request.form.get('id'))
             if user and user.id != current_user.id:
-                db.session.delete(user)
-                db.session.commit()
-                flash('Utilisateur supprimé', 'success')
+                user_name = f"{user.prenom} {user.nom}"
+                user_id_log = user.id
+                _cascade_delete_user(user)
+                Log.log(current_user, 'delete_user', f'Utilisateur supprimé: {user_name}', 'User', user_id_log)
+                flash(f'Utilisateur « {user_name} » supprimé', 'success')
         
         elif action == 'edit_fourniture':
             f = Fourniture.query.get(request.form.get('id'))
