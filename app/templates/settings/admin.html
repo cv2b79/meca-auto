@@ -642,9 +642,9 @@ function hideEditUser() { document.getElementById('edit_user_modal').style.displ
         <div style="color:#666; font-size:.9rem;">{{ backup_last_msg or 'Aucune sauvegarde effectuée' }}</div>
       </div>
       <div style="display:flex; gap:.75rem; flex-wrap:wrap;">
-        <form method="POST" action="{{ url_for('settings.backup_run') }}" style="display:inline;">
-          <button type="submit" class="btn btn-success"
-                  onclick="this.textContent='⏳ En cours...'; this.disabled=true;">
+        <form method="POST" action="{{ url_for('settings.backup_run') }}" style="display:inline;"
+              onsubmit="var b=this.querySelector('button'); b.textContent='⏳ En cours...'; setTimeout(function(){ b.disabled=true; }, 200);">
+          <button type="submit" class="btn btn-success">
             ▶️ Lancer une sauvegarde
           </button>
         </form>
