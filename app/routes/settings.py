@@ -419,6 +419,89 @@ def eleves():
                 Log.log(current_user, 'delete_eleve', f'Élève supprimé : {nom_eleve}', 'User', uid)
                 flash(f'Élève « {nom_eleve} » supprimé', 'success')
 
+        elif action == 'import_csv':
+            import csv, io
+            file = request.files.get('file')
+            if not file or file.filename == '':
+                flash('Aucun fichier sélectionné', 'error')
+                return redirect(url_for('settings.eleves'))
+            if not file.filename.lower().endswith('.csv'):
+                flash('Le fichier doit être au format CSV', 'error')
+                return redirect(url_for('settings.eleves'))
+
+            content = file.read().decode('utf-8-sig').splitlines()  # utf-8-sig gère le BOM
+            if not content:
+                flash('Fichier vide', 'error')
+                return redirect(url_for('settings.eleves'))
+
+            # Détection automatique du séparateur
+            first_line = content[0]
+            delimiter = ';' if first_line.count(';') >= first_line.count(',') else ','
+            reader = csv.DictReader(content, delimiter=delimiter)
+
+            count = 0
+            skipped = 0
+            errors = []
+
+            for i, row in enumerate(reader, 1):
+                try:
+                    nom       = (row.get('nom') or row.get('Nom') or row.get('NOM') or '').strip()
+                    prenom    = (row.get('prénom') or row.get('prenom') or row.get('Prénom')
+                                 or row.get('Prenom') or row.get('PRÉNOM') or '').strip()
+                    ddn       = (row.get('date de naissance') or row.get('ddn') or row.get('DDN')
+                                 or row.get('Date de naissance') or '').strip()
+                    classe_nom = (row.get('classe') or row.get('Classe') or row.get('CLASSE') or '').strip()
+                    email     = (row.get('adresse e-mail') or row.get('adresse email')
+                                 or row.get('email') or row.get('Email') or '').strip()
+
+                    if not nom or not prenom:
+                        errors.append(f"Ligne {i} : nom ou prénom manquant")
+                        continue
+
+                    # Classe : créer si inexistante
+                    classe_id = None
+                    if classe_nom:
+                        cls = Classe.query.filter_by(nom=classe_nom).first()
+                        if not cls:
+                            cls = Classe(nom=classe_nom, actif=True)
+                            db.session.add(cls)
+                            db.session.flush()
+                        classe_id = cls.id
+
+                    # Login : 3 lettres prénom + 3 lettres nom
+                    base_login = (prenom.split()[0][:3] + nom[:3]).lower()
+                    base_login = ''.join(c for c in base_login if c.isalnum())
+                    login = base_login
+                    suffix = 1
+                    while User.query.filter_by(login=login).first():
+                        login = f"{base_login}{suffix}"
+                        suffix += 1
+
+                    # Mot de passe : DDN sans séparateurs, sinon login
+                    if ddn:
+                        pw = ddn.replace('-', '').replace('/', '').replace('.', '')
+                        password = pw if len(pw) == 8 else login
+                    else:
+                        password = login
+
+                    u = User(nom=nom, prenom=prenom, login=login,
+                             email=email or None, role='eleve',
+                             actif=True, classe_id=classe_id)
+                    u.set_password(password)
+                    db.session.add(u)
+                    count += 1
+
+                except Exception as e:
+                    errors.append(f"Ligne {i} : {str(e)}")
+
+            db.session.commit()
+            Log.log(current_user, 'import_eleves', f'{count} élève(s) importé(s) via CSV')
+
+            if count:
+                flash(f'✅ {count} élève(s) importé(s) avec succès', 'success')
+            if errors:
+                flash(f'⚠️ {len(errors)} ligne(s) ignorée(s) : {" | ".join(errors[:3])}{"..." if len(errors) > 3 else ""}', 'warning')
+
         return redirect(url_for('settings.eleves'))
 
     classes = Classe.query.order_by(Classe.nom).all()

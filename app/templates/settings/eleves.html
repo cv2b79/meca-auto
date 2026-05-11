@@ -71,6 +71,43 @@
 
   <!-- ══════════════════ ÉLÈVES ══════════════════ -->
   <div>
+
+    <!-- Import CSV -->
+    <div class="card" style="margin-bottom:1rem; border-left:4px solid #2E6DA4;">
+      <h3 style="margin-top:0;">📂 Import CSV (Pronote)</h3>
+      <form method="POST" enctype="multipart/form-data" id="importForm">
+        <input type="hidden" name="action" value="import_csv">
+        <div id="dropZone" style="border:2px dashed #aaa; border-radius:8px; padding:1.5rem; text-align:center; cursor:pointer; transition:border-color .2s; background:#fafafa;"
+             onclick="document.getElementById('csvFile').click()"
+             ondragover="event.preventDefault(); this.style.borderColor='#2E6DA4';"
+             ondragleave="this.style.borderColor='#aaa';"
+             ondrop="handleDrop(event)">
+          <div style="font-size:2rem; margin-bottom:.5rem;">📄</div>
+          <div id="dropLabel">Glisser-déposer un fichier CSV ici<br><small style="color:#999;">ou cliquer pour choisir</small></div>
+          <input type="file" name="file" id="csvFile" accept=".csv" style="display:none;" onchange="handleFile(this)">
+        </div>
+        <div style="margin-top:.75rem; display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;">
+          <button type="submit" class="btn" id="importBtn" disabled>⬆️ Importer</button>
+          <span style="color:#666; font-size:.85rem;">
+            Colonnes attendues : <code>nom</code>, <code>prénom</code>, <code>classe</code>, <code>date de naissance</code> (optionnel), <code>adresse e-mail</code> (optionnel)
+          </span>
+        </div>
+      </form>
+      <details style="margin-top:.75rem;">
+        <summary style="cursor:pointer; color:#2E6DA4; font-size:.85rem;">ℹ️ Format CSV attendu</summary>
+        <div style="background:#f5f8fc; padding:.75rem; border-radius:4px; margin-top:.5rem; font-size:.85rem;">
+          <strong>Séparateur :</strong> <code>;</code> ou <code>,</code> (détecté automatiquement)<br>
+          <strong>Encodage :</strong> UTF-8 (export Pronote par défaut)<br>
+          <strong>Login généré :</strong> 3 lettres prénom + 3 lettres nom (ex: <code>mar.dup</code> → <code>mardup</code>)<br>
+          <strong>Mot de passe :</strong> date de naissance sans séparateurs (ex: <code>15032008</code>), sinon login<br>
+          <br>
+          <strong>Exemple :</strong><br>
+          <code>nom;prénom;classe;date de naissance;adresse e-mail</code><br>
+          <code>DUPONT;Martin;1MAVA;15/03/2008;martin@lycee.fr</code>
+        </div>
+      </details>
+    </div>
+
     <div class="card">
       <h3 style="margin-top:0;">Ajouter un élève</h3>
       <form method="POST">
@@ -244,6 +281,27 @@
 </div>
 
 <script>
+// ── Import CSV ──────────────────────────────────────────────
+function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    document.getElementById('dropLabel').innerHTML =
+        `<strong style="color:#2E6DA4;">📄 ${file.name}</strong><br><small style="color:#999;">${(file.size/1024).toFixed(1)} Ko</small>`;
+    document.getElementById('dropZone').style.borderColor = '#2E6DA4';
+    document.getElementById('importBtn').disabled = false;
+}
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('dropZone').style.borderColor = '#aaa';
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('csvFile').files = dt.files;
+    handleFile(document.getElementById('csvFile'));
+}
+
+// ── Édition élève ───────────────────────────────────────────
 function openEditModal(id, nom, prenom, login, email, classeId) {
     document.getElementById('edit_id').value = id;
     document.getElementById('edit_nom').value = nom;
