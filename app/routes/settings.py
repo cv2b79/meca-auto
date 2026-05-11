@@ -45,23 +45,82 @@ def _cascade_delete_user(user):
     db.session.delete(user)
     db.session.commit()
 
+# ── Chiffrement Fernet des credentials sensibles ──────────────────────────────
+
+def _get_fernet():
+    """Retourne une instance Fernet dérivée de la SECRET_KEY de l'application."""
+    import base64, hashlib
+    from cryptography.fernet import Fernet
+    from flask import current_app
+    secret = current_app.config.get('SECRET_KEY', '')
+    if not secret:
+        raise RuntimeError('SECRET_KEY non définie dans la configuration')
+    # SHA-256(SECRET_KEY) → 32 octets → URL-safe base64 → clé Fernet valide
+    raw_key = hashlib.sha256(secret.encode('utf-8')).digest()
+    fernet_key = base64.urlsafe_b64encode(raw_key)
+    return Fernet(fernet_key)
+
+
+def _encrypt_credential(value: str) -> str:
+    """Chiffre une valeur sensible (mot de passe, identifiant).
+    Retourne la valeur chiffrée préfixée 'enc:' pour distinguer les valeurs en clair."""
+    if not value:
+        return ''
+    try:
+        token = _get_fernet().encrypt(value.encode('utf-8')).decode('utf-8')
+        return f'enc:{token}'
+    except Exception as e:
+        import sys
+        print(f"[encrypt] Échec chiffrement : {e}", file=sys.stderr)
+        return ''
+
+
+def _decrypt_credential(value: str) -> str:
+    """Déchiffre une valeur chiffrée avec _encrypt_credential().
+    Retourne '' si la valeur est invalide ou si la clé a changé."""
+    if not value:
+        return ''
+    if not value.startswith('enc:'):
+        # Ancienne valeur en clair ou non chiffrée → retourne vide par sécurité
+        return ''
+    try:
+        token = value[4:].encode('utf-8')  # Supprime le préfixe 'enc:'
+        return _get_fernet().decrypt(token).decode('utf-8')
+    except Exception:
+        return ''  # Clé changée ou token corrompu → l'admin doit re-saisir
+
+
 def _write_backup_conf():
-    """Écrit scripts/backup.conf depuis les paramètres NAS stockés en BDD."""
-    import os
+    """Écrit scripts/backup.conf (chmod 600) avec les credentials déchiffrés.
+    Ce fichier est lu par bash ; il doit contenir les valeurs en clair."""
+    import os, stat
     app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     conf_path = os.path.join(app_dir, 'scripts', 'backup.conf')
+
+    # Déchiffrer les credentials sensibles depuis la BDD
+    nas_user = _decrypt_credential(Parametre.get('backup_nas_user', ''))
+    nas_pass = _decrypt_credential(Parametre.get('backup_nas_pass', ''))
+
     lines = [
-        '# backup.conf — généré automatiquement par Meca Auto — ne pas éditer à la main\n',
+        '# backup.conf — généré automatiquement par Meca Auto — NE PAS ÉDITER À LA MAIN\n',
+        '# Ce fichier contient des credentials en clair : accès réservé au propriétaire du service.\n',
         f'BACKUP_NAS_IP="{Parametre.get("backup_nas_ip", "")}"\n',
         f'BACKUP_NAS_SHARE="{Parametre.get("backup_nas_share", "")}"\n',
-        f'BACKUP_NAS_USER="{Parametre.get("backup_nas_user", "")}"\n',
-        f'BACKUP_NAS_PASS="{Parametre.get("backup_nas_pass", "")}"\n',
+        f'BACKUP_NAS_USER="{nas_user}"\n',
+        f'BACKUP_NAS_PASS="{nas_pass}"\n',
         f'BACKUP_NAS_FOLDER="{Parametre.get("backup_nas_folder", "meca-auto")}"\n',
         f'RETENTION_DAYS="{Parametre.get("backup_retention", "30")}"\n',
     ]
     try:
-        with open(conf_path, 'w') as f:
-            f.writelines(lines)
+        # Écriture avec umask restrictif : le fichier n'est lisible que par le propriétaire
+        old_umask = os.umask(0o177)  # Résultat : permissions 600
+        try:
+            with open(conf_path, 'w') as f:
+                f.writelines(lines)
+        finally:
+            os.umask(old_umask)
+        # Forcer les permissions 600 même si le fichier existait déjà
+        os.chmod(conf_path, stat.S_IRUSR | stat.S_IWUSR)
     except Exception as e:
         import sys
         print(f"[backup_conf] Impossible d'écrire {conf_path} : {e}", file=sys.stderr)
@@ -1148,17 +1207,24 @@ def admin():
                 flash(f'Facturation {"désactivée" if or_obj.pas_de_facturation else "activée"}', 'success')
 
         elif action == 'save_backup_config':
-            fields = ['backup_nas_ip', 'backup_nas_share', 'backup_nas_user',
-                      'backup_nas_folder', 'backup_retention']
-            for key in fields:
-                val = request.form.get(key, '').strip()
-                Parametre.set(key, val)
-            # Le mot de passe n'est mis à jour que si renseigné
+            # Champs non sensibles → stockage en clair
+            for key in ['backup_nas_ip', 'backup_nas_share', 'backup_nas_folder', 'backup_retention']:
+                Parametre.set(key, request.form.get(key, '').strip())
+
+            # Identifiant NAS → chiffré en BDD
+            new_user = request.form.get('backup_nas_user', '').strip()
+            if new_user:
+                Parametre.set('backup_nas_user', _encrypt_credential(new_user))
+
+            # Mot de passe NAS → chiffré en BDD, mis à jour seulement si saisi
             new_pass = request.form.get('backup_nas_pass', '').strip()
             if new_pass:
-                Parametre.set('backup_nas_pass', new_pass)
-            # Écrire le fichier de config pour le script bash
+                Parametre.set('backup_nas_pass', _encrypt_credential(new_pass))
+
+            db.session.commit()
+            # Régénère backup.conf (chmod 600) avec les valeurs déchiffrées pour bash
             _write_backup_conf()
+            Log.log(current_user, 'save_backup_config', 'Configuration NAS sauvegardée')
             flash('Configuration de sauvegarde enregistrée', 'success')
             return redirect(url_for('settings.admin') + '#sauvegardes')
 
@@ -1202,14 +1268,16 @@ def admin():
     # Fournitures data
     fournitures = Fourniture.query.order_by(Fourniture.nom).all()
     
-    # Données sauvegardes
+    # Données sauvegardes — l'identifiant est déchiffré pour l'affichage,
+    # le mot de passe N'EST JAMAIS renvoyé vers le navigateur.
     backup_config = {
         'backup_nas_ip':     Parametre.get('backup_nas_ip', ''),
         'backup_nas_share':  Parametre.get('backup_nas_share', ''),
-        'backup_nas_user':   Parametre.get('backup_nas_user', ''),
-        'backup_nas_pass':   Parametre.get('backup_nas_pass', ''),
+        'backup_nas_user':   _decrypt_credential(Parametre.get('backup_nas_user', '')),
+        'backup_nas_pass':   '',   # Jamais renvoyé côté client
         'backup_nas_folder': Parametre.get('backup_nas_folder', 'meca-auto'),
         'backup_retention':  Parametre.get('backup_retention', '30'),
+        'has_password':      bool(Parametre.get('backup_nas_pass', '')),  # Indicateur "déjà configuré"
     }
     backup_status, backup_last_date, backup_last_msg = _read_backup_status()
     backups_list = _list_backups()

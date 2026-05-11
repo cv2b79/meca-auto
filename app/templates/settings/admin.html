@@ -679,7 +679,8 @@ function hideEditUser() { document.getElementById('edit_user_modal').style.displ
         <div>
           <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Mot de passe NAS</label>
           <input type="password" name="backup_nas_pass"
-                 placeholder="Laisser vide pour ne pas changer" style="width:100%;">
+                 placeholder="{% if backup_config.has_password %}●●●●●● (configuré — laisser vide pour conserver){% else %}Mot de passe NAS{% endif %}"
+                 style="width:100%;" autocomplete="new-password">
         </div>
         <div>
           <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Dossier sur le NAS</label>
