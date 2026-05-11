@@ -147,14 +147,14 @@ if [ -n "${BACKUP_NAS_IP:-}" ] && [ -n "${BACKUP_NAS_SHARE:-}" ]; then
     log "▶ Copie NAS → //${BACKUP_NAS_IP}/${BACKUP_NAS_SHARE}/${BACKUP_NAS_FOLDER:-meca-auto}"
     mkdir -p "$NAS_MOUNT"
 
-    # Options de montage SMB
-    MOUNT_OPTS="rw,uid=$(id -u),gid=$(id -g),iocharset=utf8,vers=2.0"
-    if [ -n "${BACKUP_NAS_USER:-}" ]; then
-        MOUNT_OPTS="${MOUNT_OPTS},username=${BACKUP_NAS_USER}"
-    fi
-    if [ -n "${BACKUP_NAS_PASS:-}" ]; then
-        MOUNT_OPTS="${MOUNT_OPTS},password=${BACKUP_NAS_PASS}"
-    fi
+    # Fichier credentials temporaire (évite le mot de passe dans la liste des processus)
+    CREDS_TMP=$(mktemp)
+    chmod 600 "$CREDS_TMP"
+    echo "username=${BACKUP_NAS_USER:-}" >> "$CREDS_TMP"
+    echo "password=${BACKUP_NAS_PASS:-}" >> "$CREDS_TMP"
+
+    # Options SMB — vers=3.0,sec=ntlmssp requis pour Synology DSM 7
+    MOUNT_OPTS="credentials=${CREDS_TMP},vers=3.0,sec=ntlmssp,uid=$(id -u),gid=$(id -g),iocharset=utf8"
 
     if mount -t cifs "//${BACKUP_NAS_IP}/${BACKUP_NAS_SHARE}" "$NAS_MOUNT" \
             -o "${MOUNT_OPTS}" 2>/dev/null; then
@@ -165,8 +165,10 @@ if [ -n "${BACKUP_NAS_IP:-}" ] && [ -n "${BACKUP_NAS_SHARE:-}" ]; then
         # Rotation sur le NAS aussi
         find "$NAS_DEST" -name "mecaauto_*.sql.gz" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
         umount "$NAS_MOUNT" 2>/dev/null || true
+        rm -f "$CREDS_TMP"
         log "   ✅ Copie NAS réussie → ${NAS_DEST}"
     else
+        rm -f "$CREDS_TMP"
         log "   ⚠️  Impossible de monter le NAS (vérifier IP/partage/credentials)"
     fi
 else
