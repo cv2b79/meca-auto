@@ -1493,13 +1493,16 @@ def backup_run():
         return redirect(url_for('settings.admin') + '#sauvegardes')
     try:
         subprocess.Popen(
-            ['/bin/bash', script],
+            ['sudo', '/bin/bash', script],
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            close_fds=True
+            close_fds=True,
+            start_new_session=True   # Détache complètement du process Flask
         )
         Log.log(current_user, 'backup_run', 'Sauvegarde manuelle lancée')
-        flash('✅ Sauvegarde lancée en arrière-plan — actualisez dans quelques secondes pour voir le résultat.', 'success')
+        db.session.commit()
+        flash('✅ Sauvegarde lancée — actualisez dans quelques secondes.', 'success')
     except Exception as e:
         flash(f'Erreur lors du lancement : {e}', 'error')
     return redirect(url_for('settings.admin') + '#sauvegardes')
