@@ -1,195 +1,287 @@
-# Déploiement MEC AUTO sur Raspberry Pi 4
+# Déploiement MECA AUTO sur Raspberry Pi 4
 
-## Matériel
-- Raspberry Pi 4 (2Go ou 4Go RAM recommandé)
-- Carte microSD 32Go+ ( Classe 10 )
-- Alimentation USB-C 5V 3A
+## Prérequis matériel
 
-## Système d'exploitation
-
-### Option A: Raspberry Pi OS Lite (recommandé - sans interface graphique)
-- Télécharger: https://www.raspberrypi.com/software/operating-systems/
-- Flasher avec Raspberry Pi Imager
-- Configurer SSH et WiFi à l'avance (via Raspberry Pi Imager)
-
-### Option B: Raspberry Pi OS Desktop
-- Même téléchargement, version avec bureau
+- Raspberry Pi 4 (2 Go RAM minimum, 4 Go recommandé)
+- Carte microSD 32 Go+ Classe 10 (ou SSD USB)
+- Alimentation USB-C 5V/3A
+- Accès réseau local (câble Ethernet recommandé)
+- NAS Synology sur le réseau local (pour les sauvegardes)
 
 ---
 
-## Installation sur le Raspberry Pi
+## 1. Système d'exploitation
 
-### 1. Mise à jour du système
+Installer **Raspberry Pi OS Lite 64-bit** (Bookworm) via Raspberry Pi Imager.
+
+Dans les options avancées de l'Imager :
+- Activer SSH
+- Définir un nom d'utilisateur (ex : `christophe`) et un mot de passe fort
+- Configurer le WiFi si nécessaire
+
+---
+
+## 2. Mise à jour et paquets système
+
 ```bash
-sudo apt update
-sudo apt upgrade -y
-sudo reboot
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y git python3 python3-pip python3-venv \
+    postgresql postgresql-contrib \
+    libcairo2-dev pkg-config libffi-dev python3-dev \
+    cifs-utils curl
 ```
 
-### 2. Installation de PostgreSQL
+---
+
+## 3. PostgreSQL
+
 ```bash
-sudo apt install postgresql postgresql-contrib -y
 sudo systemctl enable postgresql
 sudo systemctl start postgresql
-```
 
-### 3. Création de la base de données
-```bash
-sudo -u postgres psql
-```
-
-Dans PostgreSQL:
-```sql
-CREATE USER mecauser WITH PASSWORD 'MecaAuto2024!';
+sudo -u postgres psql << 'EOF'
+CREATE USER mecauser WITH PASSWORD 'CHANGER_CE_MOT_DE_PASSE';
 CREATE DATABASE mecaauto OWNER mecauser;
 GRANT ALL PRIVILEGES ON DATABASE mecaauto TO mecauser;
 \q
+EOF
 ```
 
-### 4. Installation de Python et dépendances
+---
+
+## 4. Récupération du projet
+
 ```bash
-sudo apt install python3 python3-pip python3-venv git -y
+sudo mkdir -p /opt/meca-auto
+sudo chown christophe:christophe /opt/meca-auto
+git clone https://github.com/cv2b79/meca-auto.git /opt/meca-auto
+cd /opt/meca-auto
 ```
 
-### 5. Récupération du projet
-```bash
-cd /opt
-sudo git clone https://github.com/ton-compte/meca-auto.git
-cd meca-auto
-```
+---
 
-### 6. Création de l'environnement virtuel
+## 5. Environnement Python
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 7. Configuration des variables d'environnement
-Créer un fichier `.env`:
+---
+
+## 6. Configuration `.env`
+
 ```bash
-cp .env.example .env
+cp .env.example .env   # ou créer manuellement
 nano .env
 ```
 
-Contenu:
-```
-DATABASE_URL=postgresql://mecauser:MecaAuto2024!@localhost/mecaauto
-SECRET_KEY=change-this-secret-key-in-production
+Contenu minimal :
+```env
+DATABASE_URL=postgresql://mecauser:CHANGER_CE_MOT_DE_PASSE@localhost/mecaauto
+SECRET_KEY=generer-une-cle-aleatoire-longue-et-complexe
+FLASK_ENV=production
+
+# Email (optionnel)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=ton-email@gmail.com
-SMTP_PASSWORD=ton-app-password
+SMTP_USER=votre-email@gmail.com
+SMTP_PASSWORD=votre-app-password
 ```
 
-### 8. Initialisation de la base
+> **Important** : `SECRET_KEY` est utilisée pour chiffrer les credentials NAS. Choisir une valeur longue et aléatoire. Ne jamais la changer une fois en production (sinon les credentials chiffrés deviennent illisibles).
+
+Générer une clé aléatoire :
 ```bash
-python run.py
+python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
-Cela créera les tables et l'utilisateur admin (admin/admin123)
 
-### 9. Installation de Gunicorn et Nginx
+---
 
-**Gunicorn** (serveur Python):
+## 7. Initialisation de la base de données
+
 ```bash
-pip install gunicorn
+source venv/bin/activate
+python migrate_db.py
+python run.py  # Lance une fois pour créer les tables, Ctrl+C ensuite
 ```
 
-**Nginx** (serveur web):
+---
+
+## 8. Service systemd (Gunicorn)
+
 ```bash
-sudo apt install nginx -y
+sudo nano /etc/systemd/system/mecaauto.service
 ```
 
-### 10. Configuration Nginx
-
-Créer `/etc/nginx/sites-available/mecaauto`:
-```nginx
-server {
-    listen 80;
-    server_name IP_DU_RPI ou nom-de-domaine;
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-Activer le site:
-```bash
-sudo ln -s /etc/nginx/sites-available/mecaauto /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### 11. Service systemd pour Gunicorn
-
-Créer `/etc/systemd/system/mecaauto.service`:
 ```ini
 [Unit]
 Description=MEC AUTO Flask App
 After=network.target
 
 [Service]
-User=pi
-Group=pi
+Type=simple
+User=christophe
+Group=christophe
 WorkingDirectory=/opt/meca-auto
 Environment="PATH=/opt/meca-auto/venv/bin"
-ExecStart=/opt/meca-auto/venv/bin/gunicorn --bind 127.0.0.1:8000 --workers 3 run:app
+Environment="HOME=/home/christophe"
+ExecStart=/opt/meca-auto/venv/bin/gunicorn -w 2 -b 0.0.0.0:5000 --timeout 120 "app:create_app()"
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Activer le service:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable mecaauto
 sudo systemctl start mecaauto
+sudo systemctl status mecaauto
 ```
 
 ---
 
-## Commandes utiles
+## 9. Watchdog (redémarrage automatique)
+
+```bash
+sudo nano /etc/systemd/system/mecaauto-watchdog.service
+```
+```ini
+[Unit]
+Description=MEC AUTO Watchdog
+After=mecaauto.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/meca-auto/scripts/healthcheck.sh
+```
+
+```bash
+sudo nano /etc/systemd/system/mecaauto-watchdog.timer
+```
+```ini
+[Unit]
+Description=MEC AUTO Watchdog — toutes les 5 minutes
+Requires=mecaauto.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now mecaauto-watchdog.timer
+```
+
+---
+
+## 10. Sauvegardes automatiques
+
+### Cron (2h du matin, tous les jours)
+```bash
+sudo crontab -e
+```
+Ajouter :
+```
+0 2 * * * /bin/bash /opt/meca-auto/scripts/backup.sh
+```
+
+### Configuration NAS
+Dans l'interface web : **Administration → 🗄️ Sauvegardes**
+
+Renseigner :
+- IP du NAS (ex : `192.168.1.3`)
+- Nom du partage SMB (ex : `Backupapps`)
+- Identifiant et mot de passe NAS
+- Dossier de destination (ex : `mecapro`)
+- Rétention en jours (défaut : 30)
+
+> Les credentials NAS sont chiffrés en base de données (Fernet/AES-128).  
+> Le fichier `scripts/backup.conf` (déchiffré, utilisé par bash) est en `chmod 600`.
+
+### Prérequis NAS Synology
+- SMB activé dans DSM → Panneau de configuration → Services de fichiers
+- L'utilisateur NAS doit avoir accès **Lecture/Écriture** au partage
+- Version SMB : 3.0 (DSM 7 par défaut)
+
+---
+
+## 11. HTTPS avec Nginx Proxy Manager
+
+Nginx Proxy Manager (NPM) doit tourner sur une machine du réseau (ex : autre RPi, NAS, VM).
+
+Dans NPM → **Proxy Hosts → Add Proxy Host** :
+- Domain : `votre-sous-domaine.duckdns.org`
+- Scheme : `http`
+- Forward Hostname : `192.168.1.XX` (IP du RPi)
+- Forward Port : `5000`
+- Onglet SSL → Request a new SSL Certificate (Let's Encrypt)
+
+> **Important** : le Scheme doit être `http` (NPM gère le SSL lui-même).
+
+---
+
+## 12. Sécurité SSH
+
+```bash
+# Désactiver la connexion root
+sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+
+# Limiter aux logins autorisés
+echo "AllowUsers christophe" | sudo tee -a /etc/ssh/sshd_config
+
+sudo systemctl restart ssh
+```
+
+Ne pas exposer le port 22 sur Internet — accès SSH uniquement depuis le réseau local.
+
+---
+
+## Commandes de maintenance
 
 | Action | Commande |
 |--------|----------|
-| Démarrer | `sudo systemctl start mecaauto` |
+| Démarrer le service | `sudo systemctl start mecaauto` |
 | Arrêter | `sudo systemctl stop mecaauto` |
 | Redémarrer | `sudo systemctl restart mecaauto` |
-| Logs | `sudo journalctl -u mecaauto -f` |
+| Logs en direct | `sudo journalctl -u mecaauto -f` |
 | Statut | `sudo systemctl status mecaauto` |
+| Lancer une sauvegarde | `sudo /bin/bash /opt/meca-auto/scripts/backup.sh` |
+| Voir les sauvegardes | `bash /opt/meca-auto/scripts/list_backups.sh` |
+| Log sauvegardes | `tail -50 /opt/meca-auto/backups/backup.log` |
+| Log watchdog | `tail -50 /opt/meca-auto/backups/watchdog.log` |
+| Restaurer une sauvegarde | `sudo bash /opt/meca-auto/scripts/restore.sh` |
+| Mettre à jour le code | `sudo -u christophe git -C /opt/meca-auto pull && sudo systemctl restart mecaauto` |
 
 ---
 
-## Sauvegarde
+## Structure du projet
 
-### Sauvegarde base de données
-```bash
-sudo -u postgres pg_dump mecaauto > backup_$(date +%Y%m%d).sql
 ```
-
-### Restaurer
-```bash
-sudo -u postgres psql mecaauto < backup_20240101.sql
+/opt/meca-auto/
+├── app/                    # Application Flask
+│   ├── routes/             # Blueprints (clients, véhicules, OR, settings…)
+│   ├── templates/          # Templates Jinja2
+│   ├── models.py           # Modèles SQLAlchemy
+│   └── __init__.py         # Factory Flask
+├── scripts/
+│   ├── backup.sh           # Sauvegarde PostgreSQL + NAS
+│   ├── restore.sh          # Restauration
+│   ├── healthcheck.sh      # Watchdog
+│   ├── list_backups.sh     # Liste des sauvegardes
+│   ├── notify_backup.py    # Notification email
+│   └── backup.conf         # Config NAS déchiffrée (chmod 600, non versionné)
+├── backups/                # Fichiers de sauvegarde locaux (non versionnés)
+├── venv/                   # Environnement Python (non versionné)
+├── .env                    # Variables d'environnement (non versionné)
+├── migrate_db.py           # Script de migration PostgreSQL
+├── requirements.txt        # Dépendances Python
+└── run.py                  # Point d'entrée
 ```
-
----
-
-## Pour aller plus loin
-
-- **Nom de domaine**: Acheter un nom de domaine et utiliser ddclient pour IP dynamique
-- **HTTPS**: Installer Certbot pour SSL gratuit
-- **Backup automatique**: Cron job quotidienne
-- **Monitoring**: Installer Cockpit pour interface web
-
----
-
-## Accès
-
-- URL: `http://IP_DU_RASPBERRYPI`
-- Admin: `admin` / `admin123` (à changer!)
