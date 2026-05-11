@@ -142,14 +142,17 @@ def _read_backup_status():
         last_msg = None
         for line in reversed(lines):
             m = re.match(r'\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] (.+)', line.strip())
-            if m:
-                last_date = m.group(1)
-                last_msg = m.group(2)
-                if '✅' in last_msg or 'réussie' in last_msg.lower():
-                    status = 'ok'
-                elif '❌' in last_msg or 'erreur' in last_msg.lower():
-                    status = 'error'
-                break
+            if not m:
+                continue  # Ignorer les lignes vides ou les séparateurs ━━━
+            last_date = m.group(1)
+            last_msg = m.group(2).strip()
+            if not last_msg or last_msg.startswith('━'):
+                continue  # Ignorer les séparateurs et lignes sans message
+            if '✅' in last_msg or 'réussie' in last_msg.lower():
+                status = 'ok'
+            elif '❌' in last_msg or 'erreur' in last_msg.lower():
+                status = 'error'
+            break
         return status, last_date, last_msg
     except Exception:
         return 'unknown', None, None
