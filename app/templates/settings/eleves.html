@@ -88,8 +88,11 @@
         </div>
         <div style="margin-top:.75rem; display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;">
           <button type="submit" class="btn" id="importBtn" disabled>⬆️ Importer</button>
+          <a href="{{ url_for('settings.eleves_modele_csv') }}" class="btn btn-secondary" style="text-decoration:none;">
+            ⬇️ Télécharger le modèle CSV
+          </a>
           <span style="color:#666; font-size:.85rem;">
-            Colonnes attendues : <code>nom</code>, <code>prénom</code>, <code>classe</code>, <code>date de naissance</code> (optionnel), <code>adresse e-mail</code> (optionnel)
+            Colonnes : <code>nom</code>, <code>prénom</code>, <code>classe</code>, <code>date de naissance</code>, <code>adresse e-mail</code>
           </span>
         </div>
       </form>

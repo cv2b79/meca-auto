@@ -310,6 +310,33 @@ def _fournitures_redirect():
     return redirect(url_for('settings.fournitures'))
 
 
+@settings_bp.route('/eleves/modele-csv')
+@login_required
+def eleves_modele_csv():
+    """Télécharge un fichier CSV modèle pour l'import des élèves."""
+    if not current_user.can_manage_eleves():
+        flash('Accès refusé', 'error')
+        return redirect(url_for('main.index'))
+    import csv, io
+    from flask import Response
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';')
+    # En-tête
+    writer.writerow(['nom', 'prénom', 'classe', 'date de naissance', 'adresse e-mail'])
+    # Exemples
+    writer.writerow(['DUPONT', 'Martin', '1MAVA', '15/03/2008', 'martin.dupont@lycee.fr'])
+    writer.writerow(['MARTIN', 'Sophie', '1MAVA', '22/07/2008', ''])
+    writer.writerow(['BERNARD', 'Lucas', '2MAVA', '05/11/2007', ''])
+    writer.writerow(['PETIT', 'Emma', '2MAVA', '30/01/2007', 'emma.petit@lycee.fr'])
+    # BOM UTF-8 pour compatibilité Excel/Pronote
+    csv_content = '﻿' + output.getvalue()
+    return Response(
+        csv_content,
+        mimetype='text/csv; charset=utf-8',
+        headers={'Content-Disposition': 'attachment; filename="modele_import_eleves.csv"'}
+    )
+
+
 @settings_bp.route('/eleves', methods=['GET', 'POST'])
 @login_required
 def eleves():
