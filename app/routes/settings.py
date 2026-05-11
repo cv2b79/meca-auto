@@ -1493,7 +1493,7 @@ def backup_run():
         return redirect(url_for('settings.admin') + '#sauvegardes')
     try:
         subprocess.Popen(
-            ['sudo', '/bin/bash', script],
+            ['/usr/bin/sudo', '/bin/bash', script],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
