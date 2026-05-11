@@ -790,18 +790,47 @@ def print_or(id):
     etab_nom = Parametre.get('etab_nom', 'LYCÉE PROFESSIONNEL')
     return render_template('ordres/print.html', or_obj=or_obj, interventions=interventions, etab_nom=etab_nom)
 
+def cascade_delete_or(or_obj):
+    """
+    Supprime un OR en gérant toutes les FK PostgreSQL.
+    - Facture      : supprimée si présente (admin seulement — à vérifier avant d'appeler)
+    - Interventions / états des lieux : cascade SQLAlchemy (delete-orphan)
+    - Contrôles visuels / checklist    : supprimés explicitement (pas de cascade déclarée)
+    """
+    from app.models import Facture, ChecklistVerification, ControleVisuel
+
+    # Facture liée (pas de cascade dans le modèle)
+    if or_obj.facture:
+        db.session.delete(or_obj.facture)
+
+    # Contrôles visuels (pas de cascade déclarée)
+    ControleVisuel.query.filter_by(or_id=or_obj.id).delete()
+
+    # Vérifications checklist
+    ChecklistVerification.query.filter_by(or_id=or_obj.id).delete()
+
+    # L'OR lui-même (interventions + états des lieux cascadent via SQLAlchemy)
+    db.session.delete(or_obj)
+    db.session.commit()
+
+
 @ordres_bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
 def delete(id):
     if not current_user.has_permission('delete_or'):
         flash('Permission refusée', 'error')
         return redirect(url_for('ordres.view', id=id))
-    
+
     or_obj = OrdreReparation.query.get_or_404(id)
     numero = or_obj.numero
-    db.session.delete(or_obj)
-    db.session.commit()
-    flash(f'OR {numero} supprimé', 'success')
+
+    # Facture liée : seul le DDFPT peut supprimer un OR facturé
+    if or_obj.facture and current_user.role != 'ddfpt':
+        flash(f'OR {numero} : une facture est liée. Seul l\'administrateur peut supprimer un OR facturé.', 'error')
+        return redirect(url_for('ordres.view', id=id))
+
+    cascade_delete_or(or_obj)
+    flash(f'OR {numero} supprimé{" (facture incluse)" if or_obj.facture else ""}', 'success')
     return redirect(url_for('ordres.liste'))
 
 @ordres_bp.route('/etat-lieu-form')

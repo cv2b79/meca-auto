@@ -835,8 +835,11 @@ def admin():
         elif action == 'delete_or':
             or_obj = OrdreReparation.query.get(request.form.get('id'))
             if or_obj:
-                db.session.delete(or_obj)
-                flash('Ordre de réparation supprimé', 'success')
+                from app.routes.ordres import cascade_delete_or
+                numero = or_obj.numero
+                had_facture = or_obj.facture is not None
+                cascade_delete_or(or_obj)
+                flash(f'OR {numero} supprimé{" (facture incluse)" if had_facture else ""}', 'success')
         
         elif action == 'toggle_facturation':
             or_obj = OrdreReparation.query.get(request.form.get('id'))
