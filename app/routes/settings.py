@@ -310,6 +310,122 @@ def _fournitures_redirect():
     return redirect(url_for('settings.fournitures'))
 
 
+@settings_bp.route('/eleves', methods=['GET', 'POST'])
+@login_required
+def eleves():
+    """Page de gestion des classes et élèves — accessible aux enseignants et DDFPT."""
+    if not current_user.can_manage_eleves():
+        flash('Accès refusé', 'error')
+        return redirect(url_for('main.index'))
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        # ── Classes ────────────────────────────────────────────────
+        if action == 'add_classe':
+            nom = request.form.get('nom', '').strip()
+            niveau = request.form.get('niveau', '').strip()
+            if nom:
+                if Classe.query.filter_by(nom=nom).first():
+                    flash('Une classe avec ce nom existe déjà', 'error')
+                else:
+                    db.session.add(Classe(nom=nom, niveau=niveau or None))
+                    db.session.commit()
+                    Log.log(current_user, 'add_classe', f'Classe créée : {nom}')
+                    flash(f'Classe « {nom} » créée', 'success')
+
+        elif action == 'edit_classe':
+            cls = Classe.query.get(request.form.get('id'))
+            if cls:
+                cls.nom = request.form.get('nom', cls.nom).strip()
+                cls.niveau = request.form.get('niveau', '').strip() or None
+                db.session.commit()
+                flash('Classe modifiée', 'success')
+
+        elif action == 'toggle_classe':
+            cls = Classe.query.get(request.form.get('id'))
+            if cls:
+                cls.actif = not cls.actif
+                db.session.commit()
+                flash(f'Classe {"activée" if cls.actif else "désactivée"}', 'success')
+
+        elif action == 'delete_classe':
+            # Seulement le DDFPT peut supprimer une classe
+            if current_user.role != 'ddfpt':
+                flash('Seul l\'administrateur peut supprimer une classe', 'error')
+            else:
+                cls = Classe.query.get(request.form.get('id'))
+                if cls:
+                    nb = User.query.filter_by(classe_id=cls.id).count()
+                    if nb > 0:
+                        flash(f'Impossible : {nb} élève(s) sont dans cette classe', 'error')
+                    else:
+                        nom_cls = cls.nom
+                        db.session.delete(cls)
+                        db.session.commit()
+                        flash(f'Classe « {nom_cls} » supprimée', 'success')
+
+        # ── Élèves ────────────────────────────────────────────────
+        elif action == 'add_eleve':
+            nom = request.form.get('nom', '').strip()
+            prenom = request.form.get('prenom', '').strip()
+            login = request.form.get('login', '').strip()
+            password = request.form.get('password', '').strip()
+            classe_id = request.form.get('classe_id') or None
+            email = request.form.get('email', '').strip() or None
+            if nom and prenom and login and password:
+                if User.query.filter_by(login=login).first():
+                    flash('Login déjà utilisé', 'error')
+                else:
+                    u = User(nom=nom, prenom=prenom, login=login, role='eleve',
+                             email=email, classe_id=int(classe_id) if classe_id else None)
+                    u.set_password(password)
+                    db.session.add(u)
+                    db.session.commit()
+                    Log.log(current_user, 'add_eleve', f'Élève créé : {prenom} {nom}', 'User', u.id)
+                    flash(f'Élève « {prenom} {nom} » créé', 'success')
+            else:
+                flash('Nom, prénom, login et mot de passe sont obligatoires', 'error')
+
+        elif action == 'edit_eleve':
+            u = User.query.get(request.form.get('id'))
+            if u and u.role == 'eleve':
+                u.nom = request.form.get('nom', u.nom).strip()
+                u.prenom = request.form.get('prenom', u.prenom).strip()
+                u.login = request.form.get('login', u.login).strip()
+                u.email = request.form.get('email', '').strip() or None
+                classe_id = request.form.get('classe_id')
+                u.classe_id = int(classe_id) if classe_id else None
+                new_pw = request.form.get('password', '').strip()
+                if new_pw:
+                    u.set_password(new_pw)
+                db.session.commit()
+                Log.log(current_user, 'edit_eleve', f'Élève modifié : {u.prenom} {u.nom}', 'User', u.id)
+                flash('Élève modifié', 'success')
+
+        elif action == 'toggle_eleve':
+            u = User.query.get(request.form.get('id'))
+            if u and u.role == 'eleve':
+                u.actif = not u.actif
+                db.session.commit()
+                flash(f'Élève {"activé" if u.actif else "désactivé"}', 'success')
+
+        elif action == 'delete_eleve':
+            u = User.query.get(request.form.get('id'))
+            if u and u.role == 'eleve':
+                nom_eleve = f'{u.prenom} {u.nom}'
+                uid = u.id
+                _cascade_delete_user(u)
+                Log.log(current_user, 'delete_eleve', f'Élève supprimé : {nom_eleve}', 'User', uid)
+                flash(f'Élève « {nom_eleve} » supprimé', 'success')
+
+        return redirect(url_for('settings.eleves'))
+
+    classes = Classe.query.order_by(Classe.nom).all()
+    eleves = User.query.filter_by(role='eleve').order_by(User.nom, User.prenom).all()
+    return render_template('settings/eleves.html', classes=classes, eleves=eleves)
+
+
 @settings_bp.route('/fournitures', methods=['GET', 'POST'])
 @login_required
 def fournitures():

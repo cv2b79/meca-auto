@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% block title %}Gestion élèves & classes{% endblock %}
+{% block content %}
+
+<h2>👨‍🎓 Élèves & Classes</h2>
+
+<div style="display: grid; grid-template-columns: 340px 1fr; gap: 1.5rem; align-items: start;">
+
+  <!-- ══════════════════ CLASSES ══════════════════ -->
+  <div>
+    <div class="card">
+      <h3 style="margin-top:0;">🏫 Classes</h3>
+
+      <!-- Formulaire ajout classe -->
+      <form method="POST" style="display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+        <input type="hidden" name="action" value="add_classe">
+        <input type="text" name="nom" placeholder="Nom (ex: 1MAVA)" required
+               style="flex:1; min-width:100px; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+        <input type="text" name="niveau" placeholder="Niveau (optionnel)"
+               style="flex:1; min-width:100px; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+        <button type="submit" class="btn" style="padding:.5rem 1rem;">➕ Ajouter</button>
+      </form>
+
+      <!-- Liste des classes -->
+      {% if classes %}
+      <table style="width:100%; font-size:.9rem;">
+        <thead>
+          <tr>
+            <th>Classe</th>
+            <th>Niveau</th>
+            <th style="text-align:center;">Élèves</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for cls in classes %}
+        {% set nb_eleves = eleves | selectattr('classe_id', 'equalto', cls.id) | list | length %}
+        <tr style="{% if not cls.actif %}opacity:.5;{% endif %}">
+          <td><strong>{{ cls.nom }}</strong></td>
+          <td style="color:#666;">{{ cls.niveau or '—' }}</td>
+          <td style="text-align:center;">{{ nb_eleves }}</td>
+          <td style="white-space:nowrap; text-align:right;">
+            <!-- Toggle actif -->
+            <form method="POST" style="display:inline;">
+              <input type="hidden" name="action" value="toggle_classe">
+              <input type="hidden" name="id" value="{{ cls.id }}">
+              <button type="submit" class="btn btn-secondary" style="padding:.2rem .5rem; font-size:.8rem;"
+                      title="{{ 'Désactiver' if cls.actif else 'Activer' }}">
+                {{ '✅' if cls.actif else '⬜' }}
+              </button>
+            </form>
+            {% if current_user.role == 'ddfpt' %}
+            <!-- Supprimer classe (DDFPT uniquement) -->
+            <form method="POST" style="display:inline;"
+                  onsubmit="return confirm('Supprimer la classe {{ cls.nom }} ?')">
+              <input type="hidden" name="action" value="delete_classe">
+              <input type="hidden" name="id" value="{{ cls.id }}">
+              <button type="submit" class="btn btn-danger" style="padding:.2rem .5rem; font-size:.8rem;">🗑️</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:#999; text-align:center;">Aucune classe</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ══════════════════ ÉLÈVES ══════════════════ -->
+  <div>
+    <div class="card">
+      <h3 style="margin-top:0;">Ajouter un élève</h3>
+      <form method="POST">
+        <input type="hidden" name="action" value="add_eleve">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
+          <div>
+            <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Nom *</label>
+            <input type="text" name="nom" required style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Prénom *</label>
+            <input type="text" name="prenom" required style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Login *</label>
+            <input type="text" name="login" required style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Mot de passe *</label>
+            <input type="password" name="password" required style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+          </div>
+          <div>
+            <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Classe</label>
+            <select name="classe_id" style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+              <option value="">— Sans classe —</option>
+              {% for cls in classes if cls.actif %}
+              <option value="{{ cls.id }}">{{ cls.nom }}{% if cls.niveau %} ({{ cls.niveau }}){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Email</label>
+            <input type="email" name="email" style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+          </div>
+        </div>
+        <button type="submit" class="btn" style="margin-top:1rem;">➕ Créer l'élève</button>
+      </form>
+    </div>
+
+    <!-- Liste élèves -->
+    <div class="card" style="margin-top:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3 style="margin:0;">Liste des élèves ({{ eleves|length }})</h3>
+        <input type="text" id="searchEleve" placeholder="🔍 Rechercher..." oninput="filterEleves()"
+               style="padding:.4rem .75rem; border:1px solid #ddd; border-radius:4px; width:200px;">
+      </div>
+
+      <!-- Filtre par classe -->
+      <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+        <button class="btn btn-secondary filtre-classe active" data-classe="" onclick="filtreClasse(this, '')"
+                style="padding:.3rem .75rem; font-size:.85rem;">Tous</button>
+        {% for cls in classes %}
+        <button class="btn btn-secondary filtre-classe" data-classe="{{ cls.id }}" onclick="filtreClasse(this, '{{ cls.id }}')"
+                style="padding:.3rem .75rem; font-size:.85rem;">{{ cls.nom }}</button>
+        {% endfor %}
+        <button class="btn btn-secondary filtre-classe" data-classe="0" onclick="filtreClasse(this, '0')"
+                style="padding:.3rem .75rem; font-size:.85rem;">Sans classe</button>
+      </div>
+
+      {% if eleves %}
+      <table id="tableEleves" style="width:100%;">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Prénom</th>
+            <th>Login</th>
+            <th>Classe</th>
+            <th>État</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for u in eleves %}
+        <tr data-classe="{{ u.classe_id or '0' }}" data-nom="{{ u.nom|lower }} {{ u.prenom|lower }}"
+            style="{% if not u.actif %}opacity:.5;{% endif %}">
+          <td><strong>{{ u.nom }}</strong></td>
+          <td>{{ u.prenom }}</td>
+          <td style="font-family:monospace; color:#555;">{{ u.login }}</td>
+          <td>
+            {% if u.classe %}
+            <span style="background:#e3f2fd; padding:.2rem .5rem; border-radius:4px; font-size:.85rem;">{{ u.classe.nom }}</span>
+            {% else %}
+            <span style="color:#999; font-size:.85rem;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.actif %}
+            <span style="color:#28a745; font-size:.85rem;">✅ Actif</span>
+            {% else %}
+            <span style="color:#dc3545; font-size:.85rem;">⛔ Inactif</span>
+            {% endif %}
+          </td>
+          <td style="white-space:nowrap; text-align:right;">
+            <!-- Bouton modifier -->
+            <button type="button" class="btn btn-secondary" style="padding:.2rem .5rem; font-size:.8rem;"
+                    onclick="openEditModal({{ u.id }}, '{{ u.nom }}', '{{ u.prenom }}', '{{ u.login }}', '{{ u.email or '' }}', '{{ u.classe_id or '' }}')">
+              ✏️
+            </button>
+            <!-- Toggle actif -->
+            <form method="POST" style="display:inline;">
+              <input type="hidden" name="action" value="toggle_eleve">
+              <input type="hidden" name="id" value="{{ u.id }}">
+              <button type="submit" class="btn btn-secondary" style="padding:.2rem .5rem; font-size:.8rem;"
+                      title="{{ 'Désactiver' if u.actif else 'Activer' }}">
+                {{ '⛔' if u.actif else '✅' }}
+              </button>
+            </form>
+            <!-- Supprimer -->
+            <form method="POST" style="display:inline;"
+                  onsubmit="return confirm('Supprimer {{ u.prenom }} {{ u.nom }} ? Toutes ses interventions seront supprimées.')">
+              <input type="hidden" name="action" value="delete_eleve">
+              <input type="hidden" name="id" value="{{ u.id }}">
+              <button type="submit" class="btn btn-danger" style="padding:.2rem .5rem; font-size:.8rem;">🗑️</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:#999; text-align:center; padding:2rem;">Aucun élève</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL ÉDITION ÉLÈVE ══════════ -->
+<div id="editModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:white; padding:2rem; border-radius:8px; width:480px; max-width:95vw;">
+    <h3 style="margin-top:0;">✏️ Modifier l'élève</h3>
+    <form method="POST" id="editForm">
+      <input type="hidden" name="action" value="edit_eleve">
+      <input type="hidden" name="id" id="edit_id">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Nom</label>
+          <input type="text" name="nom" id="edit_nom" required style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Prénom</label>
+          <input type="text" name="prenom" id="edit_prenom" required style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Login</label>
+          <input type="text" name="login" id="edit_login" required style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Nouveau mot de passe <small style="color:#999;">(laisser vide = inchangé)</small></label>
+          <input type="password" name="password" id="edit_password" style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Classe</label>
+          <select name="classe_id" id="edit_classe" style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+            <option value="">— Sans classe —</option>
+            {% for cls in classes %}
+            <option value="{{ cls.id }}">{{ cls.nom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Email</label>
+          <input type="email" name="email" id="edit_email" style="width:100%; padding:.5rem; border:1px solid #ddd; border-radius:4px;">
+        </div>
+      </div>
+      <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+        <button type="submit" class="btn">💾 Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditModal(id, nom, prenom, login, email, classeId) {
+    document.getElementById('edit_id').value = id;
+    document.getElementById('edit_nom').value = nom;
+    document.getElementById('edit_prenom').value = prenom;
+    document.getElementById('edit_login').value = login;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_password').value = '';
+    const sel = document.getElementById('edit_classe');
+    sel.value = classeId || '';
+    document.getElementById('editModal').style.display = 'flex';
+}
+function closeModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// Recherche texte
+function filterEleves() {
+    const q = document.getElementById('searchEleve').value.toLowerCase();
+    document.querySelectorAll('#tableEleves tbody tr').forEach(row => {
+        const nom = row.dataset.nom || '';
+        row.style.display = nom.includes(q) ? '' : 'none';
+    });
+}
+
+// Filtre par classe
+let classeActive = '';
+function filtreClasse(btn, classeId) {
+    classeActive = classeId;
+    document.querySelectorAll('.filtre-classe').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#tableEleves tbody tr').forEach(row => {
+        if (!classeId) {
+            row.style.display = '';
+        } else {
+            row.style.display = (row.dataset.classe === classeId) ? '' : 'none';
+        }
+    });
+}
+</script>
+
+<style>
+.filtre-classe.active { background: #1E3A5F !important; color: white !important; }
+</style>
+
+{% endblock %}

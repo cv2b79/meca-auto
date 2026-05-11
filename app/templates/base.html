@@ -133,7 +133,8 @@
         <a href="{{ url_for('settings.fournitures') }}" {% if request.endpoint == 'settings.fournitures' %}class="active"{% endif %}>🧴 Fournitures</a>
         {% endif %}
         {% if current_user.role == 'enseignant' %}
-        <a href="{{ url_for('settings.checklist') }}" {% if request.endpoint == 'settings.checklist' %}class="active"{% endif %}>Checklist</a>
+        <a href="{{ url_for('settings.eleves') }}" {% if request.endpoint == 'settings.eleves' %}class="active"{% endif %}>👨‍🎓 Élèves</a>
+        <a href="{{ url_for('settings.checklist') }}" {% if request.endpoint == 'settings.checklist' %}class="active"{% endif %}>✅ Checklist</a>
         {% endif %}
         {% if current_user.role not in ['eleve'] %}
         <a href="{{ url_for('settings.mon_compte') }}" {% if request.endpoint == 'settings.mon_compte' %}class="active"{% endif %}>Mon compte</a>

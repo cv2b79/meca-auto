@@ -38,10 +38,10 @@ class User(UserMixin, db.Model):
 
     def has_permission(self, perm):
         perms = {
-            'ddfpt': ['create_or', 'edit_or', 'delete_or', 'facturer', 'see_stats', 'manage_settings', 'manage_users', 'manage_clients', 'manage_vehicules', 'edit_intervention', 'edit_etat_lieu', 'controle_visuel'],
+            'ddfpt':      ['create_or', 'edit_or', 'delete_or', 'facturer', 'see_stats', 'manage_settings', 'manage_users', 'manage_clients', 'manage_vehicules', 'edit_intervention', 'edit_etat_lieu', 'controle_visuel', 'manage_eleves'],
             'magasinier': ['create_or', 'edit_or', 'facturer', 'manage_settings', 'edit_etat_lieu', 'controle_visuel', 'manage_clients', 'manage_vehicules'],
-            'enseignant': ['create_or', 'edit_or', 'manage_clients', 'manage_vehicules', 'edit_intervention', 'edit_etat_lieu', 'controle_visuel'],
-            'eleve': ['edit_intervention', 'edit_etat_lieu', 'controle_visuel']
+            'enseignant': ['create_or', 'edit_or', 'manage_clients', 'manage_vehicules', 'edit_intervention', 'edit_etat_lieu', 'controle_visuel', 'manage_eleves'],
+            'eleve':      ['edit_intervention', 'edit_etat_lieu', 'controle_visuel']
         }
         return perm in perms.get(self.role, [])
 
@@ -78,6 +78,9 @@ class User(UserMixin, db.Model):
     def can_controle_visuel(self):
         return self.has_permission('controle_visuel')
     
+    def can_manage_eleves(self):
+        return self.has_permission('manage_eleves')
+
     def can_delete(self):
         return self.role == 'ddfpt'
 
