@@ -127,10 +127,15 @@
         {% elif or_obj.facture %}
         <a href="{{ url_for('factures.view', id=or_obj.facture.id) }}" class="btn btn-secondary">Voir la Facture</a>
         {% endif %}
-        {% if current_user.has_permission('delete_or') and or_obj.statut != 'cloture' %}
-        <form method="POST" action="{{ url_for('ordres.delete', id=or_obj.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer cet OR?');">
-            <button type="submit" class="btn btn-danger">Supprimer</button>
-        </form>
+        {% if current_user.has_permission('delete_or') %}
+            {% if or_obj.facture and current_user.role != 'ddfpt' %}
+            <button class="btn btn-danger" disabled title="Un OR facturé ne peut être supprimé que par l'administrateur">🗑️ Supprimer</button>
+            {% else %}
+            <form method="POST" action="{{ url_for('ordres.delete', id=or_obj.id) }}" style="display:inline;"
+                  onsubmit="return confirm('{% if or_obj.facture %}⚠️ Cet OR a une facture liée qui sera également supprimée.\n\n{% endif %}Supprimer l\'OR {{ or_obj.numero }} ? Cette action est irréversible.');">
+                <button type="submit" class="btn btn-danger">🗑️ Supprimer{% if or_obj.facture %} + facture{% endif %}</button>
+            </form>
+            {% endif %}
         {% endif %}
     </div>
 </div>
