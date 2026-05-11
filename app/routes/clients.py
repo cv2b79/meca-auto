@@ -90,17 +90,36 @@ def delete(id):
         flash('Accès refusé', 'error')
         return redirect(url_for('clients.list'))
     client = Client.query.get_or_404(id)
-    
-    # Check for linked vehicles
+
     from app.models import Vehicule, OrdreReparation
-    vehicules = Vehicule.query.filter_by(proprietaire_id=id).count()
+
+    # Bloquer si des OR sont directement liés au client
     ors = OrdreReparation.query.filter_by(client_id=id).count()
-    
-    if vehicules > 0 or ors > 0:
-        flash(f'Impossible de supprimer: {vehicules} véhicule(s) et {ors} OR(s) lié(s)', 'error')
+    if ors > 0:
+        flash(f'Impossible de supprimer : {ors} OR(s) lié(s) à ce client. Supprimez d\'abord les OR.', 'error')
         return redirect(url_for('clients.view', id=id))
+
+    # Vérifier que les véhicules liés n'ont eux-mêmes aucun OR
+    vehicules = Vehicule.query.filter_by(proprietaire_id=id).all()
+    for v in vehicules:
+        v_ors = OrdreReparation.query.filter_by(vehicule_id=v.id).count()
+        if v_ors > 0:
+            flash(f'Impossible de supprimer : le véhicule {v.immatriculation} a {v_ors} OR(s). Supprimez d\'abord les OR.', 'error')
+            return redirect(url_for('clients.view', id=id))
+
+    nom_client = f'{client.prenom} {client.nom}'
+    nb_vehicules = len(vehicules)
+
+    # Supprimer les véhicules orphelins (leur historique proprio cascade automatiquement)
+    for v in vehicules:
+        db.session.delete(v)
+
     db.session.delete(client)
     db.session.commit()
-    Log.log(current_user, 'delete_client', f'Client supprimé: {client.nom} {client.prenom} (id: {client.id})', 'Client', client.id)
-    flash('Client supprimé', 'success')
+
+    if nb_vehicules:
+        flash(f'Client « {nom_client} » supprimé avec ses {nb_vehicules} véhicule(s) associé(s)', 'success')
+    else:
+        flash(f'Client « {nom_client} » supprimé', 'success')
+    Log.log(current_user, 'delete_client', f'Client supprimé: {nom_client} (id: {id}) + {nb_vehicules} véhicule(s)', 'Client', id)
     return redirect(url_for('clients.list'))

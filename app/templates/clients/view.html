@@ -9,8 +9,9 @@
     <div class="actions" style="margin-top: 1rem;">
         {% if current_user.can_manage_clients() %}
         <a href="{{ url_for('clients.edit', id=client.id) }}" class="btn">Modifier</a>
-        <form method="POST" action="{{ url_for('clients.delete', id=client.id) }}" style="display:inline;">
-            <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer ce client?')">Supprimer</button>
+        <form method="POST" action="{{ url_for('clients.delete', id=client.id) }}" style="display:inline;"
+              onsubmit="return confirm('Supprimer ce client{% if vehicules %} et ses {{ vehicules|length }} véhicule(s) associé(s){% endif %} ? Cette action est irréversible.')">
+            <button type="submit" class="btn btn-danger">🗑️ Supprimer{% if vehicules %} + {{ vehicules|length }} véhicule(s){% endif %}</button>
         </form>
         {% endif %}
     </div>

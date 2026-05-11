@@ -172,3 +172,25 @@ def edit(id):
         flash('Véhicule modifié', 'success')
         return redirect(url_for('vehicules.view', id=vehicule.id))
     return render_template('vehicules/edit.html', vehicule=vehicule)
+
+
+@vehicules_bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
+def delete(id):
+    if not current_user.can_manage_vehicules():
+        flash('Accès refusé', 'error')
+        return redirect(url_for('vehicules.list'))
+    vehicule = Vehicule.query.get_or_404(id)
+
+    ors = OrdreReparation.query.filter_by(vehicule_id=id).count()
+    if ors > 0:
+        flash(f'Impossible de supprimer : {ors} OR(s) lié(s) à ce véhicule. Supprimez d\'abord les OR.', 'error')
+        return redirect(url_for('vehicules.view', id=id))
+
+    nom_vehicule = f'{vehicule.immatriculation} {vehicule.marque} {vehicule.modele}'
+    # L'historique proprio cascade automatiquement (cascade='all, delete-orphan')
+    db.session.delete(vehicule)
+    db.session.commit()
+    Log.log(current_user, 'delete_vehicule', f'Véhicule supprimé: {nom_vehicule} (id: {id})', 'Vehicule', id)
+    flash(f'Véhicule « {nom_vehicule} » supprimé', 'success')
+    return redirect(url_for('vehicules.list'))
