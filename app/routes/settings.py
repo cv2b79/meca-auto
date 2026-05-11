@@ -45,6 +45,80 @@ def _cascade_delete_user(user):
     db.session.delete(user)
     db.session.commit()
 
+def _write_backup_conf():
+    """Écrit scripts/backup.conf depuis les paramètres NAS stockés en BDD."""
+    import os
+    app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    conf_path = os.path.join(app_dir, 'scripts', 'backup.conf')
+    lines = [
+        '# backup.conf — généré automatiquement par Meca Auto — ne pas éditer à la main\n',
+        f'BACKUP_NAS_IP="{Parametre.get("backup_nas_ip", "")}"\n',
+        f'BACKUP_NAS_SHARE="{Parametre.get("backup_nas_share", "")}"\n',
+        f'BACKUP_NAS_USER="{Parametre.get("backup_nas_user", "")}"\n',
+        f'BACKUP_NAS_PASS="{Parametre.get("backup_nas_pass", "")}"\n',
+        f'BACKUP_NAS_FOLDER="{Parametre.get("backup_nas_folder", "meca-auto")}"\n',
+        f'RETENTION_DAYS="{Parametre.get("backup_retention", "30")}"\n',
+    ]
+    try:
+        with open(conf_path, 'w') as f:
+            f.writelines(lines)
+    except Exception as e:
+        import sys
+        print(f"[backup_conf] Impossible d'écrire {conf_path} : {e}", file=sys.stderr)
+
+
+def _read_backup_status():
+    """Lit le fichier log de sauvegarde et retourne (status, date, message)."""
+    import os, re
+    app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    log_path = os.path.join(app_dir, 'backups', 'backup.log')
+    if not os.path.exists(log_path):
+        return 'unknown', None, None
+    try:
+        with open(log_path, 'r', encoding='utf-8', errors='replace') as f:
+            lines = f.readlines()
+        # Cherche la dernière ligne avec ✅ ou ❌
+        status = 'unknown'
+        last_date = None
+        last_msg = None
+        for line in reversed(lines):
+            m = re.match(r'\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] (.+)', line.strip())
+            if m:
+                last_date = m.group(1)
+                last_msg = m.group(2)
+                if '✅' in last_msg or 'réussie' in last_msg.lower():
+                    status = 'ok'
+                elif '❌' in last_msg or 'erreur' in last_msg.lower():
+                    status = 'error'
+                break
+        return status, last_date, last_msg
+    except Exception:
+        return 'unknown', None, None
+
+
+def _list_backups():
+    """Retourne la liste des fichiers de sauvegarde locaux (nom, taille, date)."""
+    import os, glob as glob_mod
+    app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    backup_dir = os.path.join(app_dir, 'backups')
+    result = []
+    try:
+        files = sorted(
+            glob_mod.glob(os.path.join(backup_dir, 'mecaauto_*.sql.gz')),
+            key=os.path.getmtime, reverse=True
+        )
+        for path in files:
+            size_kb = os.path.getsize(path) // 1024
+            mtime = os.path.getmtime(path)
+            import datetime
+            dt = datetime.datetime.fromtimestamp(mtime).strftime('%d/%m/%Y %H:%M')
+            name = os.path.basename(path).replace('mecaauto_', '').replace('.sql.gz', '')
+            result.append({'name': name, 'size_kb': size_kb, 'date': dt, 'filename': os.path.basename(path)})
+    except Exception:
+        pass
+    return result
+
+
 @settings_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -1072,7 +1146,22 @@ def admin():
             if or_obj:
                 or_obj.pas_de_facturation = not or_obj.pas_de_facturation
                 flash(f'Facturation {"désactivée" if or_obj.pas_de_facturation else "activée"}', 'success')
-        
+
+        elif action == 'save_backup_config':
+            fields = ['backup_nas_ip', 'backup_nas_share', 'backup_nas_user',
+                      'backup_nas_folder', 'backup_retention']
+            for key in fields:
+                val = request.form.get(key, '').strip()
+                Parametre.set(key, val)
+            # Le mot de passe n'est mis à jour que si renseigné
+            new_pass = request.form.get('backup_nas_pass', '').strip()
+            if new_pass:
+                Parametre.set('backup_nas_pass', new_pass)
+            # Écrire le fichier de config pour le script bash
+            _write_backup_conf()
+            flash('Configuration de sauvegarde enregistrée', 'success')
+            return redirect(url_for('settings.admin') + '#sauvegardes')
+
         db.session.commit()
         return redirect(url_for('settings.admin'))
     
@@ -1113,8 +1202,20 @@ def admin():
     # Fournitures data
     fournitures = Fourniture.query.order_by(Fourniture.nom).all()
     
-    return render_template('settings/admin.html', 
-                          users=users, clients=clients, 
+    # Données sauvegardes
+    backup_config = {
+        'backup_nas_ip':     Parametre.get('backup_nas_ip', ''),
+        'backup_nas_share':  Parametre.get('backup_nas_share', ''),
+        'backup_nas_user':   Parametre.get('backup_nas_user', ''),
+        'backup_nas_pass':   Parametre.get('backup_nas_pass', ''),
+        'backup_nas_folder': Parametre.get('backup_nas_folder', 'meca-auto'),
+        'backup_retention':  Parametre.get('backup_retention', '30'),
+    }
+    backup_status, backup_last_date, backup_last_msg = _read_backup_status()
+    backups_list = _list_backups()
+
+    return render_template('settings/admin.html',
+                          users=users, clients=clients,
                           vehicules=vehicules, ordres=ordres,
                           smtp_config=smtp_config,
                           enseignants=enseignants,
@@ -1128,7 +1229,12 @@ def admin():
                           etab_tel=Parametre.get('etab_tel', ''),
                           etab_email=Parametre.get('etab_email', ''),
                           etab_siren=Parametre.get('etab_siren', ''),
-                          security_config=security_config)
+                          security_config=security_config,
+                          backup_config=backup_config,
+                          backup_status=backup_status,
+                          backup_last_date=backup_last_date,
+                          backup_last_msg=backup_last_msg,
+                          backups_list=backups_list)
 
 @settings_bp.route('/permissions', methods=['GET', 'POST'])
 @login_required
@@ -1288,15 +1394,68 @@ def checklist_edit(id):
     if current_user.role not in ['ddfpt', 'enseignant']:
         flash('Accès refusé', 'error')
         return redirect(url_for('main.index'))
-    
+
     from app.models import ChecklistItem
     item = ChecklistItem.query.get_or_404(id)
-    
+
     if request.method == 'POST':
         item.nom = request.form.get('nom')
         item.description = request.form.get('description')
         db.session.commit()
         flash('Point modifié', 'success')
         return redirect(url_for('settings.checklist'))
-    
+
     return render_template('settings/checklist_edit.html', item=item)
+
+
+# === SAUVEGARDES ===
+
+@settings_bp.route('/admin/backup/run', methods=['POST'])
+@login_required
+def backup_run():
+    """Lance le script de sauvegarde en arrière-plan."""
+    if current_user.role != 'ddfpt':
+        flash('Accès réservé au DDFPT', 'error')
+        return redirect(url_for('main.index'))
+    import os, subprocess
+    app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    script = os.path.join(app_dir, 'scripts', 'backup.sh')
+    if not os.path.exists(script):
+        flash('Script de sauvegarde introuvable', 'error')
+        return redirect(url_for('settings.admin') + '#sauvegardes')
+    try:
+        subprocess.Popen(
+            ['/bin/bash', script],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True
+        )
+        Log.log(current_user, 'backup_run', 'Sauvegarde manuelle lancée')
+        flash('✅ Sauvegarde lancée en arrière-plan — actualisez dans quelques secondes pour voir le résultat.', 'success')
+    except Exception as e:
+        flash(f'Erreur lors du lancement : {e}', 'error')
+    return redirect(url_for('settings.admin') + '#sauvegardes')
+
+
+@settings_bp.route('/admin/backup/log')
+@login_required
+def backup_log():
+    """Affiche le fichier log de sauvegarde."""
+    if current_user.role != 'ddfpt':
+        flash('Accès réservé au DDFPT', 'error')
+        return redirect(url_for('main.index'))
+    import os
+    from flask import Response
+    app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    log_path = os.path.join(app_dir, 'backups', 'backup.log')
+    if not os.path.exists(log_path):
+        content = '(Aucun log de sauvegarde trouvé — le premier backup n\'a pas encore été exécuté.)'
+    else:
+        try:
+            with open(log_path, 'r', encoding='utf-8', errors='replace') as f:
+                # Affiche les 500 dernières lignes
+                lines = f.readlines()
+                content = ''.join(lines[-500:])
+        except Exception as e:
+            content = f'Erreur de lecture : {e}'
+    return render_template('settings/backup_log.html', log_content=content)

@@ -12,8 +12,23 @@ set -euo pipefail
 APP_DIR="/opt/meca-auto"
 BACKUP_DIR="/opt/meca-auto/backups"
 LOG_FILE="/opt/meca-auto/backups/backup.log"
-RETENTION_DAYS=30        # Garder les sauvegardes des 30 derniers jours
+RETENTION_DAYS=30        # Valeur par défaut (surchargée par backup.conf)
 MIN_SIZE_KB=2            # Taille minimale acceptable d'un dump (Ko)
+
+# Charger la config NAS générée depuis l'interface d'administration
+CONF_FILE="${APP_DIR}/scripts/backup.conf"
+BACKUP_NAS_IP=""
+BACKUP_NAS_SHARE=""
+BACKUP_NAS_USER=""
+BACKUP_NAS_PASS=""
+BACKUP_NAS_FOLDER="meca-auto"
+if [ -f "$CONF_FILE" ]; then
+    # shellcheck source=/dev/null
+    source "$CONF_FILE"
+    # backup.conf peut écraser RETENTION_DAYS
+    if [ -n "${RETENTION_DAYS:-}" ]; then : ; fi
+fi
+
 DATE=$(date +%Y-%m-%d_%H-%M-%S)
 BACKUP_FILE="${BACKUP_DIR}/mecaauto_${DATE}.sql.gz"
 ENV_BACKUP="${BACKUP_DIR}/env_${DATE}.tar.gz"
@@ -126,13 +141,45 @@ if [ -n "$PREV_BACKUP" ]; then
     fi
 fi
 
-# ── Étape 7 : Rotation des anciennes sauvegardes ──────────────
-log "▶ Rotation : suppression des sauvegardes > ${RETENTION_DAYS} jours..."
+# ── Étape 7 : Copie vers le NAS ───────────────────────────────
+if [ -n "${BACKUP_NAS_IP:-}" ] && [ -n "${BACKUP_NAS_SHARE:-}" ]; then
+    NAS_MOUNT="/mnt/meca-nas-backup"
+    log "▶ Copie NAS → //${BACKUP_NAS_IP}/${BACKUP_NAS_SHARE}/${BACKUP_NAS_FOLDER:-meca-auto}"
+    mkdir -p "$NAS_MOUNT"
+
+    # Options de montage SMB
+    MOUNT_OPTS="rw,uid=$(id -u),gid=$(id -g),iocharset=utf8,vers=2.0"
+    if [ -n "${BACKUP_NAS_USER:-}" ]; then
+        MOUNT_OPTS="${MOUNT_OPTS},username=${BACKUP_NAS_USER}"
+    fi
+    if [ -n "${BACKUP_NAS_PASS:-}" ]; then
+        MOUNT_OPTS="${MOUNT_OPTS},password=${BACKUP_NAS_PASS}"
+    fi
+
+    if mount -t cifs "//${BACKUP_NAS_IP}/${BACKUP_NAS_SHARE}" "$NAS_MOUNT" \
+            -o "${MOUNT_OPTS}" 2>/dev/null; then
+        NAS_DEST="${NAS_MOUNT}/${BACKUP_NAS_FOLDER:-meca-auto}"
+        mkdir -p "$NAS_DEST"
+        cp "$BACKUP_FILE" "$NAS_DEST/"
+        cp "$ENV_BACKUP"  "$NAS_DEST/" 2>/dev/null || true
+        # Rotation sur le NAS aussi
+        find "$NAS_DEST" -name "mecaauto_*.sql.gz" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
+        umount "$NAS_MOUNT" 2>/dev/null || true
+        log "   ✅ Copie NAS réussie → ${NAS_DEST}"
+    else
+        log "   ⚠️  Impossible de monter le NAS (vérifier IP/partage/credentials)"
+    fi
+else
+    log "▶ Copie NAS ignorée (NAS non configuré)"
+fi
+
+# ── Étape 8 : Rotation des anciennes sauvegardes locales ──────
+log "▶ Rotation locale : suppression des sauvegardes > ${RETENTION_DAYS} jours..."
 DELETED=$(find "$BACKUP_DIR" -name "mecaauto_*.sql.gz" -mtime "+${RETENTION_DAYS}" -print -delete | wc -l)
 find "$BACKUP_DIR" -name "env_*.tar.gz" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
 log "   ${DELETED} ancienne(s) sauvegarde(s) supprimée(s)"
 
-# ── Étape 8 : Résumé ──────────────────────────────────────────
+# ── Étape 9 : Résumé ──────────────────────────────────────────
 NB_BACKUPS=$(ls "${BACKUP_DIR}"/mecaauto_*.sql.gz 2>/dev/null | wc -l)
 OLDEST=$(ls -t "${BACKUP_DIR}"/mecaauto_*.sql.gz 2>/dev/null | tail -1 | xargs -I{} basename {} .sql.gz | sed 's/mecaauto_//')
 TOTAL_SIZE=$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1)

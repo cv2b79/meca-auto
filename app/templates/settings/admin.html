@@ -23,6 +23,7 @@
     <div class="admin-tab"        onclick="showTab('fournitures')"   id="tab-fournitures">🧴 Fournitures</div>
     <div class="admin-tab"        onclick="showTab('email')"         id="tab-email">📧 Email</div>
     <div class="admin-tab"        onclick="showTab('donnees')"       id="tab-donnees">💾 Données</div>
+    <div class="admin-tab"        onclick="showTab('sauvegardes')"   id="tab-sauvegardes">🗄️ Sauvegardes</div>
     <div class="admin-tab"        onclick="showTab('securite')"      id="tab-securite">🔒 Sécurité</div>
 </div>
 
@@ -539,7 +540,7 @@ function showTab(name) {
 
 document.addEventListener('DOMContentLoaded', function() {
     var hash = location.hash.replace('#', '');
-    var valid = ['utilisateurs','etablissement','fournitures','email','donnees','securite'];
+    var valid = ['utilisateurs','etablissement','fournitures','email','donnees','sauvegardes','securite'];
     if (hash && valid.indexOf(hash) >= 0) showTab(hash);
     var roleSelect = document.querySelector('select[name="role"]');
     if (roleSelect) toggleClasseField(roleSelect.value);
@@ -625,4 +626,108 @@ function hideEditUser() { document.getElementById('edit_user_modal').style.displ
         </form>
     </div>
 </div>
+
+<!-- ===== SAUVEGARDES ===== -->
+<div class="admin-panel" id="panel-sauvegardes">
+
+  <!-- Statut dernière sauvegarde -->
+  <div class="full-card" style="border-left: 4px solid {% if backup_status == 'ok' %}#28a745{% elif backup_status == 'error' %}#dc3545{% else %}#ffc107{% endif %};">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h3 style="margin:0 0 0.25rem 0;">
+          {% if backup_status == 'ok' %}✅{% elif backup_status == 'error' %}❌{% else %}⏳{% endif %}
+          Dernière sauvegarde :
+          <strong>{{ backup_last_date or 'Aucune' }}</strong>
+        </h3>
+        <div style="color:#666; font-size:.9rem;">{{ backup_last_msg or 'Aucune sauvegarde effectuée' }}</div>
+      </div>
+      <div style="display:flex; gap:.75rem; flex-wrap:wrap;">
+        <form method="POST" action="{{ url_for('settings.backup_run') }}" style="display:inline;">
+          <button type="submit" class="btn btn-success"
+                  onclick="this.textContent='⏳ En cours...'; this.disabled=true;">
+            ▶️ Lancer une sauvegarde
+          </button>
+        </form>
+        <a href="{{ url_for('settings.backup_log') }}" class="btn btn-secondary" target="_blank">
+          📋 Voir le log
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config NAS -->
+  <div class="full-card">
+    <h3 style="margin-top:0;">🗄️ Configuration NAS</h3>
+    <form method="POST">
+      <input type="hidden" name="action" value="save_backup_config">
+      <div class="grid-2">
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Adresse IP du NAS *</label>
+          <input type="text" name="backup_nas_ip" value="{{ backup_config.backup_nas_ip }}"
+                 placeholder="Ex: 192.168.1.50" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Nom du partage *</label>
+          <input type="text" name="backup_nas_share" value="{{ backup_config.backup_nas_share }}"
+                 placeholder="Ex: sauvegardes" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Utilisateur NAS</label>
+          <input type="text" name="backup_nas_user" value="{{ backup_config.backup_nas_user }}"
+                 placeholder="Ex: admin" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Mot de passe NAS</label>
+          <input type="password" name="backup_nas_pass"
+                 placeholder="Laisser vide pour ne pas changer" style="width:100%;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Dossier sur le NAS</label>
+          <input type="text" name="backup_nas_folder" value="{{ backup_config.backup_nas_folder }}"
+                 placeholder="Ex: mecaauto" style="width:100%;">
+          <small style="color:#666;">Sous-dossier dans le partage (créé automatiquement)</small>
+        </div>
+        <div>
+          <label style="display:block; font-weight:bold; margin-bottom:.25rem;">Rétention (jours)</label>
+          <input type="number" name="backup_retention" value="{{ backup_config.backup_retention or 30 }}"
+                 min="1" max="365" style="width:100%;">
+          <small style="color:#666;">Sauvegardes conservées pendant N jours</small>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem; padding:.75rem; background:#e8f5e9; border-radius:4px; font-size:.9rem;">
+        <strong>📁 Chemin complet sur le NAS :</strong>
+        <code>\\{{ backup_config.backup_nas_ip or 'IP_NAS' }}\{{ backup_config.backup_nas_share or 'partage' }}\{{ backup_config.backup_nas_folder or 'mecaauto' }}\</code>
+      </div>
+
+      <button type="submit" class="btn" style="margin-top:1rem;">💾 Enregistrer la configuration</button>
+    </form>
+  </div>
+
+  <!-- Sauvegardes disponibles -->
+  <div class="full-card">
+    <h3 style="margin-top:0;">📦 Sauvegardes locales disponibles</h3>
+    {% if backups_list %}
+    <table style="width:100%;">
+      <thead><tr><th>Fichier</th><th>Date</th><th>Taille</th><th></th></tr></thead>
+      <tbody>
+      {% for b in backups_list %}
+      <tr {% if loop.first %}style="font-weight:bold; background:#e8f5e9;"{% endif %}>
+        <td>{{ b.name }}</td>
+        <td>{{ b.date }}</td>
+        <td>{{ b.size_kb }} Ko</td>
+        <td>
+          {% if loop.first %}<span style="color:#28a745; font-size:.85rem;">◀ dernière</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#999; text-align:center; padding:1rem;">Aucune sauvegarde locale</p>
+    {% endif %}
+  </div>
+
+</div>
+
 {% endblock %}
