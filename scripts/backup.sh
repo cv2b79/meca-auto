@@ -20,7 +20,14 @@ ENV_BACKUP="${BACKUP_DIR}/env_${DATE}.tar.gz"
 
 # ── Charger les variables d'environnement ─────────────────────
 if [ -f "${APP_DIR}/.env" ]; then
-    export $(grep -v '^#' "${APP_DIR}/.env" | grep '=' | xargs)
+    while IFS='=' read -r key value; do
+        # Ignorer les commentaires et lignes vides
+        [[ "$key" =~ ^#.*$ ]] && continue
+        [[ -z "$key" ]] && continue
+        # Exporter seulement les noms de variables valides (lettres, chiffres, _)
+        [[ "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] || continue
+        export "$key=$value"
+    done < "${APP_DIR}/.env"
 fi
 
 # Extraire les paramètres PostgreSQL depuis DATABASE_URL
