@@ -31,10 +31,11 @@ def create_app(config_class=Config):
     @app.before_request
     def add_etab_info():
         from app.models import Parametre
-        g.etab_nom = Parametre.get('etab_nom', '')
+        g.etab_nom     = Parametre.get('etab_nom', '')
         g.etab_adresse = Parametre.get('etab_adresse', '')
-        g.etab_tel = Parametre.get('etab_tel', '')
-        g.etab_email = Parametre.get('etab_email', '')
+        g.etab_tel     = Parametre.get('etab_tel', '')
+        g.etab_email   = Parametre.get('etab_email', '')
+        g.etab_siren   = Parametre.get('etab_siren', '')
 
     # ── Headers de sécurité HTTP ─────────────────────────────
     @app.after_request

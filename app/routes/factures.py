@@ -12,6 +12,70 @@ from email import encoders
 
 factures_bp = Blueprint('factures', __name__)
 
+
+def _build_facture_context(facture):
+    """Construit le contexte commun pour les templates de facture (print + pdf)."""
+    from app.models import Parametre, RecupSurcharge
+    or_obj = facture.ordre
+    client = or_obj.client
+    vehicule = or_obj.vehicule
+
+    interventions = EleveIntervention.query.filter_by(or_id=or_obj.id).all()
+    total_heures = sum(float(i.heures or 0) for i in interventions)
+
+    taux = Parametre.query.filter_by(cle='taux_horaire').first()
+    taux_horaire = float(taux.valeur) if taux else 50.0
+
+    # Lignes main-d'œuvre (sans fourniture)
+    mo_lines = [i for i in interventions if not i.fourniture_id]
+
+    # Lignes fournitures regroupées
+    fournitures_map = {}
+    for i in interventions:
+        if i.fourniture_id and i.fourniture:
+            key = i.fourniture_id
+            if key not in fournitures_map:
+                fournitures_map[key] = {
+                    'nom': i.fourniture.nom,
+                    'qte': 0,
+                    'pu': float(i.fourniture.prix_unitaire or 0),
+                    'total': 0.0,
+                }
+            fournitures_map[key]['qte'] += int(i.quantite or 1)
+            fournitures_map[key]['total'] += float(i.fourniture.prix_unitaire or 0) * int(i.quantite or 1)
+    fournitures_lines = list(fournitures_map.values())
+    total_fournitures = sum(f['total'] for f in fournitures_lines)
+
+    surcharge_lines = []
+    if or_obj.client_recup_pieces or or_obj.client_recup_fluides:
+        surcharges = RecupSurcharge.query.filter_by(actif=True).all()
+        for s in surcharges:
+            if 'pieces' in s.nom.lower() and or_obj.client_recup_pieces:
+                surcharge_lines.append(s)
+            if ('huile' in s.nom.lower() or 'fluide' in s.nom.lower()) and or_obj.client_recup_fluides:
+                surcharge_lines.append(s)
+
+    total_mo = total_heures * taux_horaire
+    total_surcharge = float(or_obj.montant_surcharge or 0)
+    total_ttc = total_mo + total_fournitures + total_surcharge
+
+    return dict(
+        facture=facture,
+        or_obj=or_obj,
+        client=client,
+        vehicule=vehicule,
+        interventions=interventions,
+        mo_lines=mo_lines,
+        total_heures=total_heures,
+        taux_horaire=taux_horaire,
+        fournitures_lines=fournitures_lines,
+        total_fournitures=total_fournitures,
+        surcharge_lines=surcharge_lines,
+        total_surcharge=total_surcharge,
+        total_mo=total_mo,
+        total_ttc=total_ttc,
+    )
+
 @factures_bp.route('/')
 @login_required
 def list():
@@ -122,37 +186,8 @@ def create(or_id):
 @login_required
 def view_html(id):
     facture = Facture.query.get_or_404(id)
-    or_obj = facture.ordre
-    client = or_obj.client
-    vehicule = or_obj.vehicule
-    
-    interventions = EleveIntervention.query.filter_by(or_id=or_obj.id).all()
-    total_heures = sum(float(i.heures or 0) for i in interventions)
-    
-    from app.models import Parametre
-    taux = Parametre.query.filter_by(cle='taux_horaire').first()
-    taux_horaire = float(taux.valeur) if taux else 50.0
-    
-    surcharge_lines = []
-    if or_obj.client_recup_pieces or or_obj.client_recup_fluides:
-        from app.models import RecupSurcharge
-        surcharges = RecupSurcharge.query.filter_by(actif=True).all()
-        for s in surcharges:
-            if 'pieces' in s.nom.lower() and or_obj.client_recup_pieces:
-                surcharge_lines.append(s)
-            if 'huile' in s.nom.lower() or 'fluide' in s.nom.lower():
-                if or_obj.client_recup_fluides:
-                    surcharge_lines.append(s)
-    
-    return render_template('factures/print.html', 
-        facture=facture, 
-        or_obj=or_obj, 
-        client=client,
-        vehicule=vehicule,
-        interventions=interventions,
-        total_heures=total_heures,
-        taux_horaire=taux_horaire,
-        surcharge_lines=surcharge_lines)
+    ctx = _build_facture_context(facture)
+    return render_template('factures/print.html', **ctx)
 
 @factures_bp.route('/<int:id>/pdf')
 @login_required
@@ -165,37 +200,8 @@ def pdf(id):
         return redirect(url_for('factures.view_html', id=id))
 
     facture = Facture.query.get_or_404(id)
-    or_obj = facture.ordre
-    client = or_obj.client
-    vehicule = or_obj.vehicule
-    
-    interventions = EleveIntervention.query.filter_by(or_id=or_obj.id).all()
-    total_heures = sum(float(i.heures or 0) for i in interventions)
-    
-    from app.models import Parametre
-    taux = Parametre.query.filter_by(cle='taux_horaire').first()
-    taux_horaire = float(taux.valeur) if taux else 50.0
-    
-    surcharge_lines = []
-    if or_obj.client_recup_pieces or or_obj.client_recup_fluides:
-        from app.models import RecupSurcharge
-        surcharges = RecupSurcharge.query.filter_by(actif=True).all()
-        for s in surcharges:
-            if 'pieces' in s.nom.lower() and or_obj.client_recup_pieces:
-                surcharge_lines.append(s)
-            if 'huile' in s.nom.lower() or 'fluide' in s.nom.lower():
-                if or_obj.client_recup_fluides:
-                    surcharge_lines.append(s)
-
-    html = render_template('factures/pdf.html', 
-        facture=facture, 
-        or_obj=or_obj, 
-        client=client,
-        vehicule=vehicule,
-        interventions=interventions,
-        total_heures=total_heures,
-        taux_horaire=taux_horaire,
-        surcharge_lines=surcharge_lines)
+    ctx = _build_facture_context(facture)
+    html = render_template('factures/pdf.html', **ctx)
 
     try:
         from weasyprint import HTML
@@ -236,36 +242,9 @@ def send(id):
         base_url = None
     
     facture = Facture.query.get_or_404(id)
-    or_obj = facture.ordre
-    client = or_obj.client
-    vehicule = or_obj.vehicule
-    
-    interventions = EleveIntervention.query.filter_by(or_id=or_obj.id).all()
-    total_heures = sum(float(i.heures or 0) for i in interventions)
-    
-    taux = Parametre.query.filter_by(cle='taux_horaire').first()
-    taux_horaire = float(taux.valeur) if taux else 50.0
-    
-    surcharge_lines = []
-    if or_obj.client_recup_pieces or or_obj.client_recup_fluides:
-        from app.models import RecupSurcharge
-        surcharges = RecupSurcharge.query.filter_by(actif=True).all()
-        for s in surcharges:
-            if 'pieces' in s.nom.lower() and or_obj.client_recup_pieces:
-                surcharge_lines.append(s)
-            if 'huile' in s.nom.lower() or 'fluide' in s.nom.lower():
-                if or_obj.client_recup_fluides:
-                    surcharge_lines.append(s)
-    
-    html = render_template('factures/pdf.html', 
-        facture=facture, 
-        or_obj=or_obj, 
-        client=client,
-        vehicule=vehicule,
-        interventions=interventions,
-        total_heures=total_heures,
-        taux_horaire=taux_horaire,
-        surcharge_lines=surcharge_lines)
+    ctx = _build_facture_context(facture)
+    client = ctx['client']
+    html = render_template('factures/pdf.html', **ctx)
     
     pdf_bytes = None
     try:
