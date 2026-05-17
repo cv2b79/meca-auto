@@ -282,14 +282,21 @@
 
 <!-- ── EN-TÊTE ──────────────────────────────────────── -->
 <div class="header">
-    <div class="etab-block">
-        <div class="etab-nom">{{ g.etab_nom or 'Lycée Professionnel' }}</div>
-        <div class="etab-section">Atelier Maintenance des Véhicules Automobiles</div>
-        <div class="etab-details">
-            {% if g.etab_adresse %}{{ g.etab_adresse }}<br>{% endif %}
-            {% if g.etab_tel %}Tél : {{ g.etab_tel }}{% endif %}
-            {% if g.etab_email %} — {{ g.etab_email }}{% endif %}
-            {% if g.etab_siren %}<br>SIRET / RNE : {{ g.etab_siren }}{% endif %}
+    <div class="etab-block" style="display:flex; gap:0.8rem; align-items:flex-start;">
+        {% if g.etab_logo %}
+        <img src="{{ url_for('static', filename=g.etab_logo) }}"
+             alt="Logo"
+             style="max-height:70px; max-width:110px; object-fit:contain; flex-shrink:0;">
+        {% endif %}
+        <div>
+            <div class="etab-nom">{{ g.etab_nom or 'Lycée Professionnel' }}</div>
+            <div class="etab-section">Atelier Maintenance des Véhicules Automobiles</div>
+            <div class="etab-details">
+                {% if g.etab_adresse %}{{ g.etab_adresse }}<br>{% endif %}
+                {% if g.etab_tel %}Tél : {{ g.etab_tel }}{% endif %}
+                {% if g.etab_email %} — {{ g.etab_email }}{% endif %}
+                {% if g.etab_siren %}<br>SIRET / RNE : {{ g.etab_siren }}{% endif %}
+            </div>
         </div>
     </div>
     <div class="facture-block">

@@ -1,5 +1,5 @@
 import json
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models import Forfait, RecupSurcharge, Consumable, Parametre, Enseignant, Classe, User, Client, Vehicule, OrdreReparation, Log, Fourniture
@@ -1011,6 +1011,50 @@ def admin():
                     db.session.add(param)
             db.session.commit()
             flash('Informations de l\'établissement enregistrées', 'success')
+            return redirect(url_for('settings.admin'))
+
+        # Upload logo établissement
+        if action == 'upload_logo':
+            import os
+            from werkzeug.utils import secure_filename
+            file = request.files.get('logo_file')
+            if file and file.filename:
+                ext = os.path.splitext(file.filename)[1].lower()
+                if ext not in ('.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'):
+                    flash('Format non supporté. Utilisez PNG, JPG, GIF ou SVG.', 'error')
+                    return redirect(url_for('settings.admin'))
+                upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+                os.makedirs(upload_dir, exist_ok=True)
+                dest = os.path.join(upload_dir, f'etab_logo{ext}')
+                # Supprimer l'ancien logo si extension différente
+                for old_ext in ('.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'):
+                    old_path = os.path.join(upload_dir, f'etab_logo{old_ext}')
+                    if old_ext != ext and os.path.exists(old_path):
+                        os.remove(old_path)
+                file.save(dest)
+                logo_url = f'uploads/etab_logo{ext}'
+                param = Parametre.query.filter_by(cle='etab_logo').first()
+                if param:
+                    param.valeur = logo_url
+                else:
+                    db.session.add(Parametre(cle='etab_logo', valeur=logo_url))
+                db.session.commit()
+                flash('Logo mis à jour', 'success')
+            else:
+                flash('Aucun fichier sélectionné', 'error')
+            return redirect(url_for('settings.admin'))
+
+        # Supprimer logo
+        if action == 'delete_logo':
+            import os
+            param = Parametre.query.filter_by(cle='etab_logo').first()
+            if param and param.valeur:
+                old_path = os.path.join(current_app.root_path, 'static', param.valeur)
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+                param.valeur = ''
+                db.session.commit()
+            flash('Logo supprimé', 'success')
             return redirect(url_for('settings.admin'))
         
         # === SÉCURITÉ ===

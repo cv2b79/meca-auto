@@ -182,7 +182,13 @@
 
         <!-- Logo -->
         <div class="logo-block">
+            {% if g.etab_logo %}
+            <img src="{{ url_for('static', filename=g.etab_logo) }}"
+                 alt="Logo"
+                 style="max-height:90px; max-width:200px; object-fit:contain; margin-bottom:0.75rem; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3));">
+            {% else %}
             <div class="logo-icon">🔧</div>
+            {% endif %}
             <div class="logo-title">MECA AUTO</div>
             <div class="logo-subtitle">Portail de l'atelier mécanique</div>
         </div>

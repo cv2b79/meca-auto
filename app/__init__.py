@@ -36,6 +36,7 @@ def create_app(config_class=Config):
         g.etab_tel     = Parametre.get('etab_tel', '')
         g.etab_email   = Parametre.get('etab_email', '')
         g.etab_siren   = Parametre.get('etab_siren', '')
+        g.etab_logo    = Parametre.get('etab_logo', '')
 
     # ── Headers de sécurité HTTP ─────────────────────────────
     @app.after_request
