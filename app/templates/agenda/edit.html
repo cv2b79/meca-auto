@@ -79,12 +79,28 @@
     <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">
         <button type="submit" class="btn">Enregistrer</button>
         <a href="{{ url_for('agenda.index') }}" class="btn btn-secondary">Annuler</a>
+        <button type="button" class="btn btn-danger" onclick="document.getElementById('modal-delete').style.display='flex'">🗑️ Supprimer</button>
     </div>
 </form>
 
-<form method="POST" action="{{ url_for('agenda.delete', id=rdv.id) }}" style="margin-top: 0.5rem;">
-    <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer ce rendez-vous ?')">🗑️ Supprimer</button>
-</form>
+<!-- Modal confirmation suppression -->
+<div id="modal-delete" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:8px; padding:2rem; max-width:400px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0; color:#c62828;">🗑️ Supprimer ce rendez-vous ?</h3>
+        <div style="background:#fafafa; border:1px solid #eee; border-radius:6px; padding:1rem; margin:1rem 0; font-size:0.95rem;">
+            <p style="margin:0 0 0.4rem;"><strong>{{ rdv.titre }}</strong></p>
+            <p style="margin:0 0 0.4rem; color:#555;">📅 {{ rdv.date_heure.strftime('%d/%m/%Y à %H:%M') }}</p>
+            <p style="margin:0; color:#555;">👤 {{ rdv.client.prenom }} {{ rdv.client.nom }}</p>
+        </div>
+        <p style="color:#c62828; font-size:0.9rem;">Cette action est irréversible.</p>
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.5rem;">
+            <button class="btn btn-secondary" onclick="document.getElementById('modal-delete').style.display='none'">Annuler</button>
+            <form method="POST" action="{{ url_for('agenda.delete', id=rdv.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger">🗑️ Confirmer la suppression</button>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
 function updateVehiclesEdit() {
