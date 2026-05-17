@@ -466,24 +466,25 @@ def new():
         # Handle planned RDV - create proper RendezVous record
         rdv_date = request.form.get('rdv_date')
         rdv_time = request.form.get('rdv_time')
-        if rdv_date and rdv_time and request.form.get('rdv_titre'):
+        if rdv_date and rdv_time:
             try:
                 rdv_datetime = datetime.strptime(f"{rdv_date} {rdv_time}", "%Y-%m-%d %H:%M")
                 or_obj.rdv_date_heure = rdv_datetime
-                or_obj.rdv_titre = request.form.get('rdv_titre')
-                
+
                 # Also create a proper RendezVous record if we have client_id
                 if client_id:
                     # Get client name for title
                     client_obj = Client.query.get(client_id)
                     client_name = f"{client_obj.prenom} {client_obj.nom}" if client_obj else ""
-                    intervention = request.form.get('description', '')[:30] or request.form.get('rdv_titre', '')
-                    
+                    intervention = (request.form.get('description', '') or '')[:30]
+                    rdv_titre_auto = f"{client_name} - {intervention}" if (client_name and intervention) else (client_name or 'Rendez-vous')
+                    or_obj.rdv_titre = rdv_titre_auto
+
                     rdv = RendezVous(
                         client_id=client_id,
                         vehicule_id=vehicule_id,
-                        titre=f"{client_name} - {intervention}" if client_name else request.form.get('rdv_titre'),
-                        description=f'RDV lié à l\'OR {or_numero}: {intervention}',
+                        titre=rdv_titre_auto,
+                        description=f"RDV lié à l'OR {or_numero}" + (f": {intervention}" if intervention else ""),
                         date_heure=rdv_datetime,
                         duree=60,
                         statut='planifie',
