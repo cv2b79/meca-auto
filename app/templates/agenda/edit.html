@@ -76,11 +76,14 @@
         </select>
     </div>
     
-    <div style="margin-top: 1rem;">
+    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">
         <button type="submit" class="btn">Enregistrer</button>
         <a href="{{ url_for('agenda.index') }}" class="btn btn-secondary">Annuler</a>
-        <form method="POST" action="{{ url_for('agenda.delete', id=rdv.id) }}" style="display:inline; float: right;"><button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer ce rendez-vous?')">🗑️ Supprimer</button></form>
     </div>
+</form>
+
+<form method="POST" action="{{ url_for('agenda.delete', id=rdv.id) }}" style="margin-top: 0.5rem;">
+    <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer ce rendez-vous ?')">🗑️ Supprimer</button>
 </form>
 
 <script>

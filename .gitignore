@@ -10,3 +10,4 @@ instance/
 *.xlsx
 .env
 .DS_Store
+.claude/
