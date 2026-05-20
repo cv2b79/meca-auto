@@ -565,6 +565,7 @@ def view(id):
         sessions = []
         incidents = []
     incidents_attente = [i for i in incidents if i.statut == 'en_attente']
+    incidents_valides = [i for i in incidents if i.statut == 'valide']
 
     return render_template('ordres/view.html',
         or_obj=or_obj, client=client, interventions=interventions,
@@ -572,6 +573,7 @@ def view(id):
         rdv_list=rdv_list, eleves=eleves, fournitures=fournitures,
         sessions=sessions, incidents=incidents,
         incidents_attente=incidents_attente,
+        incidents_valides=incidents_valides,
         now=datetime.utcnow())
 
 @ordres_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
