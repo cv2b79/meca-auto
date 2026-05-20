@@ -32,7 +32,7 @@
         <p style="font-size: 0.9rem; background:{% if or_obj.depollution_offerte %}#e8f5e9{% else %}#fff3e0{% endif %}; padding:0.4rem 0.6rem; border-radius:4px; margin-top:0.5rem; color:{% if or_obj.depollution_offerte %}#2e7d32{% else %}#e65100{% endif %};">
             ♻️ <strong>Dépollution :</strong>
             {% if not or_obj.client_recup_pieces %}pièces non récupérées{% endif %}{% if not or_obj.client_recup_pieces and not or_obj.client_recup_fluides %}, {% endif %}{% if not or_obj.client_recup_fluides %}fluides non récupérés{% endif %}
-            {% if or_obj.depollution_offerte %}— <strong>🎁 Offerte</strong>
+            {% if or_obj.depollution_offerte %}— <strong>🏫 Pris en charge par le lycée</strong>
             {% elif or_obj.montant_surcharge and or_obj.montant_surcharge > 0 %}— <strong>{{ "%.2f"|format(or_obj.montant_surcharge|float) }} €</strong>{% endif %}
         </p>
         {% endif %}
@@ -177,7 +177,7 @@
             <input type="checkbox" name="depollution_offerte" id="dep_offerte"
                    {% if or_obj.depollution_offerte %}checked{% endif %}
                    onchange="calcSurcharge()" style="width:1.1rem; height:1.1rem;">
-            <span>🎁 <strong>Offrir les frais de dépollution</strong> <small style="color:#888;">(surcharge = 0 €)</small></span>
+            <span>🏫 <strong>Frais de dépollution pris en charge par le lycée</strong></span>
         </label>
         {% endif %}
         <button type="submit" class="btn" style="background:#388e3c; color:white;">💾 Enregistrer</button>
@@ -204,7 +204,7 @@
     </div>
     {% endif %}
     {% if or_obj.depollution_offerte %}
-    <p style="margin-top:0.5rem; color:#2e7d32; font-weight:bold;">🎁 Frais de dépollution offerts — 0 €</p>
+    <p style="margin-top:0.5rem; color:#2e7d32; font-weight:bold;">🏫 Frais de dépollution pris en charge par le lycée — 0 €</p>
     {% elif or_obj.montant_surcharge and or_obj.montant_surcharge > 0 %}
     <p style="margin-top:0.5rem; color:#e65100; font-weight:bold;">
         💶 Surcharge dépollution : {{ "%.2f"|format(or_obj.montant_surcharge|float) }} €
@@ -224,7 +224,7 @@ function calcSurcharge() {
     if (!rp || !rf || !si || !mi) return;
     if (offerte && offerte.checked) {
         mi.value = '0.00';
-        si.innerHTML = '<span style="color:#2e7d32;">🎁 Frais de dépollution offerts — 0 €</span>';
+        si.innerHTML = '<span style="color:#2e7d32;">🏫 Frais de dépollution pris en charge par le lycée — 0 €</span>';
         return;
     }
     var total = 0, texts = [];
