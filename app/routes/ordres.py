@@ -552,11 +552,18 @@ def view(id):
     etats = or_obj.etats_lieux.all()
     etat_entree = or_obj.etats_lieux.filter_by(type='entree').first()
     etat_sortie = or_obj.etats_lieux.filter_by(type='sortie').first()
-    rdv_list = RendezVous.query.filter_by(client_id=or_obj.client_id).order_by(RendezVous.date_heure.desc()).all()
+    rdv_list = RendezVous.query.filter_by(client_id=or_obj.client_id).order_by(RendezVous.date_heure.desc()).all() if or_obj.client_id else []
     eleves = User.query.filter_by(role='eleve', actif=True).order_by(User.nom).all()
     fournitures = Fourniture.query.filter_by(actif=True).order_by(Fourniture.nom).all()
-    sessions = SessionTravail.query.filter_by(or_id=id).order_by(SessionTravail.date_session.desc()).all()
-    incidents = Incident.query.filter_by(or_id=id).order_by(Incident.date_constat.desc()).all()
+
+    # Défensif : tables créées par migrate_db.py, peut ne pas exister si migration pas encore faite
+    try:
+        sessions = SessionTravail.query.filter_by(or_id=id).order_by(SessionTravail.date_session.desc()).all()
+        incidents = Incident.query.filter_by(or_id=id).order_by(Incident.date_constat.desc()).all()
+    except Exception:
+        db.session.rollback()
+        sessions = []
+        incidents = []
     incidents_attente = [i for i in incidents if i.statut == 'en_attente']
 
     return render_template('ordres/view.html',
