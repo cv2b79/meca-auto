@@ -20,7 +20,7 @@
         <p><strong>Mode tarif:</strong> {{ or_obj.mode_tarif }}</p>
         <p><strong>Montant:</strong> {% if or_obj.montant %}{{ or_obj.montant }}€{% else %}<span style="color: #999;">Non défini</span>{% endif %}</p>
         {% if or_obj.pas_de_facturation %}
-        <p style="color: red; font-weight: bold;">⛔ Pas de facturation</p>
+        <p style="color: #2e7d32; font-weight: bold;">✅ Travaux internes — pas de facturation</p>
         {% endif %}
         {% if or_obj.rdv_date_heure %}
         <p style="color: #1E3A5F; background: #e3f2fd; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
