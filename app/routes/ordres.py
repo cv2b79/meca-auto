@@ -400,11 +400,12 @@ def new():
                 db.session.flush()
                 client_id = client.id
 
+                _annee_raw = request.form.get('annee', '').strip()
                 vehicule = Vehicule(
                     immatriculation=request.form.get('immatriculation').upper(),
-                    marque=request.form.get('marque'),
-                    modele=request.form.get('modele'),
-                    annee=request.form.get('annee'),
+                    marque=request.form.get('marque') or None,
+                    modele=request.form.get('modele') or None,
+                    annee=int(_annee_raw) if _annee_raw.isdigit() else None,
                     vin=request.form.get('vin') or None,
                     energie=request.form.get('energie') or None,
                     proprietaire_id=client_id
@@ -762,16 +763,18 @@ def add_etat_lieu(id):
 
     existing = or_obj.etats_lieux.filter_by(type=type_etat).first()
     if existing:
-        existing.kilometrage = request.form.get('kilometrage')
+        _km = request.form.get('kilometrage', '').strip()
+        existing.kilometrage = int(_km) if _km.isdigit() else None
         existing.niveau_carburant = request.form.get('niveau_carburant')
         existing.dommages = request.form.get('dommages')
         existing.observations = request.form.get('observations')
         existing.responsable = request.form.get('responsable')
     else:
+        _km = request.form.get('kilometrage', '').strip()
         etat = etat_lieu(
             or_id=or_obj.id,
             type=type_etat,
-            kilometrage=request.form.get('kilometrage'),
+            kilometrage=int(_km) if _km.isdigit() else None,
             niveau_carburant=request.form.get('niveau_carburant'),
             dommages=request.form.get('dommages'),
             observations=request.form.get('observations'),
@@ -888,16 +891,18 @@ def etat_lieu_save():
         existing = or_obj.etats_lieux.filter_by(type=type_etat).first()
         
         if existing:
-            existing.kilometrage = request.form.get('kilometrage')
+            _km2 = request.form.get('kilometrage', '').strip()
+            existing.kilometrage = int(_km2) if _km2.isdigit() else None
             existing.niveau_carburant = request.form.get('niveau_carburant')
             existing.dommages = request.form.get('dommages')
             existing.observations = request.form.get('observations')
             existing.responsable = request.form.get('responsable')
         else:
+            _km2 = request.form.get('kilometrage', '').strip()
             etat = etat_lieu(
                 or_id=or_id,
                 type=type_etat,
-                kilometrage=request.form.get('kilometrage'),
+                kilometrage=int(_km2) if _km2.isdigit() else None,
                 niveau_carburant=request.form.get('niveau_carburant'),
                 dommages=request.form.get('dommages'),
                 observations=request.form.get('observations'),

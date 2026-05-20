@@ -96,14 +96,16 @@ def new():
             db.session.flush()
             proprietaire_id = client.id
 
+        _annee = request.form.get('annee', '').strip()
+        _km = request.form.get('kilometrage', '').strip()
         vehicule = Vehicule(
             immatriculation=immat,
-            marque=request.form.get('marque'),
-            modele=request.form.get('modele'),
-            annee=request.form.get('annee'),
-            vin=request.form.get('vin'),
-            energie=request.form.get('energie'),
-            kilometrage=request.form.get('kilometrage'),
+            marque=request.form.get('marque') or None,
+            modele=request.form.get('modele') or None,
+            annee=int(_annee) if _annee.isdigit() else None,
+            vin=request.form.get('vin') or None,
+            energie=request.form.get('energie') or None,
+            kilometrage=int(_km) if _km.isdigit() else None,
             proprietaire_id=proprietaire_id
         )
         db.session.add(vehicule)
@@ -142,13 +144,15 @@ def edit(id):
     if request.method == 'POST':
         old_proprio_id = vehicule.proprietaire_id
 
+        _annee_e = request.form.get('annee', '').strip()
+        _km_e = request.form.get('kilometrage', '').strip()
         vehicule.immatriculation = request.form.get('immatriculation').upper()
-        vehicule.marque = request.form.get('marque')
-        vehicule.modele = request.form.get('modele')
-        vehicule.annee = request.form.get('annee')
-        vehicule.vin = request.form.get('vin')
-        vehicule.energie = request.form.get('energie')
-        vehicule.kilometrage = request.form.get('kilometrage')
+        vehicule.marque = request.form.get('marque') or None
+        vehicule.modele = request.form.get('modele') or None
+        vehicule.annee = int(_annee_e) if _annee_e.isdigit() else None
+        vehicule.vin = request.form.get('vin') or None
+        vehicule.energie = request.form.get('energie') or None
+        vehicule.kilometrage = int(_km_e) if _km_e.isdigit() else None
 
         new_proprio_id = request.form.get('proprietaire_id')
         if new_proprio_id and int(new_proprio_id) != old_proprio_id:
