@@ -567,6 +567,9 @@ def view(id):
     incidents_attente = [i for i in incidents if i.statut == 'en_attente']
     incidents_valides = [i for i in incidents if i.statut == 'valide']
 
+    surcharges = RecupSurcharge.query.filter_by(actif=True).all()
+    surcharges_json = [{'id': s.id, 'nom': s.nom, 'montant': float(s.montant)} for s in surcharges]
+
     return render_template('ordres/view.html',
         or_obj=or_obj, client=client, interventions=interventions,
         etats=etats, etat_entree=etat_entree, etat_sortie=etat_sortie,
@@ -574,6 +577,7 @@ def view(id):
         sessions=sessions, incidents=incidents,
         incidents_attente=incidents_attente,
         incidents_valides=incidents_valides,
+        surcharges_json=surcharges_json,
         now=datetime.utcnow())
 
 @ordres_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -614,14 +618,7 @@ def edit(id):
         
         # Pas de facturation
         or_obj.pas_de_facturation = request.form.get('pas_de_facturation') == 'on'
-
-        # Dépollution
-        or_obj.client_recup_pieces  = request.form.get('client_recup_pieces')  == 'on'
-        or_obj.client_recup_fluides = request.form.get('client_recup_fluides') == 'on'
-        try:
-            or_obj.montant_surcharge = float(request.form.get('montant_surcharge', 0) or 0)
-        except (ValueError, TypeError):
-            or_obj.montant_surcharge = 0
+        # Note : les champs dépollution sont gérés via la route /depollution (vue OR)
 
         db.session.commit()
         Log.log(current_user, 'edit_or', f'OR {or_obj.numero} modifié', 'OrdreReparation', or_obj.id)
@@ -629,10 +626,7 @@ def edit(id):
         return redirect(url_for('ordres.view', id=id))
 
     forfaits = Forfait.query.filter_by(actif=True).all()
-    surcharges = RecupSurcharge.query.filter_by(actif=True).all()
-    surcharges_list = [{'id': s.id, 'nom': s.nom, 'montant': float(s.montant)} for s in surcharges]
-    return render_template('ordres/edit.html', or_obj=or_obj, forfaits=forfaits,
-                           surcharges=surcharges, surcharges_list=surcharges_list)
+    return render_template('ordres/edit.html', or_obj=or_obj, forfaits=forfaits)
 
 @ordres_bp.route('/<int:id>/statut', methods=['POST'])
 @login_required
@@ -807,6 +801,36 @@ def add_etat_lieu(id):
     db.session.commit()
     flash('État des lieux enregistré', 'success')
     return redirect(url_for('ordres.view', id=id))
+
+@ordres_bp.route('/<int:id>/depollution', methods=['POST'])
+@login_required
+def depollution_update(id):
+    """Enseignant/DDFPT/magasinier renseignent la récupération pièces/fluides par le client."""
+    if current_user.role not in ('enseignant', 'ddfpt', 'magasinier'):
+        flash('Accès refusé', 'error')
+        return redirect(url_for('ordres.view', id=id))
+
+    or_obj = OrdreReparation.query.get_or_404(id)
+    if or_obj.statut == 'cloture' and current_user.role not in ('ddfpt', 'magasinier'):
+        flash('OR clôturé — modification impossible.', 'error')
+        return redirect(url_for('ordres.view', id=id))
+
+    or_obj.client_recup_pieces  = request.form.get('client_recup_pieces')  == 'on'
+    or_obj.client_recup_fluides = request.form.get('client_recup_fluides') == 'on'
+    try:
+        or_obj.montant_surcharge = float(request.form.get('montant_surcharge', 0) or 0)
+    except (ValueError, TypeError):
+        or_obj.montant_surcharge = 0
+
+    db.session.commit()
+    Log.log(current_user, 'depollution_update',
+            f'Dépollution OR {or_obj.numero} — pièces: {"récup" if or_obj.client_recup_pieces else "non récup"}'
+            f', fluides: {"récup" if or_obj.client_recup_fluides else "non récup"}'
+            f', surcharge: {or_obj.montant_surcharge}€',
+            'OrdreReparation', or_obj.id)
+    flash('Informations de dépollution enregistrées', 'success')
+    return redirect(url_for('ordres.view', id=id) + '#depollution')
+
 
 @ordres_bp.route('/<int:id>/print')
 @login_required

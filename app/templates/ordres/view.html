@@ -27,8 +27,13 @@
             📅 <strong>RDV planifié:</strong> {{ or_obj.rdv_date_heure.strftime('%d/%m/%Y à %H:%M') }} - {{ or_obj.rdv_titre or 'Intervention' }}
         </p>
         {% endif %}
-        {% if or_obj.client_recup_pieces == false or or_obj.client_recup_fluides == false %}
-        <p style="color: #856404; font-size: 0.9rem;">♻️ Dépollution: {% if not or_obj.client_recup_pieces %}pièces non récupérées{% endif %}{% if not or_obj.client_recup_pieces and not or_obj.client_recup_fluides %}, {% endif %}{% if not or_obj.client_recup_fluides %}fluides non récupérés{% endif %}</p>
+        {# Résumé dépollution — le détail est dans la section #depollution ci-dessous #}
+        {% if not or_obj.client_recup_pieces or not or_obj.client_recup_fluides %}
+        <p style="color: #e65100; font-size: 0.9rem; background:#fff3e0; padding:0.4rem 0.6rem; border-radius:4px; margin-top:0.5rem;">
+            ♻️ <strong>Dépollution :</strong>
+            {% if not or_obj.client_recup_pieces %}pièces non récupérées{% endif %}{% if not or_obj.client_recup_pieces and not or_obj.client_recup_fluides %}, {% endif %}{% if not or_obj.client_recup_fluides %}fluides non récupérés{% endif %}
+            {% if or_obj.montant_surcharge and or_obj.montant_surcharge > 0 %}— <strong>{{ "%.2f"|format(or_obj.montant_surcharge|float) }} €</strong>{% endif %}
+        </p>
         {% endif %}
     </div>
     
@@ -139,6 +144,86 @@
         {% endif %}
     </div>
 </div>
+
+{# ── Section dépollution ── #}
+{% set can_edit_depol = current_user.role in ('enseignant', 'ddfpt', 'magasinier') and (or_obj.statut != 'cloture' or current_user.role in ('ddfpt', 'magasinier')) %}
+<div class="card" style="margin-top: 1rem;" id="depollution">
+    <h4>♻️ Dépollution — récupération des déchets</h4>
+    {% if can_edit_depol %}
+    <form method="POST" action="{{ url_for('ordres.depollution_update', id=or_obj.id) }}">
+        <p style="font-size: 0.85rem; color: #555; margin: 0 0 0.75rem 0;">
+            Indiquer si le client <strong>récupère</strong> ses pièces usagées et/ou ses fluides.<br>
+            Si non, des frais de dépollution s'ajouteront à la facture.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                <input type="checkbox" id="dep_recup_pieces" name="client_recup_pieces"
+                       {% if or_obj.client_recup_pieces %}checked{% endif %}
+                       onchange="calcSurcharge()" style="width:1.1rem; height:1.1rem;">
+                <span>♻️ Le client <strong>récupère</strong> ses pièces usagées</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                <input type="checkbox" id="dep_recup_fluides" name="client_recup_fluides"
+                       {% if or_obj.client_recup_fluides %}checked{% endif %}
+                       onchange="calcSurcharge()" style="width:1.1rem; height:1.1rem;">
+                <span>♻️ Le client <strong>récupère</strong> ses fluides usagés (huile, liquide de frein…)</span>
+            </label>
+        </div>
+        <div id="dep_surcharge_info" style="font-size:0.9rem; color:#e65100; margin-bottom:0.5rem; font-weight:bold;"></div>
+        <input type="hidden" name="montant_surcharge" id="dep_montant_surcharge" value="{{ or_obj.montant_surcharge or 0 }}">
+        <button type="submit" class="btn" style="background:#388e3c; color:white;">💾 Enregistrer</button>
+    </form>
+    {% else %}
+    {# Lecture seule #}
+    <div style="font-size:0.9rem; line-height:1.8;">
+        <p>
+            <strong>Pièces :</strong>
+            {% if or_obj.client_recup_pieces %}
+            <span style="color:#2e7d32;">✅ récupérées par le client</span>
+            {% else %}
+            <span style="color:#e65100;">⚠️ non récupérées — frais de dépollution</span>
+            {% endif %}
+        </p>
+        <p>
+            <strong>Fluides :</strong>
+            {% if or_obj.client_recup_fluides %}
+            <span style="color:#2e7d32;">✅ récupérés par le client</span>
+            {% else %}
+            <span style="color:#e65100;">⚠️ non récupérés — frais de dépollution</span>
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+    {% if or_obj.montant_surcharge and or_obj.montant_surcharge > 0 %}
+    <p style="margin-top:0.5rem; color:#e65100; font-weight:bold;">
+        💶 Surcharge dépollution : {{ "%.2f"|format(or_obj.montant_surcharge|float) }} €
+    </p>
+    {% endif %}
+</div>
+
+<script>
+var depSurchargesData = {{ surcharges_json|tojson }};
+
+function calcSurcharge() {
+    var rp = document.getElementById('dep_recup_pieces');
+    var rf = document.getElementById('dep_recup_fluides');
+    var si = document.getElementById('dep_surcharge_info');
+    var mi = document.getElementById('dep_montant_surcharge');
+    if (!rp || !rf) return;
+    var total = 0, texts = [];
+    if (!rp.checked) {
+        var sp = depSurchargesData.find(function(x){ return x.nom.toLowerCase().includes('piece') || x.nom.toLowerCase().includes('pièce'); });
+        if (sp) { total += parseFloat(sp.montant); texts.push(sp.nom + ' : ' + sp.montant + ' €'); }
+    }
+    if (!rf.checked) {
+        var sf = depSurchargesData.find(function(x){ return x.nom.toLowerCase().includes('huile') || x.nom.toLowerCase().includes('fluide'); });
+        if (sf) { total += parseFloat(sf.montant); texts.push(sf.nom + ' : ' + sf.montant + ' €'); }
+    }
+    mi.value = total.toFixed(2);
+    si.innerHTML = total > 0 ? '💶 Frais de dépollution : ' + total.toFixed(2) + ' € (' + texts.join(' + ') + ')' : '';
+}
+calcSurcharge();
+</script>
 
 {% if rdv_list %}
 <h3>📅 Rendez-vous liés</h3>

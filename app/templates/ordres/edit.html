@@ -21,7 +21,7 @@
         </select>
     </div>
     <div class="form-group"><label>Montant</label><input type="number" step="0.01" name="montant" value="{{ or_obj.montant }}"></div>
-    
+
     <div style="margin: 1rem 0; padding: 0.75rem 1rem; background: #fff3cd; border-radius: 4px;">
         <p style="margin: 0 0 0.5rem 0;">
             <label style="cursor:pointer;">
@@ -37,7 +37,7 @@
                   placeholder="Ex: Pièce commandée, attente réponse client…"
                   style="width:100%; padding:0.4rem 0.5rem; border:1px solid #d6c07a; border-radius:4px; background:#fffdf0; font-size:0.9rem; margin-top:0.2rem; resize:vertical;">{{ or_obj.remarque_attente or '' }}</textarea>
     </div>
-    
+
     <div style="margin: 1rem 0; padding: 1rem; background: #f8d7da; border-radius: 4px;">
         <label style="display: flex; align-items: center; gap: 0.5rem;">
             <input type="checkbox" name="pas_de_facturation" {% if or_obj.pas_de_facturation %}checked{% endif %}>
@@ -46,61 +46,7 @@
         <p style="font-size: 0.85rem; color: #666; margin-top: 0.3rem;">Cocher cette case si l'intervention n'est pas facturée (ex: révision gratuite, atelier pédagogique)</p>
     </div>
 
-    <div style="margin: 1rem 0; padding: 1rem; background: #e8f5e9; border-radius: 4px;">
-        <p style="margin: 0 0 0.5rem 0; font-weight: bold;">♻️ Dépollution / Récupération des déchets</p>
-        <p style="font-size: 0.82rem; color: #555; margin: 0 0 0.75rem 0;">
-            Si le client ne récupère pas ses pièces usagées ou ses fluides, des frais de recyclage s'ajoutent à la facture.
-        </p>
-        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.4rem;">
-            <input type="checkbox" id="recup_pieces" name="client_recup_pieces"
-                   {% if or_obj.client_recup_pieces %}checked{% endif %}
-                   onchange="updateSurcharge()">
-            ♻️ Le client <strong>récupère</strong> ses pièces usagées
-        </label>
-        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.75rem;">
-            <input type="checkbox" id="recup_fluides" name="client_recup_fluides"
-                   {% if or_obj.client_recup_fluides %}checked{% endif %}
-                   onchange="updateSurcharge()">
-            ♻️ Le client <strong>récupère</strong> ses fluides usagés (huile, liquide de frein…)
-        </label>
-        <div id="surcharge_info" style="font-size: 0.85rem; color: #e65100; margin-bottom: 0.5rem;"></div>
-        <input type="hidden" name="montant_surcharge" id="montant_surcharge" value="{{ or_obj.montant_surcharge or 0 }}">
-        {% if or_obj.montant_surcharge and or_obj.montant_surcharge > 0 %}
-        <p style="font-size: 0.85rem; color: #e65100;">
-            ⚠️ Surcharge dépollution actuelle : <strong>{{ "%.2f"|format(or_obj.montant_surcharge|float) }} €</strong>
-        </p>
-        {% endif %}
-    </div>
-
     <button type="submit" class="btn">Enregistrer</button>
     <a href="{{ url_for('ordres.view', id=or_obj.id) }}" class="btn btn-secondary">Annuler</a>
 </form>
-
-<script>
-var surchargesData = {{ surcharges_list|tojson }};
-
-function updateSurcharge() {
-    var rp = document.getElementById('recup_pieces').checked;
-    var rf = document.getElementById('recup_fluides').checked;
-    var si = document.getElementById('surcharge_info');
-    var mi = document.getElementById('montant_surcharge');
-    var total = 0, texts = [];
-    if (!rp) {
-        var sp = surchargesData.find(function(x) { return x.nom.toLowerCase().includes('piece') || x.nom.toLowerCase().includes('pièce'); });
-        if (sp) { total += parseFloat(sp.montant); texts.push(sp.nom + ' : ' + sp.montant + ' €'); }
-    }
-    if (!rf) {
-        var sf = surchargesData.find(function(x) { return x.nom.toLowerCase().includes('huile') || x.nom.toLowerCase().includes('fluide'); });
-        if (sf) { total += parseFloat(sf.montant); texts.push(sf.nom + ' : ' + sf.montant + ' €'); }
-    }
-    mi.value = total.toFixed(2);
-    if (total > 0) {
-        si.innerHTML = '<strong>Frais de dépollution : ' + total.toFixed(2) + ' €</strong><br><small>' + texts.join(' | ') + '</small>';
-    } else {
-        si.innerHTML = '';
-    }
-}
-
-updateSurcharge();
-</script>
 {% endblock %}
