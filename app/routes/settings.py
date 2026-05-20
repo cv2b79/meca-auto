@@ -342,17 +342,20 @@ def index():
     
     from app.models import ChecklistItem
     checklist_items = ChecklistItem.query.order_by(ChecklistItem.ordre).all()
-    
-    return render_template('settings/index.html', 
-        forfaits=forfaits, 
-        surcharges=surcharges, 
+
+    taux_horaire = Parametre.get('taux_horaire', '50')
+
+    return render_template('settings/index.html',
+        forfaits=forfaits,
+        surcharges=surcharges,
         consommables=consommables,
         enseignants=enseignants,
         smtp_config=smtp_config,
         classes=classes,
         users=users,
         tab=tab,
-        checklist_items=checklist_items)
+        checklist_items=checklist_items,
+        taux_horaire=taux_horaire)
 
 # === MON COMPTE - CHANGEMENT MOT DE PASSE ===
 @settings_bp.route('/mon-compte', methods=['GET', 'POST'])
@@ -883,6 +886,21 @@ def surcharge_new():
     db.session.commit()
     flash('Frais de dépollution créé', 'success')
     return redirect(url_for('settings.index'))
+
+@settings_bp.route('/taux-horaire', methods=['POST'])
+@login_required
+def taux_horaire_save():
+    if not current_user.can_manage_settings():
+        flash('Accès refusé', 'error')
+        return redirect(url_for('settings.index'))
+    try:
+        taux = float(request.form.get('taux_horaire', 50))
+        Parametre.set('taux_horaire', str(round(taux, 2)))
+        flash('Taux horaire mis à jour', 'success')
+    except (ValueError, TypeError):
+        flash('Valeur invalide', 'error')
+    return redirect(url_for('settings.index'))
+
 
 @settings_bp.route('/surcharge/<int:id>/delete', methods=['POST'])
 @login_required
