@@ -317,10 +317,14 @@
     <div class="info-box">
         <div class="info-box-header">Client</div>
         <div class="info-box-body">
-            <b>Nom :</b> {{ client.nom }} {{ client.prenom }}<br>
+            {% if client %}
+            <b>Nom :</b> {{ client.nom or '' }} {{ client.prenom or '' }}<br>
             {% if client.adresse %}<b>Adresse :</b> {{ client.adresse }}<br>{% endif %}
             {% if client.telephone %}<b>Téléphone :</b> {{ client.telephone }}<br>{% endif %}
             {% if client.email %}<b>Email :</b> {{ client.email }}<br>{% endif %}
+            {% else %}
+            <span style="color:#888; font-style:italic;">Client non renseigné</span>
+            {% endif %}
         </div>
     </div>
     <!-- Véhicule -->

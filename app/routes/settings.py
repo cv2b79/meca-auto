@@ -1074,6 +1074,13 @@ def admin():
             flash('Configuration sécurité enregistrée', 'success')
             return redirect(url_for('settings.admin'))
         
+        # Notifications incidents
+        if action == 'save_notif_incident':
+            Parametre.set('notif_incident', 'oui' if request.form.get('notif_incident') == 'oui' else 'non')
+            Parametre.set('notif_incident_email', request.form.get('notif_incident_email', '').strip())
+            flash('Paramètres de notification enregistrés', 'success')
+            return redirect(url_for('settings.admin'))
+
         # Change password for current user
         if action == 'change_password':
             current_password = request.form.get('current_password')
@@ -1349,7 +1356,9 @@ def admin():
                           backup_status=backup_status,
                           backup_last_date=backup_last_date,
                           backup_last_msg=backup_last_msg,
-                          backups_list=backups_list)
+                          backups_list=backups_list,
+                          notif_incident=Parametre.get('notif_incident', 'non'),
+                          notif_incident_email=Parametre.get('notif_incident_email', ''))
 
 @settings_bp.route('/permissions', methods=['GET', 'POST'])
 @login_required

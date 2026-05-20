@@ -173,19 +173,23 @@ ok "Service démarré avec watchdog"
 
 section "8/8 — Sauvegardes"
 chmod +x "${APP_DIR}/scripts/backup.sh" "${APP_DIR}/scripts/healthcheck.sh" \
-         "${APP_DIR}/scripts/restore.sh" "${APP_DIR}/scripts/list_backups.sh"
+         "${APP_DIR}/scripts/restore.sh" "${APP_DIR}/scripts/list_backups.sh" \
+         "${APP_DIR}/scripts/export_logs.sh"
 
 mkdir -p "${APP_DIR}/backups"
 
-# Sudoers pour le backup
+# Sudoers pour le backup et l'export logs
 sudo tee /etc/sudoers.d/mecaauto-backup > /dev/null << EOF
 ${APP_USER} ALL=(ALL) NOPASSWD: /bin/bash ${APP_DIR}/scripts/backup.sh
+${APP_USER} ALL=(ALL) NOPASSWD: /bin/bash ${APP_DIR}/scripts/export_logs.sh
 EOF
 sudo chmod 0440 /etc/sudoers.d/mecaauto-backup
 
-# Cron 2h du matin
-(sudo crontab -l 2>/dev/null | grep -v backup.sh; echo "0 2 * * * /bin/bash ${APP_DIR}/scripts/backup.sh") | sudo crontab -
-ok "Sauvegardes configurées (cron 2h00)"
+# Cron 2h du matin (backup BDD) + lundi 3h (export logs hebdo)
+(sudo crontab -l 2>/dev/null | grep -v backup.sh | grep -v export_logs.sh; \
+ echo "0 2 * * * /bin/bash ${APP_DIR}/scripts/backup.sh"; \
+ echo "0 3 * * 1 /bin/bash ${APP_DIR}/scripts/export_logs.sh") | sudo crontab -
+ok "Sauvegardes configurées (backup quotidien 2h00, export logs lundi 3h00)"
 
 # ── Résumé ────────────────────────────────────────────────────
 section "Déploiement terminé"

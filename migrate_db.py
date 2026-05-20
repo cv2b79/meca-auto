@@ -271,6 +271,35 @@ CREATE_TABLES = [
         created_by  INTEGER REFERENCES users(id),
         created_at  TIMESTAMP DEFAULT NOW()
     )""",
+
+    # sessions de travail
+    """CREATE TABLE IF NOT EXISTS sessions_travail (
+        id               SERIAL PRIMARY KEY,
+        or_id            INTEGER NOT NULL REFERENCES ordres_reparation(id) ON DELETE CASCADE,
+        enseignant_id    INTEGER NOT NULL REFERENCES users(id),
+        date_session     TIMESTAMP NOT NULL,
+        classe_nom       VARCHAR(50),
+        eleves_presents  TEXT,
+        zone_vehicule    VARCHAR(50),
+        observations     TEXT,
+        certified_at     TIMESTAMP,
+        created_at       TIMESTAMP DEFAULT NOW()
+    )""",
+
+    # incidents
+    """CREATE TABLE IF NOT EXISTS incidents (
+        id               SERIAL PRIMARY KEY,
+        or_id            INTEGER NOT NULL REFERENCES ordres_reparation(id) ON DELETE CASCADE,
+        declared_by      INTEGER NOT NULL REFERENCES users(id),
+        validated_by     INTEGER REFERENCES users(id),
+        validated_at     TIMESTAMP,
+        statut           VARCHAR(20) DEFAULT 'en_attente',
+        type_incident    VARCHAR(30) NOT NULL,
+        description      TEXT NOT NULL,
+        objets_concernes TEXT,
+        date_constat     TIMESTAMP NOT NULL,
+        created_at       TIMESTAMP DEFAULT NOW()
+    )""",
 ]
 
 # ──────────────────────────────────────────────────────────────
@@ -332,8 +361,10 @@ ADD_COLUMNS = [
     ("factures", "send_by_email", "BOOLEAN DEFAULT FALSE"),
 
     # etats_lieux
-    ("etats_lieux", "responsable", "VARCHAR(100)"),
-    ("etats_lieux", "created_at",  "TIMESTAMP DEFAULT NOW()"),
+    ("etats_lieux", "responsable",        "VARCHAR(100)"),
+    ("etats_lieux", "created_at",         "TIMESTAMP DEFAULT NOW()"),
+    ("etats_lieux", "inventaire_objets",  "TEXT"),
+    ("etats_lieux", "inventaire_signe",   "BOOLEAN DEFAULT FALSE"),
 ]
 
 

@@ -545,20 +545,27 @@ def new():
 @ordres_bp.route('/<int:id>')
 @login_required
 def view(id):
+    from app.models import SessionTravail, Incident
     or_obj = OrdreReparation.query.get_or_404(id)
     client = Client.query.get(or_obj.client_id) if or_obj.client_id else None
     interventions = or_obj.interventions_eleves.all()
     etats = or_obj.etats_lieux.all()
     etat_entree = or_obj.etats_lieux.filter_by(type='entree').first()
     etat_sortie = or_obj.etats_lieux.filter_by(type='sortie').first()
-    
-    # Get related appointments
     rdv_list = RendezVous.query.filter_by(client_id=or_obj.client_id).order_by(RendezVous.date_heure.desc()).all()
-    
     eleves = User.query.filter_by(role='eleve', actif=True).order_by(User.nom).all()
     fournitures = Fourniture.query.filter_by(actif=True).order_by(Fourniture.nom).all()
-    
-    return render_template('ordres/view.html', or_obj=or_obj, client=client, interventions=interventions, etats=etats, etat_entree=etat_entree, etat_sortie=etat_sortie, rdv_list=rdv_list, eleves=eleves, fournitures=fournitures)
+    sessions = SessionTravail.query.filter_by(or_id=id).order_by(SessionTravail.date_session.desc()).all()
+    incidents = Incident.query.filter_by(or_id=id).order_by(Incident.date_constat.desc()).all()
+    incidents_attente = [i for i in incidents if i.statut == 'en_attente']
+
+    return render_template('ordres/view.html',
+        or_obj=or_obj, client=client, interventions=interventions,
+        etats=etats, etat_entree=etat_entree, etat_sortie=etat_sortie,
+        rdv_list=rdv_list, eleves=eleves, fournitures=fournitures,
+        sessions=sessions, incidents=incidents,
+        incidents_attente=incidents_attente,
+        now=datetime.utcnow())
 
 @ordres_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -629,18 +636,6 @@ def set_statut(id):
         flash('État des lieux de SORTIE requis avant de cloturer', 'warning')
         return redirect(url_for('ordres.etat_lieu_form', or_id=id, type='sortie'))
     
-# Vérifier la checklist pour termine/cloture (seulement pour DDFPT)
-    if new_statut in ['termine', 'cloture'] and current_user.role == 'ddfpt':
-        from app.models import ChecklistItem, ChecklistVerification
-        checklist_items = ChecklistItem.query.filter_by(actif=True).all()
-        if checklist_items:
-            verifs = ChecklistVerification.query.filter_by(or_id=id).all()
-            verif_dict = {v.checklist_item_id: True for v in verifs}
-            non_verified = [item.nom for item in checklist_items if not verif_dict.get(item.id, False)]
-            if non_verified:
-                flash('Checklist non complétée: ' + ', '.join(non_verified), 'error')
-                return redirect(url_for('ordres.view', id=id))
-
     if new_statut == 'cloture':
         or_obj.date_cloture = datetime.utcnow()
 
@@ -769,17 +764,24 @@ def add_etat_lieu(id):
         existing.dommages = request.form.get('dommages')
         existing.observations = request.form.get('observations')
         existing.responsable = request.form.get('responsable')
+        if type_etat == 'entree':
+            existing.inventaire_objets = request.form.get('inventaire_objets', '').strip() or None
+            existing.inventaire_signe = request.form.get('inventaire_signe') == '1'
     else:
         _km = request.form.get('kilometrage', '').strip()
-        etat = etat_lieu(
+        etat_kwargs = dict(
             or_id=or_obj.id,
             type=type_etat,
             kilometrage=int(_km) if _km.isdigit() else None,
             niveau_carburant=request.form.get('niveau_carburant'),
             dommages=request.form.get('dommages'),
             observations=request.form.get('observations'),
-            responsable=request.form.get('responsable')
+            responsable=request.form.get('responsable'),
         )
+        if type_etat == 'entree':
+            etat_kwargs['inventaire_objets'] = request.form.get('inventaire_objets', '').strip() or None
+            etat_kwargs['inventaire_signe'] = request.form.get('inventaire_signe') == '1'
+        etat = etat_lieu(**etat_kwargs)
         db.session.add(etat)
 
     db.session.commit()
@@ -868,9 +870,11 @@ def etat_lieu_form():
             if etat_entree and etat_entree.kilometrage:
                 km_entree = etat_entree.kilometrage
 
+    etat_existant = etat_lieu.query.filter_by(or_id=or_obj.id, type=type_etat).first() if or_obj else None
     return render_template('ordres/etat_lieu_form.html', vehicule=vehicule, or_obj=or_obj,
                            type_etat=type_etat, checklist_items=checklist_items,
-                           existing_verifs=existing_verifs, km_entree=km_entree)
+                           existing_verifs=existing_verifs, km_entree=km_entree,
+                           etat=etat_existant)
 
 @ordres_bp.route('/etat-lieu-save', methods=['POST'])
 @login_required

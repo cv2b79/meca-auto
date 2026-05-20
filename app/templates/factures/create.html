@@ -5,7 +5,7 @@
 <div class="card">
     <p><strong>OR:</strong> {{ or_obj.numero }}</p>
     <p><strong>Véhicule:</strong> {{ or_obj.vehicule.immatriculation }}</p>
-    <p><strong>Client:</strong> {{ or_obj.client.prenom }} {{ or_obj.client.nom }}</p>
+    <p><strong>Client:</strong> {% if or_obj.client %}{{ or_obj.client.prenom }} {{ or_obj.client.nom }}{% else %}(non renseigné){% endif %}</p>
     <p><strong>Montant:</strong> {{ or_obj.montant }}€</p>
 </div>
 <form method="POST" class="card">

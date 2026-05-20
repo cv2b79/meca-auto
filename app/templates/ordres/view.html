@@ -220,5 +220,271 @@
         <button type="submit" class="btn">Ajouter</button>
     </form>
 </div>
-{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════
+     SESSIONS DE TRAVAIL
+═══════════════════════════════════════════════════════ -->
+<div class="card" id="sessions" style="margin-top:1.5rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+        <h3 style="margin:0;">📋 Sessions de travail
+            {% if sessions %}<span style="font-size:0.85rem; color:#888; font-weight:normal;">({{ sessions|length }})</span>{% endif %}
+        </h3>
+        {% if current_user.role in ('ddfpt','enseignant') %}
+        <button class="btn" onclick="document.getElementById('form-session').style.display=document.getElementById('form-session').style.display==='none'?'block':'none'">
+            + Déclarer une session
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Formulaire nouvelle session -->
+    {% if current_user.role in ('ddfpt','enseignant') %}
+    <div id="form-session" style="display:none; background:#f8fafc; border:1px solid #dde; border-radius:6px; padding:1rem; margin-bottom:1rem;">
+        <form method="POST" action="{{ url_for('sessions.session_new', or_id=or_obj.id) }}">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                <div class="form-group" style="margin:0;">
+                    <label>Date et heure *</label>
+                    <input type="datetime-local" name="date_session" required
+                           value="{{ now.strftime('%Y-%m-%dT%H:%M') if now else '' }}">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label>Classe</label>
+                    <input type="text" name="classe_nom" placeholder="ex: 1MAVA"
+                           value="{{ current_user.classe.nom if current_user.classe else '' }}">
+                </div>
+                <div class="form-group" style="margin:0; grid-column:span 2;">
+                    <label>Élèves présents</label>
+                    <input type="text" name="eleves_presents"
+                           placeholder="ex: Martin Dupont, Sophie Bernard, Lucas Martin…">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label>Zone du véhicule</label>
+                    <select name="zone_vehicule">
+                        <option value="">-- Sélectionner --</option>
+                        <option value="moteur">Moteur</option>
+                        <option value="habitacle">Habitacle</option>
+                        <option value="train_roulant">Train roulant</option>
+                        <option value="carrosserie">Carrosserie</option>
+                        <option value="electricite">Électricité</option>
+                        <option value="autre">Autre</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label>Observations</label>
+                    <input type="text" name="observations" placeholder="Notes libres…">
+                </div>
+            </div>
+            <div style="margin-top:0.75rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                <button type="submit" name="certifier" value="1" class="btn"
+                        onclick="return confirm('Certifier et figer cette session ? Elle ne pourra plus être modifiée.')">
+                    ✅ Certifier et enregistrer
+                </button>
+                <button type="submit" name="certifier" value="0" class="btn btn-secondary">
+                    💾 Enregistrer (sans certifier)
+                </button>
+                <small style="color:#888;">Une session certifiée est définitive et figée.</small>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Liste des sessions -->
+    {% if sessions %}
+    <div style="overflow-x:auto;">
+        <table style="width:100%; font-size:0.9rem;">
+            <thead>
+                <tr style="background:var(--stat-box);">
+                    <th style="padding:0.5rem;">Date</th>
+                    <th>Enseignant</th>
+                    <th>Classe / Élèves</th>
+                    <th>Zone</th>
+                    <th>Observations</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in sessions %}
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:0.5rem; white-space:nowrap;">{{ s.date_session.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ s.enseignant.prenom }} {{ s.enseignant.nom }}</td>
+                <td>
+                    {% if s.classe_nom %}<strong>{{ s.classe_nom }}</strong><br>{% endif %}
+                    <span style="color:#555; font-size:0.85rem;">{{ s.eleves_presents or '—' }}</span>
+                </td>
+                <td>
+                    {% set zones = {'moteur':'🔧 Moteur','habitacle':'🪑 Habitacle','train_roulant':'⚙️ Train roulant','carrosserie':'🚗 Carrosserie','electricite':'⚡ Électricité','autre':'📌 Autre'} %}
+                    {{ zones.get(s.zone_vehicule, s.zone_vehicule or '—') }}
+                </td>
+                <td style="color:#555;">{{ s.observations or '—' }}</td>
+                <td>
+                    {% if s.is_certified %}
+                    <span style="color:#2e7d32; font-size:0.85rem;">✅ Certifiée<br><small>{{ s.certified_at.strftime('%d/%m %H:%M') }}</small></span>
+                    {% else %}
+                    <span style="color:#e65100; font-size:0.85rem;">⏳ Non certifiée</span>
+                    {% if current_user.id == s.enseignant_id or current_user.role == 'ddfpt' %}
+                    <form method="POST" action="{{ url_for('sessions.session_certifier', or_id=or_obj.id, sid=s.id) }}" style="display:inline; margin-left:0.3rem;">
+                        <button type="submit" class="btn btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.8rem;"
+                                onclick="return confirm('Certifier et figer cette session ?')">Certifier</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color:#888; font-style:italic;">Aucune session de travail déclarée.</p>
+    {% endif %}
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     INCIDENTS
+═══════════════════════════════════════════════════════ -->
+<div class="card" id="incidents" style="margin-top:1.5rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+        <h3 style="margin:0;">
+            ⚠️ Incidents déclarés
+            {% if incidents %}<span style="font-size:0.85rem; color:#888; font-weight:normal;">({{ incidents|length }})</span>{% endif %}
+            {% if incidents_attente %}
+            <span style="background:#c62828; color:white; font-size:0.75rem; padding:2px 7px; border-radius:10px; margin-left:0.5rem;">
+                {{ incidents_attente|length }} en attente
+            </span>
+            {% endif %}
+        </h3>
+        <button class="btn btn-danger" style="background:#e65100;"
+                onclick="document.getElementById('form-incident').style.display=document.getElementById('form-incident').style.display==='none'?'block':'none'">
+            ⚠️ Déclarer un incident
+        </button>
+    </div>
+
+    <!-- Formulaire nouvel incident -->
+    <div id="form-incident" style="display:none; background:#fff8f0; border:1px solid #ffccbc; border-radius:6px; padding:1rem; margin-bottom:1rem;">
+        <form method="POST" action="{{ url_for('sessions.incident_new', or_id=or_obj.id) }}">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                <div class="form-group" style="margin:0;">
+                    <label>Type d'incident *</label>
+                    <select name="type_incident" required>
+                        <option value="">-- Sélectionner --</option>
+                        <option value="vol">🔴 Vol</option>
+                        <option value="degradation">🟠 Dégradation</option>
+                        <option value="objet_manquant">🟡 Objet manquant</option>
+                        <option value="anomalie">🔵 Anomalie constatée</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label>Date et heure du constat *</label>
+                    <input type="datetime-local" name="date_constat" required
+                           value="{{ now.strftime('%Y-%m-%dT%H:%M') if now else '' }}">
+                </div>
+                <div class="form-group" style="margin:0; grid-column:span 2;">
+                    <label>Description *</label>
+                    <textarea name="description" rows="3" required
+                              placeholder="Décrivez précisément l'incident constaté…"></textarea>
+                </div>
+                <div class="form-group" style="margin:0; grid-column:span 2;">
+                    <label>Objet(s) concerné(s)</label>
+                    <input type="text" name="objets_concernes"
+                           placeholder="ex: Autoradio Alpine CDE-200, câble USB…">
+                </div>
+            </div>
+            {% if current_user.role == 'eleve' %}
+            <p style="color:#e65100; font-size:0.85rem; margin-top:0.5rem;">
+                ℹ️ Votre déclaration sera soumise à validation par un enseignant avant d'être enregistrée.
+            </p>
+            {% endif %}
+            <button type="submit" class="btn btn-danger" style="margin-top:0.75rem; background:#c62828;">
+                ⚠️ Enregistrer l'incident
+            </button>
+        </form>
+    </div>
+
+    <!-- Incidents en attente de validation -->
+    {% if incidents_attente and current_user.role in ('ddfpt','enseignant') %}
+    <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:0.75rem; margin-bottom:1rem;">
+        <strong>⏳ En attente de validation ({{ incidents_attente|length }})</strong>
+        {% for inc in incidents_attente %}
+        <div style="margin-top:0.5rem; padding:0.5rem; background:white; border-radius:4px;">
+            <span style="font-size:0.85rem;">
+                Déclaré par <strong>{{ inc.declarant.prenom }} {{ inc.declarant.nom }}</strong>
+                le {{ inc.created_at.strftime('%d/%m/%Y %H:%M') }} —
+                {{ inc.description[:80] }}{% if inc.description|length > 80 %}…{% endif %}
+            </span>
+            <form method="POST" action="{{ url_for('sessions.incident_valider', or_id=or_obj.id, iid=inc.id) }}" style="display:inline; margin-left:0.5rem;">
+                <button type="submit" class="btn" style="padding:0.2rem 0.6rem; font-size:0.8rem; background:#2e7d32;">
+                    ✅ Valider
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Liste des incidents validés -->
+    {% set incidents_valides = incidents|selectattr('statut','equalto','valide')|list %}
+    {% if incidents_valides %}
+    <div style="overflow-x:auto;">
+        <table style="width:100%; font-size:0.9rem;">
+            <thead>
+                <tr style="background:#fdecea;">
+                    <th style="padding:0.5rem;">Date constat</th>
+                    <th>Type</th>
+                    <th>Déclaré par</th>
+                    <th>Description</th>
+                    <th>Validé par</th>
+                    {% if current_user.role == 'ddfpt' %}<th>Action</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+            {% for inc in incidents_valides %}
+            {% set type_labels = {'vol':'🔴 Vol','degradation':'🟠 Dégradation','objet_manquant':'🟡 Objet manquant','anomalie':'🔵 Anomalie'} %}
+            <tr style="border-bottom:1px solid #fcc;">
+                <td style="padding:0.5rem; white-space:nowrap;">{{ inc.date_constat.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td><strong>{{ type_labels.get(inc.type_incident, inc.type_incident) }}</strong></td>
+                <td>{{ inc.declarant.prenom }} {{ inc.declarant.nom }}<br>
+                    <small style="color:#888;">({{ inc.declarant.role }})</small></td>
+                <td>
+                    {{ inc.description }}
+                    {% if inc.objets_concernes %}<br><small style="color:#555;">Objets : {{ inc.objets_concernes }}</small>{% endif %}
+                </td>
+                <td style="color:#2e7d32; font-size:0.85rem;">
+                    {% if inc.validateur %}
+                    {{ inc.validateur.prenom }} {{ inc.validateur.nom }}<br>
+                    <small>{{ inc.validated_at.strftime('%d/%m %H:%M') }}</small>
+                    {% endif %}
+                </td>
+                {% if current_user.role == 'ddfpt' %}
+                <td>
+                    <button class="btn btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.8rem;"
+                            onclick="document.getElementById('edit-inc-{{ inc.id }}').style.display='block'; this.style.display='none'">
+                        ✏️ Modifier
+                    </button>
+                    <div id="edit-inc-{{ inc.id }}" style="display:none;">
+                        <form method="POST" action="{{ url_for('sessions.incident_modifier', or_id=or_obj.id, iid=inc.id) }}">
+                            <select name="type_incident" style="width:100%; margin-bottom:0.3rem;">
+                                <option value="vol" {% if inc.type_incident=='vol' %}selected{% endif %}>Vol</option>
+                                <option value="degradation" {% if inc.type_incident=='degradation' %}selected{% endif %}>Dégradation</option>
+                                <option value="objet_manquant" {% if inc.type_incident=='objet_manquant' %}selected{% endif %}>Objet manquant</option>
+                                <option value="anomalie" {% if inc.type_incident=='anomalie' %}selected{% endif %}>Anomalie</option>
+                            </select>
+                            <textarea name="description" rows="2" style="width:100%; margin-bottom:0.3rem;">{{ inc.description }}</textarea>
+                            <input type="text" name="objets_concernes" value="{{ inc.objets_concernes or '' }}"
+                                   placeholder="Objets concernés" style="width:100%; margin-bottom:0.3rem;">
+                            <button type="submit" class="btn btn-danger" style="padding:0.2rem 0.5rem; font-size:0.8rem;"
+                                    onclick="return confirm('Modifier cet incident ? Cette action sera tracée dans les logs.')">
+                                Enregistrer
+                            </button>
+                        </form>
+                    </div>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% elif not incidents_attente %}
+    <p style="color:#888; font-style:italic;">Aucun incident déclaré sur cet OR.</p>
+    {% endif %}
+</div>
 {% endblock %}

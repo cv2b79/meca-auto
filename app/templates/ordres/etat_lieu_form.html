@@ -79,6 +79,28 @@
             {% endif %}
         </div>
 
+        {% if type_etat == 'entree' %}
+        <div style="background:#fff8e1; border:2px solid #ffc107; border-radius:6px; padding:1rem; margin:1rem 0;">
+            <h3 style="margin-top:0; color:#e65100;">📦 Inventaire des objets présents dans le véhicule</h3>
+            <p style="color:#666; font-size:0.9rem; margin-bottom:0.75rem;">
+                Lister tous les objets de valeur présents : autoradio, GPS, effets personnels, documents…
+                Cet inventaire est signé avec le client et servira en cas d'incident.
+            </p>
+            <div class="form-group">
+                <textarea name="inventaire_objets" rows="4"
+                          placeholder="ex: Autoradio Alpine CDE-200 (façade présente), GPS TomTom, carte grise + assurance dans boîte à gants, sac de sport sur banquette arrière…"
+                          style="width:100%;">{{ etat.inventaire_objets if etat else '' }}</textarea>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.5rem;">
+                <input type="checkbox" id="inventaire_signe" name="inventaire_signe" value="1"
+                       {% if etat and etat.inventaire_signe %}checked{% endif %}>
+                <label for="inventaire_signe" style="font-weight:600; cursor:pointer; color:#c62828;">
+                    ✅ Inventaire lu et approuvé par le client en sa présence
+                </label>
+            </div>
+        </div>
+        {% endif %}
+
         {% if type_etat == 'sortie' and checklist_items %}
         <div style="background: #f0f8ff; padding: 1rem; border-radius: 4px; margin: 1rem 0; border: 2px solid #2E6DA4;">
             <h3 style="margin-top: 0;">✅ Checklist contrôle qualité</h3>

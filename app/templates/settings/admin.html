@@ -550,6 +550,30 @@
             <a href="{{ url_for('data.logs') }}" class="btn">Voir les logs</a>
         </div>
 
+        <div class="full-card" style="margin-bottom:0; border-left:4px solid #e65100;">
+            <h3 style="margin:0 0 1rem 0;">⚠️ Notifications d'incidents</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="save_notif_incident">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
+                    <input type="checkbox" id="notif_incident" name="notif_incident" value="oui"
+                           {% if notif_incident == 'oui' %}checked{% endif %}
+                           style="width:1.1rem; height:1.1rem;">
+                    <label for="notif_incident" style="cursor:pointer; font-weight:600;">
+                        M'alerter par email à chaque déclaration d'incident
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Email destinataire</label>
+                    <input type="email" name="notif_incident_email"
+                           value="{{ notif_incident_email or '' }}"
+                           placeholder="ddfpt@lycee.fr"
+                           style="width:100%;">
+                    <small style="color:#888;">Par défaut : email du compte DDFPT si vide</small>
+                </div>
+                <button type="submit" class="btn">💾 Enregistrer</button>
+            </form>
+        </div>
+
         <div class="full-card" style="margin-bottom:0; border-left: 4px solid #e57373;">
             <h3 style="margin:0 0 0.75rem 0; color:#c62828;">🗑️ Suppression de données</h3>
             <p style="color:#e57373; font-size:0.88rem; margin-bottom:1rem; font-weight:500;">⚠️ Actions irréversibles — à utiliser avec précaution.</p>

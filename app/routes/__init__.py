@@ -9,6 +9,7 @@ def register_routes(app):
     from app.routes.settings import settings_bp
     from app.routes.agenda import agenda_bp
     from app.routes.stats import stats_bp
+    from app.routes.sessions import sessions_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
@@ -20,3 +21,4 @@ def register_routes(app):
     app.register_blueprint(settings_bp, url_prefix='/settings')
     app.register_blueprint(agenda_bp, url_prefix='/agenda')
     app.register_blueprint(stats_bp, url_prefix='/stats')
+    app.register_blueprint(sessions_bp, url_prefix='/travaux')

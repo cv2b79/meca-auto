@@ -1,22 +1,48 @@
 {% extends "base.html" %}
 {% block title %}Facture {{ facture.numero }}{% endblock %}
 {% block content %}
-<h2>Facture {{ facture.numero }}</h2>
 <div class="card">
-    <p><strong>Date:</strong> {{ facture.emitted_at.strftime('%d/%m/%Y') if facture.emitted_at else '-' }}</p>
-    <p><strong>Montant:</strong> {{ facture.montant }}€</p>
-    <p><strong>Mode:</strong> {{ facture.mode_tarif }}</p>
-    <p><strong>Envoyée par mail:</strong> {% if facture.send_by_email %}Oui{% else %}Non{% endif %}</p>
-    <div class="actions" style="margin-top: 1rem;">
-        <a href="{{ url_for('factures.view_html', id=facture.id) }}" class="btn" target="_blank">🖨️ Imprimer</a>
-        <a href="{{ url_for('factures.pdf', id=facture.id) }}" class="btn btn-secondary" target="_blank">📄 PDF</a>
-        {% if not facture.send_by_email and facture.ordre.client.email %}
-        <form method="POST" action="{{ url_for('factures.send', id=facture.id) }}" style="display:inline;">
-            <button type="submit" class="btn btn-success">Envoyer par mail</button>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+        <div>
+            <h2 style="margin:0;">Facture {{ facture.numero }}</h2>
+            {% if facture.ordre %}
+            <p style="margin:0.25rem 0 0; color:#666; font-size:0.9rem;">
+                OR <strong>{{ facture.ordre.numero }}</strong>
+                — {{ facture.ordre.vehicule.marque }} {{ facture.ordre.vehicule.modele }}
+                ({{ facture.ordre.vehicule.immatriculation }})
+                {% if facture.ordre.client %}— {{ facture.ordre.client.prenom }} {{ facture.ordre.client.nom }}{% endif %}
+            </p>
+            {% endif %}
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:1.4rem; font-weight:bold; color:#1E3A5F;">{{ "%.2f"|format(facture.montant|float) }} €</div>
+            <div style="font-size:0.85rem; color:#666;">{{ facture.emitted_at.strftime('%d/%m/%Y') if facture.emitted_at else '-' }}</div>
+            {% if facture.send_by_email %}
+            <span style="background:#28a745; color:white; padding:2px 8px; border-radius:3px; font-size:0.8rem;">✉ Envoyée</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="actions">
+        <a href="{{ url_for('factures.view_html', id=facture.id) }}" class="btn" target="_blank">🖨️ Aperçu / Imprimer</a>
+        <a href="{{ url_for('factures.pdf', id=facture.id) }}" class="btn btn-secondary" target="_blank">⬇️ Télécharger PDF</a>
+        {% set client = facture.ordre.client if facture.ordre else none %}
+        {% if not facture.send_by_email and client and client.email %}
+        <form method="POST" action="{{ url_for('factures.send', id=facture.id) }}" style="display:inline;"
+              onsubmit="return confirm('Envoyer la facture {{ facture.numero }} à {{ client.email }} ?')">
+            <button type="submit" class="btn btn-success">✉ Envoyer par mail</button>
         </form>
+        {% elif not facture.send_by_email %}
+        <span style="color:#888; font-size:0.85rem; padding:0.5rem;">Pas d'email client — envoi impossible</span>
+        {% endif %}
+        {% if facture.ordre %}
+        <a href="{{ url_for('ordres.view', id=facture.ordre.id) }}" class="btn btn-secondary">← Retour à l'OR</a>
         {% endif %}
     </div>
 </div>
-<h3>Détails</h3>
-<pre style="background: #f5f5f5; padding: 1rem; white-space: pre-wrap;">{{ facture.details }}</pre>
+
+<div class="card" style="margin-top:0;">
+    <h3>Détails de facturation</h3>
+    <pre style="background:var(--stat-box); padding:1rem; white-space:pre-wrap; border-radius:4px; font-size:0.85rem; line-height:1.6;">{{ facture.details }}</pre>
+</div>
 {% endblock %}

@@ -78,15 +78,15 @@ def _build_facture_context(facture):
 
 @factures_bp.route('/')
 @login_required
-def list():
-    year = request.args.get('year')
+def liste():
+    year = request.args.get('year', type=int)
     query = Facture.query
 
     if year:
-        query = query.filter(db.extract('year', Facture.emitted_at) == int(year))
+        query = query.filter(db.extract('year', Facture.emitted_at) == year)
 
     factures = query.order_by(Facture.emitted_at.desc()).all()
-    return render_template('factures/list.html', factures=factures)
+    return render_template('factures/list.html', factures=factures, year=year)
 
 @factures_bp.route('/<int:id>')
 @login_required
@@ -225,65 +225,75 @@ def pdf(id):
 def send(id):
     if not current_user.can_facturer():
         flash('Accès refusé', 'error')
-        return redirect(url_for('factures.list'))
+        return redirect(url_for('factures.liste'))
 
     from flask import current_app
     from app.models import Parametre
-    
-    def get_smtp_param(key, default=''):
-        param = Parametre.query.filter_by(cle=key).first()
-        return param.valeur if param else current_app.config.get(key.upper(), default)
-    
-    # Generate PDF first
-    try:
-        from weasyprint import HTML
-        base_url = request.host_url if request else None
-    except Exception:
-        base_url = None
-    
+
     facture = Facture.query.get_or_404(id)
     ctx = _build_facture_context(facture)
     client = ctx['client']
-    html = render_template('factures/pdf.html', **ctx)
-    
-    pdf_bytes = None
-    try:
-        if base_url:
-            pdf_bytes = HTML(string=html, base_url=base_url).write_pdf()
-        else:
-            pdf_bytes = HTML(string=html).write_pdf()
-    except Exception as e:
-        flash(f'Erreur génération PDF: {str(e)}', 'error')
+
+    # Vérifications préalables
+    if not client or not client.email:
+        flash("Pas d'adresse email pour ce client", 'error')
         return redirect(url_for('factures.view', id=id))
 
-    if not client.email:
-        flash('Pas d\'email client', 'error')
-        return redirect(url_for('factures.view', id=id))
-    
+    def get_smtp_param(key, default=''):
+        param = Parametre.query.filter_by(cle=key).first()
+        return param.valeur if param else current_app.config.get(key.upper(), default)
+
     smtp_host = get_smtp_param('smtp_host')
-    smtp_port = int(get_smtp_param('smtp_port', '587'))
+    smtp_port_raw = get_smtp_param('smtp_port', '587')
     smtp_user = get_smtp_param('smtp_user')
     smtp_password = get_smtp_param('smtp_password')
     smtp_from = get_smtp_param('smtp_from', 'atelier@lycee.fr')
 
     if not smtp_host or not smtp_user:
-        flash('SMTP non configuré', 'error')
+        flash('SMTP non configuré (Administration → Email)', 'error')
         return redirect(url_for('factures.view', id=id))
 
+    try:
+        smtp_port = int(smtp_port_raw)
+    except (ValueError, TypeError):
+        smtp_port = 587
+
+    # Génération du PDF
+    html_content = render_template('factures/pdf.html', **ctx)
+    pdf_bytes = None
+    try:
+        from weasyprint import HTML as WeasyHTML
+        base_url = request.host_url
+        pdf_bytes = WeasyHTML(string=html_content, base_url=base_url).write_pdf()
+    except ImportError:
+        flash('WeasyPrint non installé — email envoyé sans PDF joint', 'info')
+    except Exception as e:
+        flash(f'Erreur génération PDF : {str(e)}', 'error')
+        return redirect(url_for('factures.view', id=id))
+
+    # Construction de l'email
+    prenom = client.prenom or ''
+    nom = client.nom or ''
     msg = MIMEMultipart()
     msg['From'] = smtp_from
     msg['To'] = client.email
-    msg['Subject'] = f'Facture {facture.numero} - Atelier'
+    msg['Subject'] = f'Facture {facture.numero} - {ctx.get("or_obj") and ctx["or_obj"].vehicule and ctx["or_obj"].vehicule.marque or "Atelier"}'
 
-    body = f"Bonjour {client.prenom} {client.nom},\n\nVeuillez trouver ci-joint votre facture {facture.numero}.\n\nMontant: {facture.montant}€\n\nCordialement,\nAtelier"
-    msg.attach(MIMEText(body, 'plain'))
-    
-    # Attach PDF
-    part = MIMEBase('application', 'octet-stream')
-    part.set_payload(pdf_bytes)
-    encoders.encode_base64(part)
-    part.add_header('Content-Disposition', f'attachment; filename=facture_{facture.numero}.pdf')
-    msg.attach(part)
+    body = (
+        f"Bonjour {prenom} {nom},\n\n"
+        f"Veuillez trouver ci-joint votre facture N° {facture.numero}.\n\n"
+        f"Montant total : {facture.montant} €\n\n"
+        f"Cordialement,\n"
+        f"{Parametre.get('etab_nom', 'Atelier MVA')}"
+    )
+    msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+    if pdf_bytes:
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(pdf_bytes)
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename=facture_{facture.numero}.pdf')
+        msg.attach(part)
 
     try:
         server = smtplib.SMTP(smtp_host, smtp_port)
@@ -294,9 +304,10 @@ def send(id):
 
         facture.send_by_email = True
         db.session.commit()
-        Log.log(current_user, 'send_facture', f'Facture {facture.numero} envoyée à {client.email}', 'Facture', facture.id)
-        flash('Facture envoyée par email', 'success')
+        Log.log(current_user, 'send_facture',
+                f'Facture {facture.numero} envoyée à {client.email}', 'Facture', facture.id)
+        flash('Facture envoyée par email ✓', 'success')
     except Exception as e:
-        flash(f'Erreur envoi email: {str(e)}', 'error')
+        flash(f'Erreur envoi email : {str(e)}', 'error')
 
     return redirect(url_for('factures.view', id=id))

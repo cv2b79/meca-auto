@@ -1,27 +1,68 @@
 {% extends "base.html" %}
 {% block title %}Factures - MEC AUTO{% endblock %}
 {% block content %}
-<h2>Factures</h2>
-<form method="GET" style="margin: 1rem 0;">
-    <label>Année: </label>
-    <select name="year" onchange="this.form.submit()">
-        <option value="">Toutes</option>
-        {% for y in range(2023, 2030) %}
-        <option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+        <h2 style="margin:0;">Factures <span style="font-size:0.85rem; color:#888; font-weight:normal;">({{ factures|length }})</span></h2>
+        <form method="GET" style="display:flex; align-items:center; gap:0.5rem;">
+            <label style="font-weight:normal;">Année :</label>
+            <select name="year" onchange="this.form.submit()" style="padding:0.3rem 0.5rem; border:1px solid var(--border-dark); border-radius:4px; background:var(--bg-card); color:var(--text);">
+                <option value="">Toutes</option>
+                {% for y in range(2023, 2031) %}
+                <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            {% if year %}<a href="{{ url_for('factures.liste') }}" style="color:#888; font-size:0.85rem;">✕ Effacer filtre</a>{% endif %}
+        </form>
+    </div>
+
+    {% if factures %}
+    <table>
+        <thead>
+            <tr>
+                <th>N° Facture</th>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Véhicule</th>
+                <th style="text-align:right;">Montant</th>
+                <th style="text-align:center;">Envoyée</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for f in factures %}
+        <tr>
+            <td><a href="{{ url_for('factures.view', id=f.id) }}" style="font-weight:bold;">{{ f.numero }}</a></td>
+            <td>{{ f.emitted_at.strftime('%d/%m/%Y') if f.emitted_at else '-' }}</td>
+            <td>
+                {% if f.ordre and f.ordre.client %}
+                    {{ f.ordre.client.nom }} {{ f.ordre.client.prenom }}
+                {% else %}-{% endif %}
+            </td>
+            <td>
+                {% if f.ordre and f.ordre.vehicule %}
+                    {{ f.ordre.vehicule.marque }} {{ f.ordre.vehicule.modele }}
+                    <span style="color:#888; font-size:0.85rem;">({{ f.ordre.vehicule.immatriculation }})</span>
+                {% else %}-{% endif %}
+            </td>
+            <td style="text-align:right; font-weight:bold;">{{ "%.2f"|format(f.montant|float) }} €</td>
+            <td style="text-align:center;">
+                {% if f.send_by_email %}
+                <span style="color:#28a745;">✓</span>
+                {% else %}
+                <span style="color:#ccc;">–</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('factures.view', id=f.id) }}" class="btn" style="padding:0.25rem 0.6rem; font-size:0.8rem;">Voir</a>
+                <a href="{{ url_for('factures.pdf', id=f.id) }}" class="btn btn-secondary" style="padding:0.25rem 0.6rem; font-size:0.8rem;" target="_blank">PDF</a>
+            </td>
+        </tr>
         {% endfor %}
-    </select>
-</form>
-<table>
-    <thead><tr><th>N°</th><th>Date</th><th>Montant</th><th>Envoyée</th></tr></thead>
-    <tbody>
-    {% for f in factures %}
-    <tr>
-        <td><a href="{{ url_for('factures.view', id=f.id) }}">{{ f.numero }}</a></td>
-        <td>{{ f.emitted_at.strftime('%d/%m/%Y') if f.emitted_at else '-' }}</td>
-        <td>{{ f.montant }}€</td>
-        <td>{% if f.send_by_email %}Oui{% else %}Non{% endif %}</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-</table>
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#888; text-align:center; padding:2rem;">Aucune facture{% if year %} pour {{ year }}{% endif %}.</p>
+    {% endif %}
+</div>
 {% endblock %}

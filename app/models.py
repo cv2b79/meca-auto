@@ -263,6 +263,9 @@ class etat_lieu(db.Model):
     dommages = db.Column(db.Text)
     observations = db.Column(db.Text)
     responsable = db.Column(db.String(100))
+    # Inventaire objets (état d'entrée avec client)
+    inventaire_objets = db.Column(db.Text)
+    inventaire_signe = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
@@ -471,3 +474,49 @@ class RendezVous(db.Model):
     client = db.relationship('Client', backref='rendez_vous')
     vehicule = db.relationship('Vehicule', backref='rendez_vous')
     created_by_user = db.relationship('User', foreign_keys=[created_by])
+
+
+# ── Sessions de travail ────────────────────────────────────────
+class SessionTravail(db.Model):
+    __tablename__ = 'sessions_travail'
+
+    id = db.Column(db.Integer, primary_key=True)
+    or_id = db.Column(db.Integer, db.ForeignKey('ordres_reparation.id'), nullable=False)
+    enseignant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    date_session = db.Column(db.DateTime, nullable=False)
+    classe_nom = db.Column(db.String(50))
+    eleves_presents = db.Column(db.Text)          # texte libre ou JSON
+    zone_vehicule = db.Column(db.String(50))       # moteur/habitacle/train_roulant/carrosserie/electricite/autre
+    observations = db.Column(db.Text)
+    certified_at = db.Column(db.DateTime)          # null = brouillon, non-null = figé
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    ordre = db.relationship('OrdreReparation', backref='sessions_travail')
+    enseignant = db.relationship('User', foreign_keys=[enseignant_id])
+
+    @property
+    def is_certified(self):
+        return self.certified_at is not None
+
+
+# ── Incidents ──────────────────────────────────────────────────
+class Incident(db.Model):
+    __tablename__ = 'incidents'
+
+    TYPES = ['vol', 'degradation', 'objet_manquant', 'anomalie']
+
+    id = db.Column(db.Integer, primary_key=True)
+    or_id = db.Column(db.Integer, db.ForeignKey('ordres_reparation.id'), nullable=False)
+    declared_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    validated_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    validated_at = db.Column(db.DateTime)
+    statut = db.Column(db.String(20), default='en_attente')  # en_attente / valide
+    type_incident = db.Column(db.String(30), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    objets_concernes = db.Column(db.Text)
+    date_constat = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    ordre = db.relationship('OrdreReparation', backref='incidents')
+    declarant = db.relationship('User', foreign_keys=[declared_by])
+    validateur = db.relationship('User', foreign_keys=[validated_by])
