@@ -22,17 +22,20 @@
     </div>
     <div class="form-group"><label>Montant</label><input type="number" step="0.01" name="montant" value="{{ or_obj.montant }}"></div>
     
-    <div style="margin: 1rem 0; padding: 0.75rem 1rem; background: #fff3cd; border-radius: 4px; display:flex; flex-direction:column; gap:0.5rem;">
-        <label style="display:flex; align-items:center; gap:0.5rem; margin:0; font-weight:normal; cursor:pointer;">
-            <input type="checkbox" name="attente_pieces" {% if or_obj.attente_pieces %}checked{% endif %}>
-            <strong>🚧 En attente de pièces détachées</strong>
+    <div style="margin: 1rem 0; padding: 0.75rem 1rem; background: #fff3cd; border-radius: 4px;">
+        <p style="margin: 0 0 0.5rem 0;">
+            <label style="cursor:pointer;">
+                <input type="checkbox" name="attente_pieces" {% if or_obj.attente_pieces %}checked{% endif %}>
+                <strong>🚧 En attente de pièces détachées</strong>
+            </label>
             {% if or_obj.date_attente_pieces %}
-            <span style="font-size:0.85rem; color:#666; font-weight:normal;">— depuis le {{ or_obj.date_attente_pieces.strftime('%d/%m/%Y') }}</span>
+            <span style="font-size:0.85rem; color:#666; margin-left:0.5rem;">— depuis le {{ or_obj.date_attente_pieces.strftime('%d/%m/%Y') }}</span>
             {% endif %}
-        </label>
+        </p>
+        <label style="font-size:0.85rem; color:#7a6000;">Remarque</label>
         <input type="text" name="remarque_attente" value="{{ or_obj.remarque_attente or '' }}"
                placeholder="Ex: Pièce commandée, attente réponse client…"
-               style="width:100%; padding:0.4rem 0.5rem; border:1px solid #d6c07a; border-radius:4px; background:#fffdf0; font-size:0.9rem;">
+               style="width:100%; padding:0.4rem 0.5rem; border:1px solid #d6c07a; border-radius:4px; background:#fffdf0; font-size:0.9rem; margin-top:0.2rem;">
     </div>
     
     <div style="margin: 1rem 0; padding: 1rem; background: #f8d7da; border-radius: 4px;">
