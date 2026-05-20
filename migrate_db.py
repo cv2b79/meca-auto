@@ -356,9 +356,10 @@ ADD_COLUMNS = [
     ("eleve_interventions", "updated_at",    "TIMESTAMP"),
 
     # factures
-    ("factures", "mode_tarif",    "VARCHAR(20)"),
-    ("factures", "details",       "TEXT"),
-    ("factures", "send_by_email", "BOOLEAN DEFAULT FALSE"),
+    ("factures", "mode_tarif",       "VARCHAR(20)"),
+    ("factures", "details",          "TEXT"),
+    ("factures", "send_by_email",    "BOOLEAN DEFAULT FALSE"),
+    ("factures", "statut_paiement",  "VARCHAR(20) DEFAULT 'en_attente'"),
 
     # etats_lieux
     ("etats_lieux", "responsable",        "VARCHAR(100)"),

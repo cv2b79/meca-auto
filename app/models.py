@@ -246,6 +246,7 @@ class Facture(db.Model):
     details = db.Column(db.Text)
     emitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     send_by_email = db.Column(db.Boolean, default=False)
+    statut_paiement = db.Column(db.String(20), default='en_attente')  # 'en_attente' / 'soldee'
 
     @staticmethod
     def generer_numero(or_obj):

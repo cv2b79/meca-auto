@@ -47,12 +47,12 @@ def _build_facture_context(facture):
     total_fournitures = sum(f['total'] for f in fournitures_lines)
 
     surcharge_lines = []
-    if or_obj.client_recup_pieces or or_obj.client_recup_fluides:
+    if not or_obj.client_recup_pieces or not or_obj.client_recup_fluides:
         surcharges = RecupSurcharge.query.filter_by(actif=True).all()
         for s in surcharges:
-            if 'pieces' in s.nom.lower() and or_obj.client_recup_pieces:
+            if 'pieces' in s.nom.lower() and not or_obj.client_recup_pieces:
                 surcharge_lines.append(s)
-            if ('huile' in s.nom.lower() or 'fluide' in s.nom.lower()) and or_obj.client_recup_fluides:
+            if ('huile' in s.nom.lower() or 'fluide' in s.nom.lower()) and not or_obj.client_recup_fluides:
                 surcharge_lines.append(s)
 
     total_mo = total_heures * taux_horaire
@@ -310,4 +310,27 @@ def send(id):
     except Exception as e:
         flash(f'Erreur envoi email : {str(e)}', 'error')
 
+    return redirect(url_for('factures.view', id=id))
+
+
+@factures_bp.route('/<int:id>/paiement', methods=['POST'])
+@login_required
+def toggle_paiement(id):
+    """Magasinier ou DDFPT peuvent marquer une facture comme soldée / en attente."""
+    if not current_user.can_facturer():
+        flash('Accès refusé', 'error')
+        return redirect(url_for('factures.view', id=id))
+
+    facture = Facture.query.get_or_404(id)
+    nouveau_statut = request.form.get('statut_paiement', 'en_attente')
+    if nouveau_statut not in ('en_attente', 'soldee'):
+        flash('Statut invalide', 'error')
+        return redirect(url_for('factures.view', id=id))
+
+    facture.statut_paiement = nouveau_statut
+    db.session.commit()
+    Log.log(current_user, 'paiement_facture',
+            f'Facture {facture.numero} → statut paiement: {nouveau_statut}',
+            'Facture', facture.id)
+    flash('Statut de paiement mis à jour', 'success')
     return redirect(url_for('factures.view', id=id))

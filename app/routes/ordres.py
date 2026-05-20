@@ -237,11 +237,11 @@ Cordialement,
                 taux_param = Parametre.query.filter_by(cle='taux_horaire').first()
                 taux_horaire = float(taux_param.valeur) if taux_param else 50.0
                 surcharge_lines = []
-                if or_obj.client_recup_pieces or or_obj.client_recup_fluides:
+                if not or_obj.client_recup_pieces or not or_obj.client_recup_fluides:
                     for s in RecupSurcharge.query.filter_by(actif=True).all():
-                        if 'pieces' in s.nom.lower() and or_obj.client_recup_pieces:
+                        if 'pieces' in s.nom.lower() and not or_obj.client_recup_pieces:
                             surcharge_lines.append(s)
-                        if ('huile' in s.nom.lower() or 'fluide' in s.nom.lower()) and or_obj.client_recup_fluides:
+                        if ('huile' in s.nom.lower() or 'fluide' in s.nom.lower()) and not or_obj.client_recup_fluides:
                             surcharge_lines.append(s)
                 html = _render('factures/print.html', facture=facture, or_obj=or_obj,
                                client=client, vehicule=vehicule, interventions=interventions,
@@ -584,14 +584,9 @@ def edit(id):
         return redirect(url_for('ordres.view', id=id))
 
     # OR clôturé : seuls ddfpt et magasinier peuvent modifier
-    _or_check = OrdreReparation.query.get_or_404(id)
-    if _or_check.statut == 'cloture' and current_user.role not in ('ddfpt', 'magasinier'):
-        flash('Cet OR est clôturé — seuls le DDFPT et le magasinier peuvent le modifier.', 'error')
-        return redirect(url_for('ordres.view', id=id))
-    
     or_obj = OrdreReparation.query.get_or_404(id)
-    if or_obj.statut == 'cloture':
-        flash('OR cloturé, modification impossible', 'error')
+    if or_obj.statut == 'cloture' and current_user.role not in ('ddfpt', 'magasinier'):
+        flash('Cet OR est clôturé — seuls le DDFPT et le magasinier peuvent le modifier.', 'error')
         return redirect(url_for('ordres.view', id=id))
 
     if request.method == 'POST':
@@ -619,15 +614,25 @@ def edit(id):
         
         # Pas de facturation
         or_obj.pas_de_facturation = request.form.get('pas_de_facturation') == 'on'
-        
+
+        # Dépollution
+        or_obj.client_recup_pieces  = request.form.get('client_recup_pieces')  == 'on'
+        or_obj.client_recup_fluides = request.form.get('client_recup_fluides') == 'on'
+        try:
+            or_obj.montant_surcharge = float(request.form.get('montant_surcharge', 0) or 0)
+        except (ValueError, TypeError):
+            or_obj.montant_surcharge = 0
+
         db.session.commit()
         Log.log(current_user, 'edit_or', f'OR {or_obj.numero} modifié', 'OrdreReparation', or_obj.id)
-        db.session.commit()
         flash('OR modifié', 'success')
         return redirect(url_for('ordres.view', id=id))
 
     forfaits = Forfait.query.filter_by(actif=True).all()
-    return render_template('ordres/edit.html', or_obj=or_obj, forfaits=forfaits)
+    surcharges = RecupSurcharge.query.filter_by(actif=True).all()
+    surcharges_list = [{'id': s.id, 'nom': s.nom, 'montant': float(s.montant)} for s in surcharges]
+    return render_template('ordres/edit.html', or_obj=or_obj, forfaits=forfaits,
+                           surcharges=surcharges, surcharges_list=surcharges_list)
 
 @ordres_bp.route('/<int:id>/statut', methods=['POST'])
 @login_required

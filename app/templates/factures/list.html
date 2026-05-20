@@ -25,7 +25,8 @@
                 <th>Client</th>
                 <th>Véhicule</th>
                 <th style="text-align:right;">Montant</th>
-                <th style="text-align:center;">Envoyée</th>
+                <th style="text-align:center;">Paiement</th>
+                <th style="text-align:center;">Email</th>
                 <th></th>
             </tr>
         </thead>
@@ -46,6 +47,14 @@
                 {% else %}-{% endif %}
             </td>
             <td style="text-align:right; font-weight:bold;">{{ "%.2f"|format(f.montant|float) }} €</td>
+            <td style="text-align:center;">
+                {% set sp = f.statut_paiement if f.statut_paiement else 'en_attente' %}
+                {% if sp == 'soldee' %}
+                <span style="color:#2e7d32; font-weight:bold;">✅ Soldée</span>
+                {% else %}
+                <span style="color:#e65100; font-size:0.85rem;">⏳ En attente</span>
+                {% endif %}
+            </td>
             <td style="text-align:center;">
                 {% if f.send_by_email %}
                 <span style="color:#28a745;">✓</span>
