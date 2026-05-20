@@ -84,6 +84,9 @@ def session_new(or_id):
         return redirect(url_for('ordres.view', id=or_id))
 
     or_obj = OrdreReparation.query.get_or_404(or_id)
+    if or_obj.statut == 'cloture' and current_user.role not in ('ddfpt', 'magasinier'):
+        flash('OR clôturé — modification impossible.', 'error')
+        return redirect(url_for('ordres.view', id=or_id))
     date_str = request.form.get('date_session', '').strip()
     try:
         date_session = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
@@ -122,6 +125,10 @@ def session_new(or_id):
 @sessions_bp.route('/or/<int:or_id>/sessions/<int:sid>/certifier', methods=['POST'])
 @login_required
 def session_certifier(or_id, sid):
+    or_obj = OrdreReparation.query.get_or_404(or_id)
+    if or_obj.statut == 'cloture' and current_user.role not in ('ddfpt', 'magasinier'):
+        flash('OR clôturé — modification impossible.', 'error')
+        return redirect(url_for('ordres.view', id=or_id))
     session = SessionTravail.query.get_or_404(sid)
     if session.or_id != or_id:
         flash('Erreur', 'error')
@@ -147,6 +154,9 @@ def session_certifier(or_id, sid):
 @login_required
 def incident_new(or_id):
     or_obj = OrdreReparation.query.get_or_404(or_id)
+    if or_obj.statut == 'cloture' and current_user.role not in ('ddfpt', 'magasinier'):
+        flash('OR clôturé — modification impossible.', 'error')
+        return redirect(url_for('ordres.view', id=or_id))
     date_str = request.form.get('date_constat', '').strip()
     try:
         date_constat = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
@@ -203,6 +213,10 @@ def incident_valider(or_id, iid):
     if current_user.role not in ('ddfpt', 'enseignant'):
         flash('Accès refusé', 'error')
         return redirect(url_for('ordres.view', id=or_id) + '#incidents')
+    or_obj = OrdreReparation.query.get_or_404(or_id)
+    if or_obj.statut == 'cloture' and current_user.role not in ('ddfpt', 'magasinier'):
+        flash('OR clôturé — modification impossible.', 'error')
+        return redirect(url_for('ordres.view', id=or_id))
 
     incident = Incident.query.get_or_404(iid)
     if incident.or_id != or_id:

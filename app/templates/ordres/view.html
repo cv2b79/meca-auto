@@ -225,20 +225,25 @@
 <!-- ═══════════════════════════════════════════════════════
      SESSIONS DE TRAVAIL
 ═══════════════════════════════════════════════════════ -->
+{% set can_write = or_obj.statut != 'cloture' or current_user.role in ('ddfpt', 'magasinier') %}
 <div class="card" id="sessions" style="margin-top:1.5rem;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
         <h3 style="margin:0;">📋 Sessions de travail
             {% if sessions %}<span style="font-size:0.85rem; color:#888; font-weight:normal;">({{ sessions|length }})</span>{% endif %}
         </h3>
-        {% if current_user.role in ('ddfpt','enseignant') %}
+        {% if current_user.role in ('ddfpt','enseignant') and can_write %}
         <button class="btn" onclick="document.getElementById('form-session').style.display=document.getElementById('form-session').style.display==='none'?'block':'none'">
             + Déclarer une session
         </button>
         {% endif %}
     </div>
 
+    {% if or_obj.statut == 'cloture' and current_user.role == 'enseignant' %}
+    <p style="color:#888; font-style:italic; font-size:0.9rem;">🔒 OR clôturé — consultation uniquement.</p>
+    {% endif %}
+
     <!-- Formulaire nouvelle session -->
-    {% if current_user.role in ('ddfpt','enseignant') %}
+    {% if current_user.role in ('ddfpt','enseignant') and can_write %}
     <div id="form-session" style="display:none; background:#f8fafc; border:1px solid #dde; border-radius:6px; padding:1rem; margin-bottom:1rem;">
         <form method="POST" action="{{ url_for('sessions.session_new', or_id=or_obj.id) }}">
             <div style="background:#e8f5e9; border:1px solid #a5d6a7; border-radius:4px; padding:0.5rem 0.75rem; margin-bottom:0.75rem; font-size:0.9rem;">
@@ -324,7 +329,7 @@
                     <span style="color:#2e7d32; font-size:0.85rem;">✅ Certifiée<br><small>{{ s.certified_at.strftime('%d/%m %H:%M') }}</small></span>
                     {% else %}
                     <span style="color:#e65100; font-size:0.85rem;">⏳ Non certifiée</span>
-                    {% if current_user.id == s.enseignant_id or current_user.role == 'ddfpt' %}
+                    {% if can_write and (current_user.id == s.enseignant_id or current_user.role == 'ddfpt') %}
                     <form method="POST" action="{{ url_for('sessions.session_certifier', or_id=or_obj.id, sid=s.id) }}" style="display:inline; margin-left:0.3rem;">
                         <button type="submit" class="btn btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.8rem;"
                                 onclick="return confirm('Certifier et figer cette session ?')">Certifier</button>
@@ -356,13 +361,16 @@
             </span>
             {% endif %}
         </h3>
+        {% if can_write %}
         <button class="btn btn-danger" style="background:#e65100;"
                 onclick="document.getElementById('form-incident').style.display=document.getElementById('form-incident').style.display==='none'?'block':'none'">
             ⚠️ Déclarer un incident
         </button>
+        {% endif %}
     </div>
 
     <!-- Formulaire nouvel incident -->
+    {% if can_write %}
     <div id="form-incident" style="display:none; background:#fff8f0; border:1px solid #ffccbc; border-radius:6px; padding:1rem; margin-bottom:1rem;">
         <form method="POST" action="{{ url_for('sessions.incident_new', or_id=or_obj.id) }}">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
@@ -402,9 +410,10 @@
             </button>
         </form>
     </div>
+    {% endif %}
 
     <!-- Incidents en attente de validation -->
-    {% if incidents_attente and current_user.role in ('ddfpt','enseignant') %}
+    {% if incidents_attente and current_user.role in ('ddfpt','enseignant') and can_write %}
     <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:0.75rem; margin-bottom:1rem;">
         <strong>⏳ En attente de validation ({{ incidents_attente|length }})</strong>
         {% for inc in incidents_attente %}
