@@ -582,6 +582,12 @@ def edit(id):
     if not current_user.can_edit_or():
         flash('Permission refusée: vous ne pouvez pas modifier les OR', 'error')
         return redirect(url_for('ordres.view', id=id))
+
+    # OR clôturé : seuls ddfpt et magasinier peuvent modifier
+    _or_check = OrdreReparation.query.get_or_404(id)
+    if _or_check.statut == 'cloture' and current_user.role not in ('ddfpt', 'magasinier'):
+        flash('Cet OR est clôturé — seuls le DDFPT et le magasinier peuvent le modifier.', 'error')
+        return redirect(url_for('ordres.view', id=id))
     
     or_obj = OrdreReparation.query.get_or_404(id)
     if or_obj.statut == 'cloture':

@@ -116,7 +116,7 @@
 <div class="card" style="margin-top: 1rem;">
     <h4>Actions</h4>
     <div class="actions">
-        {% if current_user.can_edit_or() %}
+        {% if current_user.can_edit_or() and (or_obj.statut != 'cloture' or current_user.role in ('ddfpt', 'magasinier')) %}
         <a href="{{ url_for('ordres.edit', id=or_obj.id) }}" class="btn">Modifier</a>
         {% endif %}
         <a href="{{ url_for('ordres.print_or', id=or_obj.id) }}" onclick="window.open(this.href, 'popup', 'width=800,height=900'); return false;" class="btn btn-secondary">Imprimer OR</a>
