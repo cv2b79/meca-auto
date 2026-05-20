@@ -706,7 +706,11 @@ def fournitures():
         return redirect(url_for('settings.fournitures'))
 
     fournitures_list = Fourniture.query.order_by(Fourniture.nom).all()
-    return render_template('settings/fournitures.html', fournitures=fournitures_list)
+    return render_template('settings/fournitures.html',
+        fournitures=fournitures_list,
+        forfaits=Forfait.query.filter_by(actif=True).all(),
+        surcharges=RecupSurcharge.query.filter_by(actif=True).all(),
+        taux_horaire=Parametre.get('taux_horaire', '50'))
 
 
 @settings_bp.route('/fourniture/new', methods=['POST'])
