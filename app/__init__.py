@@ -51,4 +51,20 @@ def create_app(config_class=Config):
     from app.routes import register_routes
     register_routes(app)
 
+    # ── Auto-migration colonnes manquantes ────────────────────
+    # Ajoute les nouvelles colonnes sans bloquer si elles existent déjà.
+    with app.app_context():
+        try:
+            from sqlalchemy import text
+            _cols = [
+                "ALTER TABLE ordres_reparation ADD COLUMN IF NOT EXISTS depollution_offerte BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE factures         ADD COLUMN IF NOT EXISTS statut_paiement      VARCHAR(20) DEFAULT 'en_attente'",
+            ]
+            with db.engine.connect() as _conn:
+                for _sql in _cols:
+                    _conn.execute(text(_sql))
+                _conn.commit()
+        except Exception:
+            pass
+
     return app
