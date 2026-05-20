@@ -817,16 +817,26 @@ def depollution_update(id):
 
     or_obj.client_recup_pieces  = request.form.get('client_recup_pieces')  == 'on'
     or_obj.client_recup_fluides = request.form.get('client_recup_fluides') == 'on'
-    try:
-        or_obj.montant_surcharge = float(request.form.get('montant_surcharge', 0) or 0)
-    except (ValueError, TypeError):
+
+    # Magasinier/DDFPT peuvent offrir les frais
+    if current_user.role in ('magasinier', 'ddfpt'):
+        or_obj.depollution_offerte = request.form.get('depollution_offerte') == 'on'
+
+    # Si offerte, surcharge = 0 ; sinon calcul normal
+    if or_obj.depollution_offerte:
         or_obj.montant_surcharge = 0
+    else:
+        try:
+            or_obj.montant_surcharge = float(request.form.get('montant_surcharge', 0) or 0)
+        except (ValueError, TypeError):
+            or_obj.montant_surcharge = 0
 
     db.session.commit()
     Log.log(current_user, 'depollution_update',
             f'Dépollution OR {or_obj.numero} — pièces: {"récup" if or_obj.client_recup_pieces else "non récup"}'
             f', fluides: {"récup" if or_obj.client_recup_fluides else "non récup"}'
-            f', surcharge: {or_obj.montant_surcharge}€',
+            f', surcharge: {or_obj.montant_surcharge}€'
+            f'{" (OFFERTE)" if or_obj.depollution_offerte else ""}',
             'OrdreReparation', or_obj.id)
     flash('Informations de dépollution enregistrées', 'success')
     return redirect(url_for('ordres.view', id=id) + '#depollution')

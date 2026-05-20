@@ -160,6 +160,7 @@ class OrdreReparation(db.Model):
     client_recup_pieces = db.Column(db.Boolean, default=True)
     client_recup_fluides = db.Column(db.Boolean, default=True)
     montant_surcharge = db.Column(db.Numeric(10, 2), default=0)
+    depollution_offerte = db.Column(db.Boolean, default=False)
     
     # Classe et élève (optionnels)
     classe_nom = db.Column(db.String(50))

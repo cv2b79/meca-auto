@@ -29,10 +29,11 @@
         {% endif %}
         {# Résumé dépollution — le détail est dans la section #depollution ci-dessous #}
         {% if not or_obj.client_recup_pieces or not or_obj.client_recup_fluides %}
-        <p style="color: #e65100; font-size: 0.9rem; background:#fff3e0; padding:0.4rem 0.6rem; border-radius:4px; margin-top:0.5rem;">
+        <p style="font-size: 0.9rem; background:{% if or_obj.depollution_offerte %}#e8f5e9{% else %}#fff3e0{% endif %}; padding:0.4rem 0.6rem; border-radius:4px; margin-top:0.5rem; color:{% if or_obj.depollution_offerte %}#2e7d32{% else %}#e65100{% endif %};">
             ♻️ <strong>Dépollution :</strong>
             {% if not or_obj.client_recup_pieces %}pièces non récupérées{% endif %}{% if not or_obj.client_recup_pieces and not or_obj.client_recup_fluides %}, {% endif %}{% if not or_obj.client_recup_fluides %}fluides non récupérés{% endif %}
-            {% if or_obj.montant_surcharge and or_obj.montant_surcharge > 0 %}— <strong>{{ "%.2f"|format(or_obj.montant_surcharge|float) }} €</strong>{% endif %}
+            {% if or_obj.depollution_offerte %}— <strong>🎁 Offerte</strong>
+            {% elif or_obj.montant_surcharge and or_obj.montant_surcharge > 0 %}— <strong>{{ "%.2f"|format(or_obj.montant_surcharge|float) }} €</strong>{% endif %}
         </p>
         {% endif %}
     </div>
@@ -171,6 +172,14 @@
         </div>
         <div id="dep_surcharge_info" style="font-size:0.9rem; color:#e65100; margin-bottom:0.5rem; font-weight:bold;"></div>
         <input type="hidden" name="montant_surcharge" id="dep_montant_surcharge" value="{{ or_obj.montant_surcharge or 0 }}">
+        {% if current_user.role in ('magasinier', 'ddfpt') %}
+        <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; margin-bottom:0.75rem; padding:0.5rem 0.75rem; background:#fff8e1; border-radius:4px; border:1px solid #ffe082;">
+            <input type="checkbox" name="depollution_offerte" id="dep_offerte"
+                   {% if or_obj.depollution_offerte %}checked{% endif %}
+                   onchange="calcSurcharge()" style="width:1.1rem; height:1.1rem;">
+            <span>🎁 <strong>Offrir les frais de dépollution</strong> <small style="color:#888;">(surcharge = 0 €)</small></span>
+        </label>
+        {% endif %}
         <button type="submit" class="btn" style="background:#388e3c; color:white;">💾 Enregistrer</button>
     </form>
     {% else %}
@@ -194,7 +203,9 @@
         </p>
     </div>
     {% endif %}
-    {% if or_obj.montant_surcharge and or_obj.montant_surcharge > 0 %}
+    {% if or_obj.depollution_offerte %}
+    <p style="margin-top:0.5rem; color:#2e7d32; font-weight:bold;">🎁 Frais de dépollution offerts — 0 €</p>
+    {% elif or_obj.montant_surcharge and or_obj.montant_surcharge > 0 %}
     <p style="margin-top:0.5rem; color:#e65100; font-weight:bold;">
         💶 Surcharge dépollution : {{ "%.2f"|format(or_obj.montant_surcharge|float) }} €
     </p>
@@ -207,9 +218,15 @@ var depSurchargesData = {{ surcharges_json|tojson }};
 function calcSurcharge() {
     var rp = document.getElementById('dep_recup_pieces');
     var rf = document.getElementById('dep_recup_fluides');
+    var offerte = document.getElementById('dep_offerte');
     var si = document.getElementById('dep_surcharge_info');
     var mi = document.getElementById('dep_montant_surcharge');
-    if (!rp || !rf) return;
+    if (!rp || !rf || !si || !mi) return;
+    if (offerte && offerte.checked) {
+        mi.value = '0.00';
+        si.innerHTML = '<span style="color:#2e7d32;">🎁 Frais de dépollution offerts — 0 €</span>';
+        return;
+    }
     var total = 0, texts = [];
     if (!rp.checked) {
         var sp = depSurchargesData.find(function(x){ return x.nom.toLowerCase().includes('piece') || x.nom.toLowerCase().includes('pièce'); });

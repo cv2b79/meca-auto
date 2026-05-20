@@ -330,9 +330,10 @@ ADD_COLUMNS = [
 
     # ordres_reparation
     ("ordres_reparation", "mode_tarif",           "VARCHAR(20) DEFAULT 'forfait'"),
-    ("ordres_reparation", "client_recup_pieces",  "BOOLEAN DEFAULT TRUE"),
-    ("ordres_reparation", "client_recup_fluides", "BOOLEAN DEFAULT TRUE"),
-    ("ordres_reparation", "montant_surcharge",    "NUMERIC(10,2) DEFAULT 0"),
+    ("ordres_reparation", "client_recup_pieces",    "BOOLEAN DEFAULT TRUE"),
+    ("ordres_reparation", "client_recup_fluides",   "BOOLEAN DEFAULT TRUE"),
+    ("ordres_reparation", "montant_surcharge",      "NUMERIC(10,2) DEFAULT 0"),
+    ("ordres_reparation", "depollution_offerte",    "BOOLEAN DEFAULT FALSE"),
     ("ordres_reparation", "classe_nom",           "VARCHAR(50)"),
     ("ordres_reparation", "eleve_nom",            "VARCHAR(100)"),
     ("ordres_reparation", "eleve_id",             "INTEGER REFERENCES users(id)"),
