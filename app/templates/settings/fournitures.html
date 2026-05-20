@@ -79,22 +79,43 @@
             <label style="display:block; font-size:0.8rem;">Montant (€)</label>
             <input type="number" step="0.01" name="montant" required style="padding:0.4rem; width:100px;">
         </div>
-        <button type="submit" class="btn">Ajouter</button>
+        <button type="submit" class="btn">➕ Ajouter</button>
     </form>
-    <table style="font-size:0.9rem; width:100%;">
-        <thead><tr><th>Nom</th><th>Montant</th><th></th></tr></thead>
-        <tbody>
-        {% for f in forfaits %}
-        <tr>
-            <td>{{ f.nom }}</td>
-            <td>{{ f.montant }} €</td>
-            <td><form method="POST" action="{{ url_for('settings.forfait_delete', id=f.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer ?')"><button type="submit" class="btn btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.8rem;">Supprimer</button></form></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="3" style="color:#999;">Aucun forfait</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div style="overflow-x: auto;">
+        <table style="width:100%;">
+            <thead>
+                <tr>
+                    <th style="width:55%;">Nom</th>
+                    <th style="width:20%; text-align:right;">Montant (€)</th>
+                    <th style="width:25%; text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for f in forfaits %}
+            <tr>
+                <form method="POST" action="{{ url_for('settings.forfait_edit', id=f.id) }}">
+                <td><input type="text" name="nom" value="{{ f.nom }}" style="width:100%;"></td>
+                <td style="text-align:right;">
+                    <input type="number" step="0.01" min="0" name="montant" value="{{ f.montant }}" style="width:110px; text-align:right;">
+                </td>
+                <td style="text-align:right; white-space:nowrap;">
+                    <button type="submit" class="btn btn-secondary" style="padding:0.2rem 0.6rem;">💾 Sauver</button>
+                </td>
+                </form>
+                <td style="text-align:right;">
+                    <form method="POST" action="{{ url_for('settings.forfait_delete', id=f.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer ce forfait ?')">
+                        <button type="submit" class="btn btn-danger" style="padding:0.2rem 0.6rem;">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: #999; padding: 1.5rem;">Aucun forfait enregistré</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="card" style="margin-top:1.5rem;">
@@ -108,21 +129,42 @@
             <label style="display:block; font-size:0.8rem;">Montant (€)</label>
             <input type="number" step="0.01" name="montant" required style="padding:0.4rem; width:100px;">
         </div>
-        <button type="submit" class="btn">Ajouter</button>
+        <button type="submit" class="btn">➕ Ajouter</button>
     </form>
-    <table style="font-size:0.9rem; width:100%;">
-        <thead><tr><th>Type</th><th>Montant</th><th></th></tr></thead>
-        <tbody>
-        {% for r in surcharges %}
-        <tr>
-            <td>{{ r.nom }}</td>
-            <td>{{ r.montant }} €</td>
-            <td><form method="POST" action="{{ url_for('settings.surcharge_delete', id=r.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer ?')"><button type="submit" class="btn btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.8rem;">Supprimer</button></form></td>
-        </tr>
-        {% else %}
-        <tr><td colspan="3" style="color:#999;">Aucun frais configuré</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div style="overflow-x: auto;">
+        <table style="width:100%;">
+            <thead>
+                <tr>
+                    <th style="width:55%;">Type</th>
+                    <th style="width:20%; text-align:right;">Montant (€)</th>
+                    <th style="width:25%; text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in surcharges %}
+            <tr>
+                <form method="POST" action="{{ url_for('settings.surcharge_edit', id=r.id) }}">
+                <td><input type="text" name="nom" value="{{ r.nom }}" style="width:100%;"></td>
+                <td style="text-align:right;">
+                    <input type="number" step="0.01" min="0" name="montant" value="{{ r.montant }}" style="width:110px; text-align:right;">
+                </td>
+                <td style="text-align:right; white-space:nowrap;">
+                    <button type="submit" class="btn btn-secondary" style="padding:0.2rem 0.6rem;">💾 Sauver</button>
+                </td>
+                </form>
+                <td style="text-align:right;">
+                    <form method="POST" action="{{ url_for('settings.surcharge_delete', id=r.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer ce frais ?')">
+                        <button type="submit" class="btn btn-danger" style="padding:0.2rem 0.6rem;">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: #999; padding: 1.5rem;">Aucun frais configuré</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

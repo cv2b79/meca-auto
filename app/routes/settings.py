@@ -412,7 +412,7 @@ def forfait_new():
     db.session.add(forfait)
     db.session.commit()
     flash('Forfait créé', 'success')
-    return redirect(url_for('settings.index'))
+    return _tarif_redirect()
 
 @settings_bp.route('/forfait/<int:id>/edit', methods=['POST'])
 @login_required
@@ -427,7 +427,7 @@ def forfait_edit(id):
     forfait.montant = request.form.get('montant')
     db.session.commit()
     flash('Forfait modifié', 'success')
-    return redirect(url_for('settings.index'))
+    return _tarif_redirect()
 
 @settings_bp.route('/forfait/<int:id>/delete', methods=['POST'])
 @login_required
@@ -440,7 +440,13 @@ def forfait_delete(id):
     forfait.actif = False
     db.session.commit()
     flash('Forfait supprimé', 'success')
-    return redirect(url_for('settings.index'))
+    return _tarif_redirect()
+
+def _tarif_redirect():
+    """Redirige vers la bonne page de tarification selon le rôle."""
+    if current_user.role == 'ddfpt':
+        return redirect(url_for('settings.admin', tab='tarification'))
+    return redirect(url_for('settings.fournitures'))
 
 # === FOURNITURES ===
 def _fournitures_redirect():
@@ -889,7 +895,7 @@ def surcharge_new():
     db.session.add(surcharge)
     db.session.commit()
     flash('Frais de dépollution créé', 'success')
-    return redirect(url_for('settings.index'))
+    return _tarif_redirect()
 
 @settings_bp.route('/taux-horaire', methods=['POST'])
 @login_required
@@ -903,7 +909,7 @@ def taux_horaire_save():
         flash('Taux horaire mis à jour', 'success')
     except (ValueError, TypeError):
         flash('Valeur invalide', 'error')
-    return redirect(url_for('settings.index'))
+    return _tarif_redirect()
 
 
 @settings_bp.route('/surcharge/<int:id>/delete', methods=['POST'])
@@ -917,7 +923,20 @@ def surcharge_delete(id):
     surcharge.actif = False
     db.session.commit()
     flash('Frais supprimé', 'success')
-    return redirect(url_for('settings.index'))
+    return _tarif_redirect()
+
+@settings_bp.route('/surcharge/<int:id>/edit', methods=['POST'])
+@login_required
+def surcharge_edit(id):
+    if not current_user.can_manage_settings():
+        flash('Accès refusé', 'error')
+        return redirect(url_for('main.index'))
+    surcharge = RecupSurcharge.query.get_or_404(id)
+    surcharge.nom = request.form.get('nom')
+    surcharge.montant = request.form.get('montant')
+    db.session.commit()
+    flash('Frais modifié', 'success')
+    return _tarif_redirect()
 
 # === CONSOMMABLES ===
 @settings_bp.route('/consommable/new', methods=['POST'])
