@@ -74,6 +74,83 @@
         .dark .badge.en_cours { background: #ffc107; }
         .dark .badge.termine { background: #28a745; }
         .dark .badge.cloture { background: #6c757d; }
+
+        /* ── Hamburger ───────────────────────────────────────── */
+        .nav-toggle { display: none; }
+        .nav-links { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+
+        /* ── Responsive mobile (≤ 768px) ─────────────────────── */
+        @media (max-width: 768px) {
+            /* Header */
+            .header { padding: 0.7rem 1rem; flex-wrap: wrap; gap: 0.4rem; }
+            .header h1 { font-size: 1rem; }
+            .header-right { gap: 0.5rem; flex-wrap: wrap; }
+            .header-right .user { font-size: 0.78rem; }
+            .theme-toggle { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+            .theme-toggle .toggle-label { display: none; }
+
+            /* Nav hamburger */
+            .nav { padding: 0; flex-direction: column; }
+            .nav-toggle {
+                display: block;
+                width: 100%;
+                padding: 0.65rem 1rem;
+                background: transparent;
+                border: none;
+                color: white;
+                font-size: 1rem;
+                font-weight: bold;
+                text-align: left;
+                cursor: pointer;
+                letter-spacing: 0.03em;
+            }
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                gap: 0;
+                padding: 0 0 0.5rem 0;
+            }
+            .nav-links.open { display: flex; }
+            .nav-links a {
+                padding: 0.65rem 1.25rem;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                border-radius: 0;
+                font-size: 0.95rem;
+            }
+            .nav-links a.active { background: rgba(255,255,255,0.15); color: white; }
+
+            /* Container & cards */
+            .container { margin: 0.75rem auto; padding: 0 0.5rem; }
+            .card { padding: 0.9rem; max-width: 100%; overflow-x: auto; }
+
+            /* Tables scrollables */
+            .card table { min-width: 480px; }
+            .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+            /* Boutons plus grands (tap) */
+            .btn { padding: 0.6rem 1rem; font-size: 0.93rem; }
+            th, td { padding: 0.5rem 0.4rem; font-size: 0.83rem; }
+
+            /* Inputs : font-size 16px évite le zoom automatique sur iOS */
+            input:not([type=checkbox]):not([type=radio]),
+            select, textarea { font-size: 16px !important; }
+
+            /* Stats */
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .stat-box .number { font-size: 1.6rem; }
+
+            /* Cacher colonnes secondaires si la page le demande */
+            .col-hide-mobile { display: none !important; }
+
+            /* Footer compact */
+            footer { font-size: 0.75rem; padding: 0.75rem; }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 { font-size: 0.9rem; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stat-box .number { font-size: 1.3rem; }
+        }
     </style>
     <script>
         function toggleTheme() {
@@ -93,6 +170,27 @@
                 localStorage.setItem('scrollPos', window.scrollY);
             }
         }, true);
+
+        // Hamburger nav toggle
+        function toggleNav() {
+            var links = document.getElementById('nav-links');
+            var btn   = document.querySelector('.nav-toggle');
+            if (!links) return;
+            links.classList.toggle('open');
+            btn.textContent = links.classList.contains('open') ? '✕ Fermer' : '☰ Menu';
+        }
+        // Ferme le menu si on clique sur un lien
+        document.addEventListener('DOMContentLoaded', function() {
+            var links = document.querySelectorAll('.nav-links a');
+            links.forEach(function(a) {
+                a.addEventListener('click', function() {
+                    var nl = document.getElementById('nav-links');
+                    var btn = document.querySelector('.nav-toggle');
+                    if (nl) nl.classList.remove('open');
+                    if (btn) btn.textContent = '☰ Menu';
+                });
+            });
+        });
     </script>
 </head>
 <body>
@@ -100,45 +198,48 @@
     <div class="header">
         <h1>MEC AUTO - Gestion Atelier</h1>
         <div class="header-right">
-            <button class="theme-toggle" onclick="toggleTheme()">🌙 Mode sombre</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 <span class="toggle-label">Mode sombre</span></button>
             <span class="user">{{ current_user.prenom }} {{ current_user.nom }}{% if current_user.role == 'ddfpt' %}, DDFPT{% elif current_user.role == 'magasinier' %}, Magasinier{% elif current_user.role == 'enseignant' %}, Enseignant{% elif current_user.role == 'eleve' %}, Élève{% endif %}</span>
             <a href="{{ url_for('auth.logout') }}">Déconnexion</a>
         </div>
     </div>
     <div class="nav">
-        <a href="{{ url_for('main.index') }}" {% if request.endpoint=='main.index' %}class="active"{% endif %}>Tableau de bord</a>
-        <a href="{{ url_for('ordres.liste') }}" {% if request.endpoint and 'ordres' in request.endpoint %}class="active"{% endif %}>Ordres de réparation</a>
-        {% if current_user.can_manage_clients() %}
-        <a href="{{ url_for('clients.list') }}" {% if request.endpoint and 'clients' in request.endpoint %}class="active"{% endif %}>Clients</a>
-        {% endif %}
-        {% if current_user.can_manage_vehicules() %}
-        <a href="{{ url_for('vehicules.list') }}" {% if request.endpoint and 'vehicules' in request.endpoint %}class="active"{% endif %}>Véhicules</a>
-        {% endif %}
-        {% if current_user.role != 'eleve' %}
-        <a href="{{ url_for('agenda.index') }}" {% if request.endpoint and 'agenda' in request.endpoint %}class="active"{% endif %}>📅 Agenda</a>
-        {% endif %}
-        {% if current_user.role == 'eleve' %}
-        <a href="{{ url_for('main.mes_interventions') }}" {% if request.endpoint and 'mes_interventions' in request.endpoint %}class="active"{% endif %}>📋 Mes interventions</a>
-        {% endif %}
-        {% if current_user.can_facturer() %}
-        <a href="{{ url_for('factures.liste') }}" {% if request.endpoint and 'factures' in request.endpoint %}class="active"{% endif %}>Factures</a>
-        {% endif %}
-        {% if current_user.can_see_stats() %}
-        <a href="{{ url_for('stats.index') }}" {% if request.endpoint and 'stats' in request.endpoint %}class="active"{% endif %}>Statistiques</a>
-        {% endif %}
-        {% if current_user.role == 'ddfpt' %}
-        <a href="{{ url_for('settings.admin', tab='users') }}" {% if request.endpoint == 'settings.admin' %}class="active"{% endif %}>Admin</a>
-        {% endif %}
-        {% if current_user.role == 'magasinier' %}
-        <a href="{{ url_for('settings.fournitures') }}" {% if request.endpoint == 'settings.fournitures' %}class="active"{% endif %}>🧴 Fournitures</a>
-        {% endif %}
-        {% if current_user.role == 'enseignant' %}
-        <a href="{{ url_for('settings.eleves') }}" {% if request.endpoint == 'settings.eleves' %}class="active"{% endif %}>👨‍🎓 Élèves</a>
-        <a href="{{ url_for('settings.checklist') }}" {% if request.endpoint == 'settings.checklist' %}class="active"{% endif %}>✅ Checklist</a>
-        {% endif %}
-        {% if current_user.role not in ['eleve'] %}
-        <a href="{{ url_for('settings.mon_compte') }}" {% if request.endpoint == 'settings.mon_compte' %}class="active"{% endif %}>Mon compte</a>
-        {% endif %}
+        <button class="nav-toggle" onclick="toggleNav()">☰ Menu</button>
+        <div class="nav-links" id="nav-links">
+            <a href="{{ url_for('main.index') }}" {% if request.endpoint=='main.index' %}class="active"{% endif %}>Tableau de bord</a>
+            <a href="{{ url_for('ordres.liste') }}" {% if request.endpoint and 'ordres' in request.endpoint %}class="active"{% endif %}>Ordres de réparation</a>
+            {% if current_user.can_manage_clients() %}
+            <a href="{{ url_for('clients.list') }}" {% if request.endpoint and 'clients' in request.endpoint %}class="active"{% endif %}>Clients</a>
+            {% endif %}
+            {% if current_user.can_manage_vehicules() %}
+            <a href="{{ url_for('vehicules.list') }}" {% if request.endpoint and 'vehicules' in request.endpoint %}class="active"{% endif %}>Véhicules</a>
+            {% endif %}
+            {% if current_user.role != 'eleve' %}
+            <a href="{{ url_for('agenda.index') }}" {% if request.endpoint and 'agenda' in request.endpoint %}class="active"{% endif %}>📅 Agenda</a>
+            {% endif %}
+            {% if current_user.role == 'eleve' %}
+            <a href="{{ url_for('main.mes_interventions') }}" {% if request.endpoint and 'mes_interventions' in request.endpoint %}class="active"{% endif %}>📋 Mes interventions</a>
+            {% endif %}
+            {% if current_user.can_facturer() %}
+            <a href="{{ url_for('factures.liste') }}" {% if request.endpoint and 'factures' in request.endpoint %}class="active"{% endif %}>Factures</a>
+            {% endif %}
+            {% if current_user.can_see_stats() %}
+            <a href="{{ url_for('stats.index') }}" {% if request.endpoint and 'stats' in request.endpoint %}class="active"{% endif %}>Statistiques</a>
+            {% endif %}
+            {% if current_user.role == 'ddfpt' %}
+            <a href="{{ url_for('settings.admin', tab='users') }}" {% if request.endpoint == 'settings.admin' %}class="active"{% endif %}>Admin</a>
+            {% endif %}
+            {% if current_user.role == 'magasinier' %}
+            <a href="{{ url_for('settings.fournitures') }}" {% if request.endpoint == 'settings.fournitures' %}class="active"{% endif %}>🧴 Fournitures</a>
+            {% endif %}
+            {% if current_user.role == 'enseignant' %}
+            <a href="{{ url_for('settings.eleves') }}" {% if request.endpoint == 'settings.eleves' %}class="active"{% endif %}>👨‍🎓 Élèves</a>
+            <a href="{{ url_for('settings.checklist') }}" {% if request.endpoint == 'settings.checklist' %}class="active"{% endif %}>✅ Checklist</a>
+            {% endif %}
+            {% if current_user.role not in ['eleve'] %}
+            <a href="{{ url_for('settings.mon_compte') }}" {% if request.endpoint == 'settings.mon_compte' %}class="active"{% endif %}>Mon compte</a>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
 
