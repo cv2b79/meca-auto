@@ -474,6 +474,14 @@
     </div>
 </div>
 
+<!-- ── CGV ────────────────────────────────────────────── -->
+{% if cgv_texte %}
+<div style="margin-top:1rem; padding:0.6rem 0.8rem; border:1px solid #ccd6e0; border-radius:4px; background:#f8fafc;">
+    <div style="font-size:7pt; font-weight:bold; color:#1E3A5F; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Conditions générales de vente</div>
+    <div style="font-size:7pt; color:#555; line-height:1.5; white-space:pre-wrap;">{{ cgv_texte }}</div>
+</div>
+{% endif %}
+
 <!-- ── PIED DE PAGE ──────────────────────────────────── -->
 <div class="footer">
     {% if g.etab_nom %}{{ g.etab_nom }} — {% endif %}Section MVA

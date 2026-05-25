@@ -220,6 +220,24 @@
             </form>
         </div>
 
+        <!-- CGV -->
+        <div class="full-card" style="margin-top:1rem;">
+            <h3 style="margin:0 0 0.75rem 0;">📋 Conditions Générales de Vente</h3>
+            <p style="color:#666; font-size:0.88rem; margin-bottom:0.75rem;">
+                Texte affiché en pied de page de chaque facture PDF. Laisser vide pour ne rien afficher.
+            </p>
+            <form method="POST">
+                <input type="hidden" name="action" value="save_cgv">
+                <textarea name="cgv_texte" rows="5"
+                    placeholder="Ex : Travaux réalisés par des élèves en formation MVA sous la responsabilité d'un enseignant qualifié. En cas d'anomalie constatée dans les 30 jours suivant la restitution du véhicule et imputable aux travaux effectués, l'atelier s'engage à reprendre les travaux sans frais. Paiement à réception de facture."
+                    style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:0.9rem; line-height:1.5; resize:vertical;">{{ cgv_texte or '' }}</textarea>
+                <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.5rem;">
+                    <button type="submit" class="btn">💾 Enregistrer</button>
+                    <span style="font-size:0.82rem; color:#888;">Le texte apparaîtra sur tous les PDF de factures.</span>
+                </div>
+            </form>
+        </div>
+
         <!-- Logo -->
         <div class="full-card" style="margin-top:1rem;">
             <h3 style="margin:0 0 1rem 0;">🖼️ Logo de l'établissement</h3>

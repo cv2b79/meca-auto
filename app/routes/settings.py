@@ -1040,6 +1040,13 @@ def admin():
             flash('Configuration email enregistrée', 'success')
             return redirect(url_for('settings.admin'))
 
+        # Save CGV
+        if action == 'save_cgv':
+            Parametre.set('cgv_texte', request.form.get('cgv_texte', '').strip())
+            db.session.commit()
+            flash('CGV enregistrées', 'success')
+            return redirect(url_for('settings.admin', tab='etablissement'))
+
         # Save etablissement info
         if action == 'save_etablissement':
             for key in ['etab_nom', 'etab_adresse', 'etab_tel', 'etab_email', 'etab_siren']:
@@ -1402,7 +1409,8 @@ def admin():
                           backup_last_msg=backup_last_msg,
                           backups_list=backups_list,
                           notif_incident=Parametre.get('notif_incident', 'non'),
-                          notif_incident_email=Parametre.get('notif_incident_email', ''))
+                          notif_incident_email=Parametre.get('notif_incident_email', ''),
+                          cgv_texte=Parametre.get('cgv_texte', ''))
 
 @settings_bp.route('/permissions', methods=['GET', 'POST'])
 @login_required

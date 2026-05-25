@@ -59,6 +59,8 @@ def _build_facture_context(facture):
     total_surcharge = float(or_obj.montant_surcharge or 0)
     total_ttc = total_mo + total_fournitures + total_surcharge
 
+    cgv_texte = Parametre.get('cgv_texte', '')
+
     return dict(
         facture=facture,
         or_obj=or_obj,
@@ -74,6 +76,7 @@ def _build_facture_context(facture):
         total_surcharge=total_surcharge,
         total_mo=total_mo,
         total_ttc=total_ttc,
+        cgv_texte=cgv_texte,
     )
 
 @factures_bp.route('/')
