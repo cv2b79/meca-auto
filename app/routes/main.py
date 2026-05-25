@@ -34,14 +34,13 @@ def index():
     
     vehicules_atelier = list(vehicules_dict.values())
     
-    # Get this week's RDVs (from Monday to Sunday)
+    # Get upcoming RDVs (today + 7 days, past excluded)
     today = datetime.now()
-    # 7-day sliding window (last 7 days + next 7 days)
-    start_sliding = today - timedelta(days=7)
-    end_sliding = today + timedelta(days=7)
-    
+    start_today = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_sliding = start_today + timedelta(days=8)
+
     rdv_7_jours = RendezVous.query.filter(
-        RendezVous.date_heure >= start_sliding,
+        RendezVous.date_heure >= start_today,
         RendezVous.date_heure <= end_sliding,
         RendezVous.statut != 'annule'
     ).order_by(RendezVous.date_heure).all()
