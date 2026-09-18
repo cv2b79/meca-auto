@@ -213,18 +213,24 @@ Renseigner :
 
 ---
 
-## 11. HTTPS avec Nginx Proxy Manager
+## 11. HTTPS avec Caddy (sur le Pi lui-même)
 
-Nginx Proxy Manager (NPM) doit tourner sur une machine du réseau (ex : autre RPi, NAS, VM).
+Caddy tourne sur le Raspberry, devant Gunicorn : il gère le certificat et le chiffrement.
+Gunicorn n'écoute plus que sur `127.0.0.1:5000` (inaccessible depuis le réseau).
 
-Dans NPM → **Proxy Hosts → Add Proxy Host** :
-- Domain : `votre-sous-domaine.duckdns.org`
-- Scheme : `http`
-- Forward Hostname : `192.168.1.XX` (IP du RPi)
-- Forward Port : `5000`
-- Onglet SSL → Request a new SSL Certificate (Let's Encrypt)
+```bash
+bash /opt/meca-auto/scripts/setup_https.sh
+```
 
-> **Important** : le Scheme doit être `http` (NPM gère le SSL lui-même).
+Le script :
+- vérifie `SECRET_KEY` et `FLASK_ENV=production` dans `.env`
+- installe Caddy et écrit `/etc/caddy/Caddyfile`
+  - **mode 1** (réseau du lycée) : `https://IP-du-Pi`, certificat interne
+  - **mode 2** (Internet) : `https://domaine`, certificat Let's Encrypt (ports 80/443 redirigés vers le Pi sur la box)
+- passe Gunicorn en `127.0.0.1:5000`
+- active le pare-feu `ufw` (SSH depuis le réseau local seulement, 80/443 ouverts)
+
+Retour arrière : `sudo systemctl stop caddy` puis restaurer `/etc/systemd/system/mecaauto.service.bak-*`.
 
 ---
 

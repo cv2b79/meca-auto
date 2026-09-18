@@ -157,7 +157,8 @@ def setup():
         nom='Admin',
         prenom='DDFPT',
         login='admin',
-        role='ddfpt'
+        role='ddfpt',
+        must_change_password=True
     )
     user.set_password('admin123')
     db.session.add(user)

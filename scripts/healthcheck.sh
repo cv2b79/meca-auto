@@ -6,7 +6,7 @@
 # ╚══════════════════════════════════════════════════════════════╝
 
 LOG_FILE="/opt/meca-auto/backups/watchdog.log"
-URL="http://localhost:5000/"
+URL="http://127.0.0.1:5000/"
 MAX_TIME=10
 DATE=$(date '+%Y-%m-%d %H:%M:%S')
 

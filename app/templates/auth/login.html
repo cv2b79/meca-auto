@@ -210,6 +210,7 @@
             {% endwith %}
 
             <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="login">Identifiant ou email</label>
                     <input type="text" id="login" name="login" required autofocus

@@ -2,12 +2,15 @@ from flask import Flask, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect, CSRFError
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from datetime import timedelta
 
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
+csrf = CSRFProtect()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -21,6 +24,18 @@ def create_app(config_class=Config):
     import os
     if os.getenv('FLASK_ENV') == 'production':
         app.config['SESSION_COOKIE_SECURE'] = True    # cookie uniquement sur HTTPS
+        # Derrière Caddy : faire confiance aux en-têtes X-Forwarded-* (HTTPS, IP client)
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+    # ── Protection CSRF (jeton sur tous les formulaires POST) ──
+    app.config['WTF_CSRF_TIME_LIMIT'] = None  # valable toute la session
+    csrf.init_app(app)
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        from flask import flash, redirect, request, url_for
+        flash('Formulaire expiré, merci de réessayer.', 'error')
+        return redirect(request.referrer or url_for('auth.login'))
 
     db.init_app(app)
     migrate.init_app(app, db)

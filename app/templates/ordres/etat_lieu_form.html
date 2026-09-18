@@ -24,6 +24,7 @@
     <h1>ÉTAT DES LIEUX - {{ 'ENTRÉE' if type_etat == 'entree' else 'SORTIE' }}</h1>
     
     <form method="POST" action="{{ url_for('ordres.etat_lieu_save') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="or_id" value="{{ or_obj.id if or_obj else '' }}">
         <input type="hidden" name="vehicule_id" value="{{ vehicule.id if vehicule else '' }}">
         <input type="hidden" name="type_etat" value="{{ type_etat }}">

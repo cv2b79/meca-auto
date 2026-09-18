@@ -5,6 +5,11 @@ load_dotenv()
 
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    if os.getenv('FLASK_ENV') == 'production' and (
+            not os.getenv('SECRET_KEY') or len(SECRET_KEY) < 32 or 'change' in SECRET_KEY):
+        raise RuntimeError(
+            "SECRET_KEY absente ou faible dans .env. Générer une clé avec : "
+            "python3 -c \"import secrets; print(secrets.token_hex(32))\"")
 
     # Utiliser SQLite en local (dev), PostgreSQL en prod
     db_url = os.getenv('DATABASE_URL', '')

@@ -1,3 +1,4 @@
+import os
 from app import create_app, db
 from app.models import User, Forfait, Parametre
 
@@ -27,4 +28,4 @@ if __name__ == '__main__':
             db.session.commit()
             print('Base initialisée: admin / admin123')
 
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=os.getenv('FLASK_DEBUG') == '1')
