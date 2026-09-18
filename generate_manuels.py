@@ -332,8 +332,8 @@ def manuel_enseignant():
     ])
     para(doc, "Les boutons ✏️ et 🗑️ permettent de **corriger** ou **supprimer** une ligne tant que l'OR n'est pas clôturé. "
               "Les élèves peuvent aussi saisir eux-mêmes leurs interventions.")
-    encadre(doc, 'astuce', "Un élève voit dans sa liste les OR **sur lesquels il a une intervention**. "
-                           "Pour qu'un élève retrouve un OR, ajoutez-lui une première intervention.")
+    encadre(doc, 'info', "Un élève voit uniquement les OR dont il est l'**élève responsable** "
+                         "ou sur lesquels il a une **intervention**. Il ne peut pas ouvrir les autres.")
 
     h(doc, 'Les sessions de travail (traçabilité)', 2)
     para(doc, "Bouton **+ Déclarer une session** : à faire à **chaque séance** en atelier sur le véhicule.")
@@ -422,7 +422,8 @@ def manuel_enseignant():
     h(doc, 'Questions fréquentes')
     faq(doc, section_faq_commune() + [
         ("Un élève ne voit pas l'OR sur lequel il travaille",
-         "Lui ajouter une **intervention** sur cet OR (voir partie 5)."),
+         "Lui ajouter une **intervention** sur cet OR. À la création d'un OR, choisir l'élève "
+         "comme **élève responsable** le lui rend visible directement."),
         ("Un élève a oublié son mot de passe",
          "Menu **Élèves** → ✏️ sur l'élève → saisir un **nouveau mot de passe**."),
         ("Je ne peux pas clôturer l'OR",
@@ -565,7 +566,7 @@ def fiche_eleve():
     h(doc, "🧭 Ce que je vois")
     tableau(doc, ['Menu', 'Contenu'], [
         ['**Tableau de bord**', 'Mes OR en cours'],
-        ['**Ordres de réparation**', 'Les OR sur lesquels je travaille (les coordonnées du client sont masquées)'],
+        ['**Ordres de réparation**', 'Les OR dont je suis responsable ou sur lesquels je travaille (client masqué)'],
         ['**📋 Mes interventions**', 'Tout mon travail : dates, véhicules, heures, total de mes heures'],
     ], largeurs=[4.8, 13.5], size=S)
 

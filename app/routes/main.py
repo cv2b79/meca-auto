@@ -13,13 +13,7 @@ def index():
     base_query = OrdreReparation.query
     
     if current_user.role == 'eleve':
-        from app.models import EleveIntervention
-        base_query = base_query.filter(
-            (OrdreReparation.created_by == current_user.id) |
-            (OrdreReparation.id.in_(
-                db.session.query(EleveIntervention.or_id).filter_by(eleve_id=current_user.id)
-            ))
-        )
+        base_query = base_query.filter(OrdreReparation.filtre_eleve(current_user))
     
     ordres_atelier = []
     for or_obj in base_query.all():
@@ -27,10 +21,12 @@ def index():
             ordres_atelier.append(or_obj)
     
     vehicules_dict = {}
+    or_par_vehicule = {}
     for o in ordres_atelier:
         v = o.vehicule
         if v.id not in vehicules_dict:
             vehicules_dict[v.id] = v
+        or_par_vehicule.setdefault(v.id, []).append(o)
     
     vehicules_atelier = list(vehicules_dict.values())
     
@@ -65,7 +61,7 @@ def index():
     alertes = []
     
     # OR en attente de pièces
-    or_attente_pieces = OrdreReparation.query.filter_by(attente_pieces=True, statut='en_cours').all()
+    or_attente_pieces = base_query.filter_by(attente_pieces=True, statut='en_cours').all()
     for or_obj in or_attente_pieces:
         jours_attente = (today - or_obj.date_attente_pieces).days if or_obj.date_attente_pieces else 0
         alertes.append({
@@ -93,6 +89,7 @@ def index():
         'or_cloture': OrdreReparation.query.filter_by(statut='cloture').count(),
         'vehicules_atelier': vehicules_atelier,
         'ordres_actifs': ordres_atelier,
+        'or_par_vehicule': or_par_vehicule,
         'rdv_7_jours': rdv_7_jours,
         'rdv_aujourdhui': rdv_aujourdhui,
         'or_mois': or_mois,

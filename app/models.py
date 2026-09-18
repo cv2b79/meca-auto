@@ -170,6 +170,18 @@ class OrdreReparation(db.Model):
     
     # Pas de facturation
     pas_de_facturation = db.Column(db.Boolean, default=False)
+
+    @staticmethod
+    def filtre_eleve(user):
+        """OR visibles par un élève : créés par lui, dont il est l'élève responsable,
+        ou sur lesquels il a une intervention."""
+        return (
+            (OrdreReparation.created_by == user.id) |
+            (OrdreReparation.eleve_id == user.id) |
+            OrdreReparation.id.in_(
+                db.session.query(EleveIntervention.or_id).filter_by(eleve_id=user.id)
+            )
+        )
     
     # Attente pièces
     attente_pieces = db.Column(db.Boolean, default=False)

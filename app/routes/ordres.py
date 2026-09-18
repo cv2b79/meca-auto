@@ -294,13 +294,7 @@ def liste():
     query = OrdreReparation.query.join(Vehicule).join(Client)
     
     if current_user.role == 'eleve':
-        from app.models import EleveIntervention
-        query = query.filter(
-            (OrdreReparation.created_by == current_user.id) |
-            (OrdreReparation.id.in_(
-                db.session.query(EleveIntervention.or_id).filter_by(eleve_id=current_user.id)
-            ))
-        )
+        query = query.filter(OrdreReparation.filtre_eleve(current_user))
     
     if statut:
         query = query.filter(OrdreReparation.statut == statut)
@@ -547,6 +541,10 @@ def new():
 def view(id):
     from app.models import SessionTravail, Incident
     or_obj = OrdreReparation.query.get_or_404(id)
+    if current_user.role == 'eleve' and not OrdreReparation.query.filter(
+            OrdreReparation.id == id, OrdreReparation.filtre_eleve(current_user)).first():
+        flash("Cet OR ne vous est pas attribué.", 'error')
+        return redirect(url_for('ordres.liste'))
     client = Client.query.get(or_obj.client_id) if or_obj.client_id else None
     interventions = or_obj.interventions_eleves.all()
     etats = or_obj.etats_lieux.all()

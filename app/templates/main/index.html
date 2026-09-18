@@ -121,13 +121,7 @@
                 <td style="padding: 0.5rem;"><strong><a href="{{ url_for('vehicules.view', id=v.id) }}">{{ v.immatriculation }}</a></strong></td>
                 <td style="padding: 0.5rem;">{{ v.marque }} {{ v.modele }}</td>
                 <td style="padding: 0.5rem;">
-                    {% set or_list = v.ordres_reparation.all() %}
-                    {% set active_or = [] %}
-                    {% for or in or_list %}
-                        {% if or.statut in ['ouvert', 'en_cours', 'termine'] %}
-                            {% set _ = active_or.append(or) %}
-                        {% endif %}
-                    {% endfor %}
+                    {% set active_or = stats.or_par_vehicule.get(v.id, []) %}
                     {% if active_or %}
                         {% for or in active_or %}
                         <span class="badge {{ or.statut }}"><a href="{{ url_for('ordres.view', id=or.id) }}" style="color: inherit;">{{ or.numero }}</a></span>
