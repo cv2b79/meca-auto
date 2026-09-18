@@ -111,7 +111,9 @@ ok "Caddy configuré pour https://${SITE}"
 
 # ── 4. Gunicorn n'écoute plus que localement ─────────────────
 sudo cp "$SERVICE" "${SERVICE}.bak-$(date +%Y%m%d%H%M)"
-sudo sed -i 's|-b 0\.0\.0\.0:|-b 127.0.0.1:|' "$SERVICE"
+# Le service peut lancer « python run.py » (serveur de dev) ou gunicorn :
+# dans les deux cas on le remplace par gunicorn écoutant uniquement en local.
+sudo sed -i "s|^ExecStart=.*|ExecStart=${APP_DIR}/venv/bin/gunicorn -w 2 -b 127.0.0.1:5000 --timeout 120 \"app:create_app()\"|" "$SERVICE"
 sudo systemctl daemon-reload
 sudo systemctl restart mecaauto
 sleep 3
