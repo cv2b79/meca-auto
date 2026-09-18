@@ -69,21 +69,27 @@ if [ "$MODE" = "2" ]; then
     [ -n "$DOMAIN" ] || error "Domaine obligatoire"
     SITE="$DOMAIN"
     TLS_LINE=""
-    GLOBAL=""
     HSTS='        Strict-Transport-Security "max-age=31536000"'
-    REDIRECT=""
+    # L'IP locale reste servie (certificat interne) : le logiciel reste
+    # accessible sur le réseau même si le domaine/NAT n'est pas encore prêt.
+    EXTRA_SITE="${IP} {
+    tls internal
+    encode gzip
+    reverse_proxy 127.0.0.1:5000
+}"
 else
     SITE="${IP}"
     TLS_LINE="    tls internal"
-    # Accès par IP : le navigateur n'envoie pas de nom (SNI), Caddy doit savoir quel certificat servir
-    GLOBAL="{
-    default_sni ${IP}
-}"
     HSTS=""
-    REDIRECT="http://${IP} {
+    EXTRA_SITE="http://${IP} {
     redir https://${IP}{uri}
 }"
 fi
+
+# Accès par IP : le navigateur n'envoie pas de nom (SNI), Caddy doit savoir quel certificat servir
+GLOBAL="{
+    default_sni ${IP}
+}"
 
 # ── 3. Installer Caddy ───────────────────────────────────────
 log "Installation de Caddy..."
@@ -107,7 +113,7 @@ ${HSTS}
     }
     reverse_proxy 127.0.0.1:5000
 }
-${REDIRECT}
+${EXTRA_SITE}
 EOF
 sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null \
     || error "Caddyfile invalide — voir /etc/caddy/Caddyfile"
@@ -157,7 +163,10 @@ if [ "$MODE" != "2" ]; then
     echo "  /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
 else
     echo ""
+    echo "En local : https://${IP} (certificat interne) en attendant le NAT."
     echo "Sur la box/routeur : rediriger le port 443 (et 80 si possible) vers ${IP}."
+    echo "Tant que le NAT n'est pas en place, Let's Encrypt échouera (normal) :"
+    echo "voir sudo journalctl -u caddy -f"
     echo "Ne JAMAIS rediriger le port 22 (SSH) ni le 5000."
 fi
 echo ""
