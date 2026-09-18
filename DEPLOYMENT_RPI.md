@@ -206,6 +206,16 @@ Renseigner :
 > Les credentials NAS sont chiffrés en base de données (Fernet/AES-128).  
 > Le fichier `scripts/backup.conf` (déchiffré, utilisé par bash) est en `chmod 600`.
 
+### Copies chiffrées : clé USB, Nuage apps.education.fr, email
+En plus du NAS, une archive **chiffrée** (.7z, ouvrable avec 7-Zip) peut partir chaque nuit vers :
+- une **clé USB** branchée sur le Pi et nommée `MECABACKUP` (dossier `MECA-AUTO/`) ;
+- le **Nuage apps.education.fr** (WebDAV + mot de passe d'application) : une copie par jour de semaine + une par mois ;
+- un **email** (chaque lundi ou chaque jour, pièce jointe ≤ 20 Mo).
+
+Réglages : **Administration → 🗄️ Sauvegardes → Copies chiffrées**. Prérequis : `sudo apt install p7zip-full`.
+Le **mot de passe de chiffrement** doit être noté sur papier : sans lui les copies sont illisibles.
+Restauration depuis une copie : `sudo bash /opt/meca-auto/scripts/restore.sh /chemin/mecaauto_xxx.7z`.
+
 ### Prérequis NAS Synology
 - SMB activé dans DSM → Panneau de configuration → Services de fichiers
 - L'utilisateur NAS doit avoir accès **Lecture/Écriture** au partage

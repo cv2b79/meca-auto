@@ -47,7 +47,7 @@ sudo apt install -y \
     git python3 python3-pip python3-venv \
     postgresql postgresql-contrib \
     libcairo2-dev pkg-config libffi-dev python3-dev \
-    cifs-utils curl
+    cifs-utils curl p7zip-full
 ok "Paquets installés"
 
 section "2/8 — PostgreSQL"

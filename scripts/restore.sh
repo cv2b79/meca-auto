@@ -1,7 +1,7 @@
 #!/bin/bash
 # ╔══════════════════════════════════════════════════════════════╗
 # ║         MECA AUTO — Script de restauration                  ║
-# ║  Usage : ./scripts/restore.sh [fichier.sql.gz]              ║
+# ║  Usage : ./scripts/restore.sh [fichier.sql.gz | .7z]        ║
 # ║          Sans argument = utilise la dernière sauvegarde      ║
 # ╚══════════════════════════════════════════════════════════════╝
 
@@ -35,6 +35,19 @@ fi
 if [ ! -f "$BACKUP_FILE" ]; then
     echo "❌ Fichier introuvable : $BACKUP_FILE"
     exit 1
+fi
+
+# Archive chiffrée (.7z venant de la clé USB, du Nuage ou d'un email) :
+# 7z demande le mot de passe de chiffrement, puis on restaure le dump qu'elle contient.
+if [[ "$BACKUP_FILE" == *.7z ]]; then
+    command -v 7z >/dev/null || { echo "❌ 7z absent : sudo apt install p7zip-full"; exit 1; }
+    EXTRACT_DIR=$(mktemp -d)
+    trap 'rm -rf "$EXTRACT_DIR"' EXIT
+    echo "🔐 Archive chiffrée : saisir le mot de passe de chiffrement des sauvegardes"
+    7z x -o"$EXTRACT_DIR" "$BACKUP_FILE" || { echo "❌ Mot de passe incorrect ou archive corrompue"; exit 1; }
+    BACKUP_FILE=$(ls "$EXTRACT_DIR"/mecaauto_*.sql.gz 2>/dev/null | head -1)
+    [ -n "$BACKUP_FILE" ] || { echo "❌ Aucun dump mecaauto_*.sql.gz dans l'archive"; exit 1; }
+    echo "   (l'archive contient aussi le .env de l'époque : l'ouvrir avec 7-Zip si besoin)"
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -11,3 +11,4 @@ instance/
 .env
 .DS_Store
 .claude/
+scripts/backup.conf

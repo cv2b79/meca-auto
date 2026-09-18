@@ -919,6 +919,91 @@ function previewLogo(input) {
     </form>
   </div>
 
+  <!-- Copies chiffrées hors du Pi -->
+  <div class="full-card">
+    <h3 style="margin-top:0;">🔐 Copies chiffrées : clé USB, Nuage, email</h3>
+    <p style="font-size:.9rem; color:#555; margin-top:0;">
+      Chaque nuit, en plus du NAS, une <strong>archive chiffrée</strong> (.7z) est envoyée vers les destinations cochées.
+      Une destination absente (clé non branchée, pas d'Internet…) est signalée dans le log sans bloquer les autres.
+      L'archive s'ouvre avec <strong>7-Zip</strong> et le mot de passe de chiffrement.
+    </p>
+    <form method="POST">
+      <input type="hidden" name="action" value="save_backup_dest">
+
+      <div style="padding:.75rem; background:#fff3e0; border:1px solid #ffb74d; border-radius:4px; margin-bottom:1rem;">
+        <label style="display:block; font-weight:bold; margin-bottom:.25rem;">🔑 Mot de passe de chiffrement des sauvegardes *</label>
+        <input type="password" name="backup_crypt_pass" autocomplete="new-password" style="width:100%; max-width:420px;"
+               placeholder="{% if backup_config.has_crypt_pass %}●●●●●● (configuré — laisser vide pour conserver){% else %}12 caractères minimum conseillés{% endif %}">
+        <small style="display:block; color:#b35900; margin-top:.25rem;">
+          ⚠️ <strong>Notez-le sur papier et rangez-le en lieu sûr.</strong> Sans lui, les copies chiffrées sont
+          <strong>impossibles à ouvrir</strong>. Sans mot de passe défini, aucune copie ne quitte le Pi.
+        </small>
+      </div>
+
+      <div class="grid-2">
+        <div style="padding:.75rem; border:1px solid var(--border-dark); border-radius:4px;">
+          <label style="display:flex; gap:.5rem; align-items:center; font-weight:bold; cursor:pointer;">
+            <input type="checkbox" name="backup_usb_actif" {% if backup_config.usb_actif %}checked{% endif %}> 💾 Clé USB
+          </label>
+          <small style="color:#666; display:block; margin-top:.4rem;">
+            Brancher une clé sur le Pi et la <strong>renommer <code>MECABACKUP</code></strong>
+            (sous Windows : clic droit sur la clé → Renommer). Les copies vont dans le dossier
+            <code>MECA-AUTO</code>, conservées selon la rétention ci-dessus.
+          </small>
+        </div>
+
+        <div style="padding:.75rem; border:1px solid var(--border-dark); border-radius:4px;">
+          <label style="display:flex; gap:.5rem; align-items:center; font-weight:bold; cursor:pointer;">
+            <input type="checkbox" name="backup_mail_actif" {% if backup_config.mail_actif %}checked{% endif %}> ✉️ Email
+          </label>
+          <label style="display:block; margin:.5rem 0 .25rem;">Destinataire</label>
+          <input type="email" name="backup_mail_dest" value="{{ backup_config.mail_dest }}" style="width:100%;" placeholder="ddfpt@ac-xxx.fr">
+          <label style="display:block; margin:.5rem 0 .25rem;">Fréquence</label>
+          <select name="backup_mail_freq" style="width:100%;">
+            <option value="hebdo" {% if backup_config.mail_freq != 'quotidien' %}selected{% endif %}>Chaque lundi</option>
+            <option value="quotidien" {% if backup_config.mail_freq == 'quotidien' %}selected{% endif %}>Chaque jour</option>
+          </select>
+          <small style="color:#666;">Utilise le serveur de l'onglet Email. Pièce jointe limitée à 20 Mo.</small>
+        </div>
+      </div>
+
+      <div style="padding:.75rem; border:1px solid var(--border-dark); border-radius:4px; margin-top:1rem;">
+        <label style="display:flex; gap:.5rem; align-items:center; font-weight:bold; cursor:pointer;">
+          <input type="checkbox" name="backup_nuage_actif" {% if backup_config.nuage_actif %}checked{% endif %}> ☁️ Nuage apps.education.fr
+        </label>
+        <div class="grid-2" style="margin-top:.5rem;">
+          <div>
+            <label style="display:block; margin-bottom:.25rem;">Adresse WebDAV</label>
+            <input type="url" name="backup_nuage_url" value="{{ backup_config.nuage_url }}" style="width:100%;"
+                   placeholder="https://nuageXX.apps.education.fr/remote.php/dav/files/identifiant">
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:.25rem;">Dossier dans le Nuage</label>
+            <input type="text" name="backup_nuage_dossier" value="{{ backup_config.nuage_dossier }}" style="width:100%;">
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:.25rem;">Identifiant</label>
+            <input type="text" name="backup_nuage_user" value="{{ backup_config.nuage_user }}" style="width:100%;" autocomplete="off">
+          </div>
+          <div>
+            <label style="display:block; margin-bottom:.25rem;">Mot de passe d'application</label>
+            <input type="password" name="backup_nuage_pass" autocomplete="new-password" style="width:100%;"
+                   placeholder="{% if backup_config.nuage_has_pass %}●●●●●● (configuré — laisser vide pour conserver){% else %}Mot de passe d'application{% endif %}">
+          </div>
+        </div>
+        <small style="color:#666; display:block; margin-top:.5rem;">
+          Dans le Nuage : <strong>Fichiers → ⚙️ Paramètres des fichiers</strong> (en bas à gauche) → copier l'adresse <strong>WebDAV</strong>.
+          Puis <strong>avatar → Paramètres personnels → Sécurité → Créer un mot de passe d'application</strong>
+          (n'utilisez pas votre mot de passe académique). Rotation automatique : une copie par jour de la semaine
+          (écrasée la semaine suivante) + une copie par mois.
+        </small>
+      </div>
+
+      <button type="submit" class="btn" style="margin-top:1rem;">💾 Enregistrer les destinations</button>
+      <small style="color:#666; margin-left:.5rem;">Puis « ▶️ Lancer une sauvegarde » et « 📋 Voir le log » pour tester.</small>
+    </form>
+  </div>
+
   <!-- Sauvegardes disponibles -->
   <div class="full-card">
     <h3 style="margin-top:0;">📦 Sauvegardes locales disponibles</h3>

@@ -45,6 +45,17 @@ if [ -f "${APP_DIR}/.env" ]; then
     done < "${APP_DIR}/.env"
 fi
 
+# SMTP : les réglages de l'interface (backup.conf) priment sur le .env
+export SMTP_HOST="${BACKUP_SMTP_HOST:-${SMTP_HOST:-}}"
+export SMTP_PORT="${BACKUP_SMTP_PORT:-${SMTP_PORT:-587}}"
+export SMTP_USER="${BACKUP_SMTP_USER:-${SMTP_USER:-}}"
+export SMTP_PASSWORD="${BACKUP_SMTP_PASSWORD:-${SMTP_PASSWORD:-}}"
+export SMTP_FROM="${BACKUP_SMTP_FROM:-${SMTP_FROM:-}}"
+export EMAIL_DDFPT="${BACKUP_EMAIL_DDFPT:-${EMAIL_DDFPT:-}}"
+
+# Lancement manuel (bouton de l'interface, via sudo) ou automatique (cron root)
+MANUEL="${SUDO_USER:+oui}"
+
 # Extraire les paramètres PostgreSQL depuis DATABASE_URL
 # Format : postgresql://user:password@host:port/dbname
 if [ -z "${DATABASE_URL:-}" ]; then
@@ -175,16 +186,122 @@ else
     log "▶ Copie NAS ignorée (NAS non configuré)"
 fi
 
-# ── Étape 8 : Rotation des anciennes sauvegardes locales ──────
+# ── Étape 8 : Copies chiffrées hors du Pi (USB, Nuage, email) ─
+# Une destination en échec est signalée mais ne bloque ni les autres ni la sauvegarde.
+DEST_RESUME=""
+dest() { DEST_RESUME="${DEST_RESUME}${DEST_RESUME:+, }$1"; }
+
+copie_usb() {
+    local dev mnt monte_ici=""
+    dev=$(blkid -L MECABACKUP 2>/dev/null || true)
+    if [ -z "$dev" ]; then
+        log "   ⚠️  Clé USB « MECABACKUP » non branchée"; dest "USB absente"; return
+    fi
+    mnt=$(findmnt -n -o TARGET "$dev" 2>/dev/null | head -1 || true)
+    if [ -z "$mnt" ]; then
+        mnt="/mnt/meca-usb"; mkdir -p "$mnt"
+        if ! mount "$dev" "$mnt" 2>/dev/null; then
+            log "   ⚠️  Impossible de monter la clé USB ($dev)"; dest "USB erreur"; return
+        fi
+        monte_ici="oui"
+    fi
+    if mkdir -p "$mnt/MECA-AUTO" && cp "$CRYPT_FILE" "$mnt/MECA-AUTO/"; then
+        find "$mnt/MECA-AUTO" -name "mecaauto_*.7z" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
+        sync
+        log "   ✅ Copie clé USB → $dev (MECA-AUTO/$(basename "$CRYPT_FILE"))"; dest "USB ok"
+    else
+        log "   ⚠️  Copie sur la clé USB échouée (clé pleine ou en lecture seule ?)"; dest "USB erreur"
+    fi
+    [ -n "$monte_ici" ] && umount "$mnt" 2>/dev/null || true
+}
+
+copie_nuage() {
+    if [ -z "${BACKUP_NUAGE_URL:-}" ] || [ -z "${BACKUP_NUAGE_USER:-}" ] || [ -z "${BACKUP_NUAGE_PASS:-}" ]; then
+        log "   ⚠️  Nuage : adresse, identifiant ou mot de passe manquant"; dest "Nuage non configuré"; return
+    fi
+    local cfg dossier jours nom code base
+    # Identifiants dans un fichier temporaire : jamais visibles dans la liste des processus
+    cfg=$(mktemp); chmod 600 "$cfg"
+    local u="${BACKUP_NUAGE_USER}:${BACKUP_NUAGE_PASS}"
+    u=${u//\\/\\\\}; u=${u//\"/\\\"}
+    printf 'user = "%s"\n' "$u" > "$cfg"
+    dossier="${BACKUP_NUAGE_DOSSIER:-MecaAuto}"; dossier="${dossier// /%20}"
+    base="${BACKUP_NUAGE_URL}/${dossier}"
+    curl -s -o /dev/null --max-time 60 -K "$cfg" -X MKCOL "${base}/" || true
+    # Rotation sans suppression : une copie par jour de semaine + une par mois
+    jours=(lundi mardi mercredi jeudi vendredi samedi dimanche)
+    nom="mecaauto_${jours[$(( $(date +%u) - 1 ))]}.7z"
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 900 -K "$cfg" -T "$CRYPT_FILE" "${base}/${nom}") || true
+    code="${code:-000}"
+    if [ "$code" = "201" ] || [ "$code" = "204" ]; then
+        log "   ✅ Copie Nuage → ${BACKUP_NUAGE_DOSSIER:-MecaAuto}/${nom}"; dest "Nuage ok"
+        if [ "$(date +%d)" = "01" ]; then
+            curl -s -o /dev/null --max-time 900 -K "$cfg" -T "$CRYPT_FILE" "${base}/mecaauto_mois_$(date +%Y-%m).7z" \
+                && log "   ✅ Copie mensuelle Nuage → mecaauto_mois_$(date +%Y-%m).7z" || true
+        fi
+    elif [ "$code" = "401" ]; then
+        log "   ⚠️  Nuage : identifiant ou mot de passe d'application refusé (HTTP 401)"; dest "Nuage erreur"
+    elif [ "$code" = "000" ]; then
+        log "   ⚠️  Nuage injoignable (pas d'Internet ?)"; dest "Nuage injoignable"
+    else
+        log "   ⚠️  Nuage : envoi refusé (HTTP ${code}) — vérifier l'adresse WebDAV"; dest "Nuage erreur"
+    fi
+    rm -f "$cfg"
+}
+
+copie_mail() {
+    if [ "${BACKUP_MAIL_FREQ:-hebdo}" != "quotidien" ] && [ "$(date +%u)" != "1" ] && [ -z "$MANUEL" ]; then
+        log "   ✉️  Email : envoi prévu le lundi"; return
+    fi
+    local dest_mail="${BACKUP_MAIL_DEST:-${EMAIL_DDFPT:-}}" taille
+    if [ -z "${SMTP_HOST:-}" ] || [ -z "$dest_mail" ]; then
+        log "   ⚠️  Email : serveur SMTP ou destinataire non configuré"; dest "email non configuré"; return
+    fi
+    taille=$(stat -c %s "$CRYPT_FILE")
+    if [ "$taille" -gt 20971520 ]; then
+        log "   ⚠️  Email : archive trop grosse ($((taille / 1048576)) Mo > 20 Mo), non envoyée"; dest "email trop gros"; return
+    fi
+    if BACKUP_MAIL_TO="$dest_mail" python3 "${APP_DIR}/scripts/notify_backup.py" "ARCHIVE" \
+            "Copie chiffrée de la sauvegarde du $(date '+%d/%m/%Y'). Ouvrir avec 7-Zip et le mot de passe de chiffrement." \
+            "$CRYPT_FILE"; then
+        log "   ✅ Email envoyé à ${dest_mail}"; dest "email ok"
+    else
+        log "   ⚠️  Envoi de l'email échoué (voir réglages de l'onglet Email)"; dest "email erreur"
+    fi
+}
+
+if [ "${BACKUP_USB_ACTIF:-non}" = "oui" ] || [ "${BACKUP_NUAGE_ACTIF:-non}" = "oui" ] || [ "${BACKUP_MAIL_ACTIF:-non}" = "oui" ]; then
+    log "▶ Copies chiffrées hors du Pi..."
+    if [ -z "${BACKUP_CRYPT_PASS:-}" ]; then
+        log "   ⚠️  Mot de passe de chiffrement non défini : aucune copie envoyée"; dest "copies non chiffrables"
+    elif ! command -v 7z >/dev/null 2>&1; then
+        log "   ⚠️  7z absent : installer avec « sudo apt install p7zip-full »"; dest "7z absent"
+    else
+        CRYPT_FILE="${BACKUP_DIR}/mecaauto_${DATE}.7z"
+        # -mhe=on : même les noms des fichiers sont chiffrés
+        if 7z a -t7z -mhe=on -p"${BACKUP_CRYPT_PASS}" "$CRYPT_FILE" "$BACKUP_FILE" "$ENV_BACKUP" >/dev/null 2>&1 \
+                && 7z t -p"${BACKUP_CRYPT_PASS}" "$CRYPT_FILE" >/dev/null 2>&1; then
+            log "   🔐 Archive chiffrée : $(basename "$CRYPT_FILE") ($(du -k "$CRYPT_FILE" | cut -f1) Ko)"
+            [ "${BACKUP_USB_ACTIF:-non}" = "oui" ]   && copie_usb
+            [ "${BACKUP_NUAGE_ACTIF:-non}" = "oui" ] && copie_nuage
+            [ "${BACKUP_MAIL_ACTIF:-non}" = "oui" ]  && copie_mail
+        else
+            log "   ⚠️  Création de l'archive chiffrée échouée"; dest "chiffrement erreur"
+        fi
+        rm -f "$CRYPT_FILE"   # les copies en clair restent dans ${BACKUP_DIR} (et le NAS)
+    fi
+fi
+
+# ── Étape 9 : Rotation des anciennes sauvegardes locales ──────
 log "▶ Rotation locale : suppression des sauvegardes > ${RETENTION_DAYS} jours..."
 DELETED=$(find "$BACKUP_DIR" -name "mecaauto_*.sql.gz" -mtime "+${RETENTION_DAYS}" -print -delete | wc -l)
 find "$BACKUP_DIR" -name "env_*.tar.gz" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
 log "   ${DELETED} ancienne(s) sauvegarde(s) supprimée(s)"
 
-# ── Étape 9 : Résumé ──────────────────────────────────────────
+# ── Étape 10 : Résumé ─────────────────────────────────────────
 NB_BACKUPS=$(ls "${BACKUP_DIR}"/mecaauto_*.sql.gz 2>/dev/null | wc -l)
 OLDEST=$(ls -t "${BACKUP_DIR}"/mecaauto_*.sql.gz 2>/dev/null | tail -1 | xargs -I{} basename {} .sql.gz | sed 's/mecaauto_//')
 TOTAL_SIZE=$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1)
 
-notify_success "Sauvegarde réussie — ${SIZE_KB} Ko, ${TABLE_COUNT} tables, ${NB_BACKUPS} backup(s) conservé(s) (plus ancien: ${OLDEST:-?}), espace total: ${TOTAL_SIZE}"
+notify_success "Sauvegarde réussie — ${SIZE_KB} Ko, ${TABLE_COUNT} tables, ${NB_BACKUPS} backup(s) conservé(s) (plus ancien: ${OLDEST:-?}), espace total: ${TOTAL_SIZE}${DEST_RESUME:+ — copies : ${DEST_RESUME}}"
 log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

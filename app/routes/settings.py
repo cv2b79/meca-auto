@@ -97,25 +97,43 @@ def _write_backup_conf():
     app_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     conf_path = os.path.join(app_dir, 'scripts', 'backup.conf')
 
-    # Déchiffrer les credentials sensibles depuis la BDD
-    nas_user = _decrypt_credential(Parametre.get('backup_nas_user', ''))
-    nas_pass = _decrypt_credential(Parametre.get('backup_nas_pass', ''))
-
+    import shlex
+    dec = lambda cle: _decrypt_credential(Parametre.get(cle, ''))
+    valeurs = {
+        'BACKUP_NAS_IP':      Parametre.get('backup_nas_ip', ''),
+        'BACKUP_NAS_SHARE':   Parametre.get('backup_nas_share', ''),
+        'BACKUP_NAS_USER':    dec('backup_nas_user'),
+        'BACKUP_NAS_PASS':    dec('backup_nas_pass'),
+        'BACKUP_NAS_FOLDER':  Parametre.get('backup_nas_folder', 'meca-auto'),
+        'RETENTION_DAYS':     Parametre.get('backup_retention', '30'),
+        # Copies chiffrées hors du Pi
+        'BACKUP_CRYPT_PASS':  dec('backup_crypt_pass'),
+        'BACKUP_USB_ACTIF':   Parametre.get('backup_usb_actif', 'non'),
+        'BACKUP_NUAGE_ACTIF': Parametre.get('backup_nuage_actif', 'non'),
+        'BACKUP_NUAGE_URL':   Parametre.get('backup_nuage_url', '').rstrip('/'),
+        'BACKUP_NUAGE_USER':  dec('backup_nuage_user'),
+        'BACKUP_NUAGE_PASS':  dec('backup_nuage_pass'),
+        'BACKUP_NUAGE_DOSSIER': Parametre.get('backup_nuage_dossier', 'MecaAuto').strip('/'),
+        'BACKUP_MAIL_ACTIF':  Parametre.get('backup_mail_actif', 'non'),
+        'BACKUP_MAIL_DEST':   Parametre.get('backup_mail_dest', ''),
+        'BACKUP_MAIL_FREQ':   Parametre.get('backup_mail_freq', 'hebdo'),
+        # SMTP configuré dans l'interface (onglet Email)
+        'BACKUP_SMTP_HOST':   Parametre.get('smtp_host', ''),
+        'BACKUP_SMTP_PORT':   Parametre.get('smtp_port', '587'),
+        'BACKUP_SMTP_USER':   Parametre.get('smtp_user', ''),
+        'BACKUP_SMTP_PASSWORD': Parametre.get('smtp_password', ''),
+        'BACKUP_SMTP_FROM':   Parametre.get('smtp_from', ''),
+        'BACKUP_EMAIL_DDFPT': Parametre.get('email_ddfpt_notif', ''),
+    }
     lines = [
         '# backup.conf — généré automatiquement par Meca Auto — NE PAS ÉDITER À LA MAIN\n',
         '# Ce fichier contient des credentials en clair : accès réservé au propriétaire du service.\n',
-        f'BACKUP_NAS_IP="{Parametre.get("backup_nas_ip", "")}"\n',
-        f'BACKUP_NAS_SHARE="{Parametre.get("backup_nas_share", "")}"\n',
-        f'BACKUP_NAS_USER="{nas_user}"\n',
-        f'BACKUP_NAS_PASS="{nas_pass}"\n',
-        f'BACKUP_NAS_FOLDER="{Parametre.get("backup_nas_folder", "meca-auto")}"\n',
-        f'RETENTION_DAYS="{Parametre.get("backup_retention", "30")}"\n',
-    ]
+    ] + [f'{k}={shlex.quote(v or "")}\n' for k, v in valeurs.items()]
     try:
         # Écriture avec umask restrictif : le fichier n'est lisible que par le propriétaire
         old_umask = os.umask(0o177)  # Résultat : permissions 600
         try:
-            with open(conf_path, 'w') as f:
+            with open(conf_path, 'w', encoding='utf-8') as f:
                 f.writelines(lines)
         finally:
             os.umask(old_umask)
@@ -1037,6 +1055,7 @@ def admin():
                     param = Parametre(cle=key, valeur=value)
                     db.session.add(param)
             db.session.commit()
+            _write_backup_conf()  # le script de sauvegarde utilise ces réglages SMTP
             flash('Configuration email enregistrée', 'success')
             return redirect(url_for('settings.admin'))
 
@@ -1330,6 +1349,31 @@ def admin():
             flash('Configuration de sauvegarde enregistrée', 'success')
             return redirect(url_for('settings.admin') + '#sauvegardes')
 
+        elif action == 'save_backup_dest':
+            f = request.form
+            for cle in ('backup_usb_actif', 'backup_nuage_actif', 'backup_mail_actif'):
+                Parametre.set(cle, 'oui' if f.get(cle) else 'non')
+            Parametre.set('backup_nuage_url', f.get('backup_nuage_url', '').strip())
+            Parametre.set('backup_nuage_dossier', f.get('backup_nuage_dossier', '').strip() or 'MecaAuto')
+            Parametre.set('backup_mail_dest', f.get('backup_mail_dest', '').strip())
+            Parametre.set('backup_mail_freq', 'quotidien' if f.get('backup_mail_freq') == 'quotidien' else 'hebdo')
+            # Secrets : chiffrés en BDD, mis à jour seulement si saisis
+            for cle in ('backup_nuage_user', 'backup_nuage_pass', 'backup_crypt_pass'):
+                val = f.get(cle, '').strip()
+                if val:
+                    Parametre.set(cle, _encrypt_credential(val))
+            actives = [n for n, c in (('USB', 'backup_usb_actif'), ('Nuage', 'backup_nuage_actif'),
+                                      ('email', 'backup_mail_actif')) if f.get(c)]
+            db.session.commit()
+            _write_backup_conf()
+            Log.log(current_user, 'save_backup_config',
+                    f"Destinations de sauvegarde : {', '.join(actives) or 'aucune'}")
+            if actives and not Parametre.get('backup_crypt_pass', ''):
+                flash('⚠️ Définissez un mot de passe de chiffrement : sans lui, aucune copie ne quitte le Pi.', 'warning')
+            else:
+                flash('Destinations de sauvegarde enregistrées', 'success')
+            return redirect(url_for('settings.admin') + '#sauvegardes')
+
         db.session.commit()
         return redirect(url_for('settings.admin'))
     
@@ -1380,6 +1424,16 @@ def admin():
         'backup_nas_folder': Parametre.get('backup_nas_folder', 'meca-auto'),
         'backup_retention':  Parametre.get('backup_retention', '30'),
         'has_password':      bool(Parametre.get('backup_nas_pass', '')),  # Indicateur "déjà configuré"
+        'usb_actif':    Parametre.get('backup_usb_actif', 'non') == 'oui',
+        'nuage_actif':  Parametre.get('backup_nuage_actif', 'non') == 'oui',
+        'nuage_url':    Parametre.get('backup_nuage_url', ''),
+        'nuage_user':   _decrypt_credential(Parametre.get('backup_nuage_user', '')),
+        'nuage_has_pass': bool(Parametre.get('backup_nuage_pass', '')),
+        'nuage_dossier': Parametre.get('backup_nuage_dossier', 'MecaAuto'),
+        'mail_actif':   Parametre.get('backup_mail_actif', 'non') == 'oui',
+        'mail_dest':    Parametre.get('backup_mail_dest', '') or Parametre.get('email_ddfpt_notif', ''),
+        'mail_freq':    Parametre.get('backup_mail_freq', 'hebdo'),
+        'has_crypt_pass': bool(Parametre.get('backup_crypt_pass', '')),
     }
     backup_status, backup_last_date, backup_last_msg = _read_backup_status()
     backups_list = _list_backups()
@@ -1599,6 +1653,7 @@ def backup_run():
     if not os.path.exists(script):
         flash('Script de sauvegarde introuvable', 'error')
         return redirect(url_for('settings.admin') + '#sauvegardes')
+    _write_backup_conf()  # prend en compte les derniers réglages
     try:
         subprocess.Popen(
             ['/usr/bin/sudo', '/bin/bash', script],
