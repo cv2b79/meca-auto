@@ -69,11 +69,16 @@ if [ "$MODE" = "2" ]; then
     [ -n "$DOMAIN" ] || error "Domaine obligatoire"
     SITE="$DOMAIN"
     TLS_LINE=""
+    GLOBAL=""
     HSTS='        Strict-Transport-Security "max-age=31536000"'
     REDIRECT=""
 else
     SITE="${IP}"
     TLS_LINE="    tls internal"
+    # Accès par IP : le navigateur n'envoie pas de nom (SNI), Caddy doit savoir quel certificat servir
+    GLOBAL="{
+    default_sni ${IP}
+}"
     HSTS=""
     REDIRECT="http://${IP} {
     redir https://${IP}{uri}
@@ -89,6 +94,7 @@ ok "Caddy installé"
 sudo cp /etc/caddy/Caddyfile "/etc/caddy/Caddyfile.bak-$(date +%Y%m%d%H%M)" 2>/dev/null || true
 sudo tee /etc/caddy/Caddyfile > /dev/null << EOF
 # MECA AUTO — généré par scripts/setup_https.sh
+${GLOBAL}
 ${SITE} {
 ${TLS_LINE}
     encode gzip
