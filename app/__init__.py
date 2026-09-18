@@ -41,6 +41,7 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Merci de vous connecter pour accéder à cette page.'
     
     # Add etab info to all templates
     @app.before_request
