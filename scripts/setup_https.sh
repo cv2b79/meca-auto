@@ -127,15 +127,17 @@ fi
 read -p "Activer le pare-feu (SSH depuis le réseau local, 80/443 ouverts) ? [O/n] : " FW
 if [[ ! "$FW" =~ ^[nN]$ ]]; then
     sudo apt install -y ufw
-    LAN=$(ip -o -f inet addr show | awk '/scope global/ {print $4; exit}')
-    LAN=$(python3 -c "import ipaddress,sys; print(ipaddress.ip_interface(sys.argv[1]).network)" "$LAN")
-    sudo ufw allow from "$LAN" to any port 22 proto tcp   # SSH en premier : on ne se coupe pas l'accès
+    # SSH en premier (on ne se coupe pas l'accès), depuis tout réseau local privé :
+    # l'accès survit à un changement de box, Internet reste bloqué.
+    for LAN in 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12; do
+        sudo ufw allow from "$LAN" to any port 22 proto tcp
+    done
     sudo ufw allow 80/tcp
     sudo ufw allow 443/tcp
     sudo ufw default deny incoming
     sudo ufw default allow outgoing
     sudo ufw --force enable
-    ok "Pare-feu actif (SSH autorisé depuis ${LAN})"
+    ok "Pare-feu actif (SSH autorisé depuis les réseaux locaux uniquement)"
 fi
 
 # ── Résumé ───────────────────────────────────────────────────
@@ -149,7 +151,7 @@ if [ "$MODE" != "2" ]; then
     echo "  /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt"
 else
     echo ""
-    echo "Sur la box/routeur : rediriger les ports 80 et 443 vers ${IP}."
+    echo "Sur la box/routeur : rediriger le port 443 (et 80 si possible) vers ${IP}."
     echo "Ne JAMAIS rediriger le port 22 (SSH) ni le 5000."
 fi
 echo ""
