@@ -84,6 +84,11 @@ def login():
                 flash('Vous devez changer votre mot de passe', 'warning')
                 return redirect(url_for('settings.mon_compte'))
 
+            # Sans question de sécurité, "mot de passe oublié" est impossible
+            if user.role != 'eleve' and not (user.security_question and user.security_answer):
+                flash('Veuillez définir votre question de sécurité : elle vous permettra de réinitialiser votre mot de passe en cas d\'oubli', 'warning')
+                return redirect(url_for('settings.mon_compte'))
+
             next_page = request.args.get('next')
             return redirect(next_page or url_for('main.index'))
         else:
@@ -184,7 +189,7 @@ def forgot_password():
 
         # M2: réponse générique — ne pas révéler si le compte existe
         if not user or not user.security_question:
-            flash('Si ce compte existe et dispose d\'une question de sécurité, répondez ci-dessous.', 'info')
+            flash('Si ce compte existe et dispose d\'une question de sécurité, répondez ci-dessous. Sinon, demandez au DDFPT de réinitialiser votre mot de passe.', 'info')
             return render_template('auth/forgot_password.html')
 
         # Stocker user_id en session (M2: pas dans le form)

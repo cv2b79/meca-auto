@@ -397,8 +397,8 @@ def mon_compte():
                 flash('Mot de passe actuel incorrect', 'error')
             elif new_password != confirm_password:
                 flash('Les mots de passe ne correspondent pas', 'error')
-            elif len(new_password) < 4:
-                flash('Le mot de passe doit contenir au moins 4 caractères', 'error')
+            elif len(new_password) < 8:
+                flash('Le mot de passe doit contenir au moins 8 caractères', 'error')
             else:
                 current_user.set_password(new_password)
                 current_user.must_change_password = False
@@ -411,7 +411,26 @@ def mon_compte():
                 db.session.commit()
                 Log.log(current_user, 'change_password', 'Mot de passe modifié', 'User', current_user.id)
                 flash('Mot de passe modifié avec succès', 'success')
-    
+
+        elif action == 'save_security_question':
+            current_password = request.form.get('current_password')
+            security_question = (request.form.get('security_question') or '').strip()
+            security_answer = (request.form.get('security_answer') or '').strip()
+
+            if not current_user.check_password(current_password):
+                flash('Mot de passe actuel incorrect', 'error')
+            elif not security_question or not security_answer:
+                flash('La question et la réponse sont obligatoires', 'error')
+            elif security_question.lower() in security_answer.lower():
+                flash('La réponse ne peut pas contenir la question', 'error')
+            else:
+                current_user.security_question = security_question
+                current_user.security_answer = security_answer
+                db.session.commit()
+                Log.log(current_user, 'security_question', 'Question de sécurité définie', 'User', current_user.id)
+                flash('Question de sécurité enregistrée', 'success')
+                return redirect(url_for('main.index'))
+
     return render_template('settings/mon_compte.html')
 
 # === FORFAITS ===
@@ -1160,8 +1179,8 @@ def admin():
                 flash('Mot de passe actuel incorrect', 'error')
             elif new_password != confirm_password:
                 flash('Les mots de passe ne correspondent pas', 'error')
-            elif len(new_password) < 4:
-                flash('Le mot de passe doit contenir au moins 4 caractères', 'error')
+            elif len(new_password) < 8:
+                flash('Le mot de passe doit contenir au moins 8 caractères', 'error')
             else:
                 current_user.set_password(new_password)
                 if security_question:
@@ -1203,6 +1222,18 @@ def admin():
                 user.role = request.form.get('role')
                 classe_id = request.form.get('classe_id')
                 user.classe_id = int(classe_id) if classe_id else None
+                new_password = (request.form.get('new_password') or '').strip()
+                if new_password:
+                    if len(new_password) < 8:
+                        flash('Le mot de passe doit contenir au moins 8 caractères', 'error')
+                        return redirect(url_for('settings.admin') + '#utilisateurs')
+                    user.set_password(new_password)
+                    user.failed_attempts = 0
+                    user.locked_until = None
+                    # Les élèves n'ont pas accès à "Mon compte"
+                    user.must_change_password = user.role != 'eleve'
+                    Log.log(current_user, 'reset_password', f'Mot de passe réinitialisé par l\'admin: {user.prenom} {user.nom}', 'User', user.id)
+                    flash(f'Mot de passe de {user.prenom} {user.nom} réinitialisé' + (' (à changer à la prochaine connexion)' if user.must_change_password else ''), 'success')
                 db.session.commit()
                 Log.log(current_user, 'edit_user', f'Utilisateur modifié: {user.prenom} {user.nom} ({user.role})', 'User', user.id)
                 db.session.commit()

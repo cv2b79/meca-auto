@@ -19,12 +19,31 @@
             <label style="display: block; font-size: 0.85rem;">Confirmer le mot de passe</label>
             <input type="password" name="confirm_password" required style="width: 100%;">
         </div>
-        <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: #fff3cd; border-radius: 4px;">
-            <label style="display: block; font-size: 0.85rem;">Question de sécurité (optionnel)</label>
-            <input type="text" name="security_question" value="{{ current_user.security_question or '' }}" placeholder="Ex: Nom du premier animal de compagnie" style="width: 100%; margin-bottom: 0.3rem;">
-            <input type="text" name="security_answer" value="{{ current_user.security_answer or '' }}" placeholder="Réponse" style="width: 100%;">
-        </div>
         <button type="submit" class="btn">Enregistrer</button>
+    </form>
+</div>
+
+<div class="card" style="margin-bottom: 1rem;{% if not current_user.security_question %} border: 2px solid #f0ad4e;{% endif %}">
+    <h3>❓ Question de sécurité</h3>
+    <p style="font-size: 0.85rem; color: #666; margin-top: 0;">
+        Elle permet de réinitialiser vous-même votre mot de passe en cas d'oubli (lien « Mot de passe oublié » de la page de connexion).
+        {% if not current_user.security_question %}<br><strong style="color:#b26a00;">Aucune question n'est encore définie.</strong>{% endif %}
+    </p>
+    <form method="POST" style="max-width: 400px;">
+        <input type="hidden" name="action" value="save_security_question">
+        <div style="margin-bottom: 0.5rem;">
+            <label style="display: block; font-size: 0.85rem;">Question</label>
+            <input type="text" name="security_question" value="{{ current_user.security_question or '' }}" required placeholder="Ex: Nom du premier animal de compagnie" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+            <label style="display: block; font-size: 0.85rem;">Réponse</label>
+            <input type="text" name="security_answer" value="{{ current_user.security_answer or '' }}" required autocomplete="off" style="width: 100%;">
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+            <label style="display: block; font-size: 0.85rem;">Mot de passe actuel (confirmation)</label>
+            <input type="password" name="current_password" required style="width: 100%;">
+        </div>
+        <button type="submit" class="btn">Enregistrer la question</button>
     </form>
 </div>
 {% endblock %}
