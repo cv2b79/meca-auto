@@ -260,6 +260,22 @@ Ne pas exposer le port 22 sur Internet — accès SSH uniquement depuis le rése
 
 ---
 
+## 13. Mise à jour automatique depuis GitHub
+
+```bash
+sudo bash /opt/meca-auto/scripts/install_auto_update.sh
+```
+
+Toutes les 15 minutes, `scripts/auto_update.sh` :
+- regarde s'il y a de nouveaux commits sur `main` (GitHub) ;
+- les applique, réinstalle les dépendances si `requirements.txt` a changé, lance `migrate_db.py` ;
+- redémarre `mecaauto` et vérifie que l'app répond ;
+- si l'app ne répond plus, revient automatiquement à la version précédente.
+
+Il ne touche à rien si des fichiers ont été modifiés à la main sur le RPi.
+
+---
+
 ## Commandes de maintenance
 
 | Action | Commande |
@@ -275,6 +291,8 @@ Ne pas exposer le port 22 sur Internet — accès SSH uniquement depuis le rése
 | Log watchdog | `tail -50 /opt/meca-auto/backups/watchdog.log` |
 | Restaurer une sauvegarde | `sudo bash /opt/meca-auto/scripts/restore.sh` |
 | Mettre à jour le code | `sudo -u christophe git -C /opt/meca-auto pull && sudo systemctl restart mecaauto` |
+| Forcer la mise à jour auto maintenant | `sudo systemctl start mecaauto-update` |
+| Log mise à jour auto | `tail -50 /opt/meca-auto/backups/auto_update.log` |
 
 ---
 
