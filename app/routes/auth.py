@@ -1,12 +1,28 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User, Log, Parametre
 from datetime import datetime, timedelta
+import time
 
 auth_bp = Blueprint('auth', __name__)
 
 MAX_LOGIN_ATTEMPTS = 3
+MIN_PASSWORD_LEN = 8
+MAX_RESET_ATTEMPTS = 3
+
+# IP rate limiting: {ip: [timestamp, ...]}
+_ip_login_attempts: dict = {}
+
+def _is_ip_rate_limited(ip: str, window: int = 300, max_fail: int = 15) -> bool:
+    now = time.time()
+    attempts = [t for t in _ip_login_attempts.get(ip, []) if now - t < window]
+    _ip_login_attempts[ip] = attempts
+    if len(attempts) >= max_fail:
+        return True
+    attempts.append(now)
+    _ip_login_attempts[ip] = attempts
+    return False
 
 def get_max_attempts():
     param = Parametre.query.filter_by(cle='max_login_attempts').first()
@@ -32,19 +48,26 @@ def login():
         return redirect(url_for('main.index'))
 
     if request.method == 'POST':
-        login_input = request.form.get('login')
-        password = request.form.get('password')
+        # M3: IP rate limit (15 failures / 5 min)
+        ip = request.remote_addr
+        if _is_ip_rate_limited(ip):
+            flash('Trop de tentatives depuis cette adresse. Réessayez dans quelques minutes.', 'error')
+            return render_template('auth/login.html')
+
+        # Sanitize inputs (M1 null byte)
+        login_input = (request.form.get('login') or '').replace('\x00', '').strip()[:128]
+        password = request.form.get('password') or ''
 
         user = User.query.filter(
-            (User.login == login_input) | 
+            (User.login == login_input) |
             ((User.email != None) & (User.email == login_input))
         ).first()
 
         max_attempts = get_max_attempts()
         lockout_duration = get_lockout_duration()
-        
+
         if user and is_account_locked(user):
-            remaining = (user.locked_until - datetime.utcnow()).seconds // 60
+            remaining = max(0, (user.locked_until - datetime.utcnow()).seconds // 60)
             flash(f'Compte verrouillé. Réessayez dans {remaining} minute(s)', 'error')
             return render_template('auth/login.html')
 
@@ -54,16 +77,17 @@ def login():
                 user.locked_until = None
                 db.session.commit()
             login_user(user)
-            Log.log(user, 'login', f'Connexion depuis {request.remote_addr}')
+            Log.log(user, 'login', f'Connexion depuis {ip}')
             flash('Connexion réussie', 'success')
-            
+
             if user.must_change_password:
                 flash('Vous devez changer votre mot de passe', 'warning')
                 return redirect(url_for('settings.mon_compte'))
-            
+
             next_page = request.args.get('next')
             return redirect(next_page or url_for('main.index'))
         else:
+            # M2: message identique qu'un compte existe ou non
             if user and user.actif:
                 user.failed_attempts = (user.failed_attempts or 0) + 1
                 if user.failed_attempts >= max_attempts:
@@ -72,9 +96,9 @@ def login():
                     flash(f'Trop de tentatives. Compte verrouillé {lockout_duration} minutes', 'error')
                 else:
                     db.session.commit()
-                    flash(f'Identifiants invalides. Tentative {user.failed_attempts}/{max_attempts}', 'error')
+                    flash('Identifiants invalides', 'error')
             else:
-                Log.log(None, 'login_failed', f'Essai de connexion: {login_input} depuis {request.remote_addr}')
+                Log.log(None, 'login_failed', f'Essai: {login_input[:32]} depuis {ip}')
                 flash('Identifiants invalides', 'error')
 
     return render_template('auth/login.html')
@@ -83,61 +107,94 @@ def login():
 def forgot_password():
     if request.method == 'POST':
         action = request.form.get('action')
-        
-        user = None
-        
+
         if action == 'reset_password':
-            user_id = request.form.get('user_id')
+            # M1+M2: user_id depuis la session (pas le form)
+            user_id = session.get('reset_user_id')
+            if not user_id:
+                flash('Session expirée. Veuillez recommencer.', 'error')
+                return redirect(url_for('auth.forgot_password'))
+
             user = User.query.get(user_id)
             if not user:
+                session.pop('reset_user_id', None)
+                session.pop('reset_attempts', None)
                 flash('Erreur. Veuillez recommencer.', 'error')
-                return render_template('auth/forgot_password.html')
-            
-            if request.form.get('answer') and user.security_answer:
-                if request.form.get('answer').lower() == user.security_answer.lower():
-                    new_password = request.form.get('new_password')
-                    confirm = request.form.get('confirm_password')
-                    
+                return redirect(url_for('auth.forgot_password'))
+
+            # M1: compteur de tentatives de réponse
+            reset_attempts = session.get('reset_attempts', 0)
+            if reset_attempts >= MAX_RESET_ATTEMPTS:
+                session.pop('reset_user_id', None)
+                session.pop('reset_attempts', None)
+                Log.log(None, 'reset_brute', f'Trop de tentatives reset pour user {user_id}')
+                flash('Trop de tentatives incorrectes. Veuillez recommencer depuis le début.', 'error')
+                return redirect(url_for('auth.forgot_password'))
+
+            answer = (request.form.get('answer') or '').strip()
+            if answer and user.security_answer:
+                if answer.lower() == user.security_answer.lower():
+                    new_password = request.form.get('new_password') or ''
+                    confirm = request.form.get('confirm_password') or ''
+
                     if new_password != confirm:
                         flash('Les mots de passe ne correspondent pas', 'error')
-                        return render_template('auth/forgot_password.html', user_id=user.id, step='answer', user=user)
-                    
-                    if len(new_password) < 4:
-                        flash('Le mot de passe doit contenir au moins 4 caractères', 'error')
-                        return render_template('auth/forgot_password.html', user_id=user.id, step='answer', user=user)
-                    
+                        return render_template('auth/forgot_password.html',
+                                               step='answer', question=user.security_question)
+
+                    # M1: validation longueur côté serveur
+                    if len(new_password) < MIN_PASSWORD_LEN:
+                        flash(f'Le mot de passe doit contenir au moins {MIN_PASSWORD_LEN} caractères', 'error')
+                        return render_template('auth/forgot_password.html',
+                                               step='answer', question=user.security_question)
+
                     user.set_password(new_password)
                     user.failed_attempts = 0
                     user.locked_until = None
                     db.session.commit()
+                    session.pop('reset_user_id', None)
+                    session.pop('reset_attempts', None)
+                    Log.log(user, 'reset_password_self', 'Réinitialisation via question de sécurité')
                     flash('Mot de passe réinitialisé. Vous pouvez vous connecter.', 'success')
                     return redirect(url_for('auth.login'))
                 else:
-                    flash('Réponse incorrecte', 'error')
-                    return render_template('auth/forgot_password.html', user_id=user.id, step='answer', user=user)
+                    session['reset_attempts'] = reset_attempts + 1
+                    remaining = MAX_RESET_ATTEMPTS - session['reset_attempts']
+                    if remaining > 0:
+                        flash(f'Réponse incorrecte. Il vous reste {remaining} tentative(s).', 'error')
+                    else:
+                        flash('Réponse incorrecte.', 'error')
+                    return render_template('auth/forgot_password.html',
+                                           step='answer', question=user.security_question)
             else:
-                flash('Erreur', 'error')
-                return render_template('auth/forgot_password.html', user_id=user.id, step='answer', user=user)
-        
-        login_input = request.form.get('login') or request.form.get('email')
-        
+                flash('Réponse manquante', 'error')
+                return render_template('auth/forgot_password.html',
+                                       step='answer', question=user.security_question)
+
+        # action == 'check_question'
+        login_input = (request.form.get('login') or request.form.get('email') or '').strip()
+
         if login_input:
             user = User.query.filter(
-                (User.login == login_input) | 
+                (User.login == login_input) |
                 ((User.email != None) & (User.email == login_input))
             ).first()
-        
-        if not user:
-            flash('Utilisateur non trouvé', 'error')
+        else:
+            user = None
+
+        # M2: réponse générique — ne pas révéler si le compte existe
+        if not user or not user.security_question:
+            flash('Si ce compte existe et dispose d\'une question de sécurité, répondez ci-dessous.', 'info')
             return render_template('auth/forgot_password.html')
-        
-        if action == 'check_question':
-            if not user.security_question:
-                flash('Aucune question de sécurité définie. Contacter l\'administrateur.', 'error')
-                return render_template('auth/forgot_password.html')
-            
-            return render_template('auth/forgot_password.html', user_id=user.id, step='answer', user=user)
-    
+
+        # Stocker user_id en session (M2: pas dans le form)
+        session['reset_user_id'] = user.id
+        session['reset_attempts'] = 0
+        return render_template('auth/forgot_password.html', step='answer', question=user.security_question)
+
+    # GET — réinitialiser la session de reset
+    session.pop('reset_user_id', None)
+    session.pop('reset_attempts', None)
     return render_template('auth/forgot_password.html')
 
 @auth_bp.route('/logout')

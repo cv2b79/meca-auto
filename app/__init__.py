@@ -57,18 +57,32 @@ def create_app(config_class=Config):
     # ── Headers de sécurité HTTP ─────────────────────────────
     @app.after_request
     def set_security_headers(response):
+        from flask import request as _req
         response.headers['X-Content-Type-Options']  = 'nosniff'
-        response.headers['X-Frame-Options']          = 'SAMEORIGIN'
+        response.headers['X-Frame-Options']          = 'DENY'
         response.headers['X-XSS-Protection']         = '1; mode=block'
         response.headers['Referrer-Policy']           = 'strict-origin-when-cross-origin'
         response.headers['Permissions-Policy']        = 'geolocation=(), microphone=(), camera=()'
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            "form-action 'self'; "
+            "frame-ancestors 'none'"
+        )
+        if _req.path.startswith('/login') or _req.path.startswith('/forgot'):
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+            response.headers['Pragma'] = 'no-cache'
+        response.headers.pop('Server', None)
         return response
 
     from app.routes import register_routes
     register_routes(app)
 
     # ── Auto-migration colonnes manquantes ────────────────────
-    # Ajoute les nouvelles colonnes sans bloquer si elles existent déjà.
     with app.app_context():
         try:
             from sqlalchemy import text, inspect as sa_inspect
