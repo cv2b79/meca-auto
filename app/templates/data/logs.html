@@ -26,10 +26,12 @@
     </select>
     <button type="submit" class="btn">Filtrer</button>
     <a href="{{ url_for('data.logs') }}" class="btn btn-secondary">Reset</a>
+    <a href="{{ url_for('data.export_logs_csv', action=action_filter or '', user_id=user_filter or '', date_from=date_from or '', date_to=date_to or '') }}" class="btn btn-secondary" title="Télécharger les logs filtrés en CSV">📥 Export CSV</a>
+    <a href="{{ url_for('data.log_archives') }}" class="btn btn-secondary">🗂️ Archives</a>
 </form>
 
 <div style="margin-bottom: 1rem; font-size: 0.9rem; color: #666;">
-    Affichage des 200 dernières actions
+    Affichage des 200 dernières actions — <a href="{{ url_for('data.log_archives') }}">Voir les archives par semaine/mois →</a>
 </div>
 
 <table>

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Archives des logs - MEC AUTO{% endblock %}
+{% block content %}
+<h2>🗂️ Archives des logs</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+
+    <!-- Générer archive par semaine -->
+    <div class="card">
+        <h3>📅 Archiver une semaine</h3>
+        <form method="POST" action="{{ url_for('data.log_archive_create') }}">
+            <input type="hidden" name="period_type" value="week">
+            <div class="form-group">
+                <label>Semaine</label>
+                <select name="period_value" style="width: 100%;">
+                    {% for w in weeks %}
+                    <option value="{{ w.value }}">{{ w.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn">💾 Générer l'archive</button>
+        </form>
+    </div>
+
+    <!-- Générer archive par mois -->
+    <div class="card">
+        <h3>📆 Archiver un mois</h3>
+        <form method="POST" action="{{ url_for('data.log_archive_create') }}">
+            <input type="hidden" name="period_type" value="month">
+            <div class="form-group">
+                <label>Mois</label>
+                <select name="period_value" style="width: 100%;">
+                    {% for m in months %}
+                    <option value="{{ m.value }}">{{ m.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn">💾 Générer l'archive</button>
+        </form>
+    </div>
+
+</div>
+
+<!-- Liste des archives -->
+<div class="card">
+    <h3>📁 Archives disponibles ({{ files|length }})</h3>
+    {% if files %}
+    <table>
+        <thead>
+            <tr>
+                <th>Période</th>
+                <th>Entrées</th>
+                <th>Taille</th>
+                <th>Généré le</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for f in files %}
+        <tr>
+            <td><strong>{{ f.label }}</strong><br><small style="color:#888;">{{ f.name }}</small></td>
+            <td>{{ f.entries }} entrées</td>
+            <td>{{ f.size }}</td>
+            <td>{{ f.created }}</td>
+            <td>
+                <a href="{{ url_for('data.log_archive_download', filename=f.name) }}" class="btn btn-secondary" style="padding: 0.2rem 0.6rem;">📥 Télécharger</a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #666; padding: 1rem 0;">Aucune archive disponible. Générez votre première archive ci-dessus.</p>
+    {% endif %}
+</div>
+
+<div style="margin-top: 1rem;">
+    <a href="{{ url_for('data.logs') }}" class="btn btn-secondary">← Retour aux logs</a>
+</div>
+{% endblock %}

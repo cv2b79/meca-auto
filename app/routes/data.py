@@ -5,7 +5,8 @@ from app.models import Client, Vehicule, OrdreReparation, Facture, Enseignant, C
 import os
 import csv
 import io
-from datetime import datetime
+import calendar
+from datetime import datetime, timedelta
 
 data_bp = Blueprint('data', __name__)
 
@@ -141,7 +142,6 @@ def archiver():
         flash('Année manquante', 'error')
         return redirect(url_for('data.index'))
     
-    from datetime import datetime
     cutoff = datetime(int(year), 12, 31)
     
     # Archiver les OR cloturés
@@ -211,6 +211,213 @@ def stats_export():
     output.seek(0)
     return send_file(io.BytesIO(output.getvalue().encode('utf-8')), 
                      mimetype='text/csv', as_attachment=True, download_name=f'stats_mecaauto_{datetime.now().strftime("%Y%m%d")}.csv')
+
+@data_bp.route('/logs/export-csv')
+@login_required
+def export_logs_csv():
+    if not current_user.role == 'ddfpt':
+        flash('Accès réservé au DDFPT', 'error')
+        return redirect(url_for('main.index'))
+
+    action_filter = request.args.get('action')
+    user_filter = request.args.get('user_id', type=int)
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+
+    query = Log.query
+    if action_filter:
+        query = query.filter(Log.action == action_filter)
+    if user_filter:
+        query = query.filter(Log.user_id == user_filter)
+    if date_from:
+        try:
+            query = query.filter(Log.created_at >= datetime.strptime(date_from, '%Y-%m-%d'))
+        except: pass
+    if date_to:
+        try:
+            d = datetime.strptime(date_to, '%Y-%m-%d')
+            query = query.filter(Log.created_at <= d.replace(hour=23, minute=59))
+        except: pass
+
+    logs_data = query.order_by(Log.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Date/Heure', 'Utilisateur', 'Action', 'Détails', 'Cible type', 'Cible ID'])
+    for log in logs_data:
+        writer.writerow([
+            log.created_at.strftime('%d/%m/%Y %H:%M:%S') if log.created_at else '',
+            f"{log.user.prenom} {log.user.nom}" if log.user else 'System',
+            log.action,
+            log.details or '',
+            log.target_type or '',
+            log.target_id or ''
+        ])
+
+    output.seek(0)
+    filename = f'logs_mecaauto_{datetime.now().strftime("%Y%m%d_%H%M")}.csv'
+    return send_file(io.BytesIO(output.getvalue().encode('utf-8')),
+                     mimetype='text/csv', as_attachment=True, download_name=filename)
+
+
+@data_bp.route('/logs/archive-create', methods=['POST'])
+@login_required
+def log_archive_create():
+    if not current_user.role == 'ddfpt':
+        flash('Accès réservé au DDFPT', 'error')
+        return redirect(url_for('main.index'))
+
+    period_type = request.form.get('period_type')  # 'week' or 'month'
+    period_value = request.form.get('period_value')  # e.g. '2026-W44' or '2026-11'
+
+    try:
+        if period_type == 'week':
+            year, week = period_value.split('-W')
+            import datetime as _dt
+            d = _dt.date.fromisocalendar(int(year), int(week), 1)
+            date_from = datetime(d.year, d.month, d.day, 0, 0, 0)
+            date_to = date_from + timedelta(days=7)
+            label = f'Semaine {week} — {year}'
+            filename = f'logs_{year}_S{week.zfill(2)}.csv'
+        elif period_type == 'month':
+            year, month = period_value.split('-')
+            date_from = datetime(int(year), int(month), 1, 0, 0, 0)
+            last_day = calendar.monthrange(int(year), int(month))[1]
+            date_to = datetime(int(year), int(month), last_day, 23, 59, 59)
+            mois_noms = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                         'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+            label = f'{mois_noms[int(month)-1]} {year}'
+            filename = f'logs_{year}_{month.zfill(2)}.csv'
+        else:
+            flash('Période invalide', 'error')
+            return redirect(url_for('data.log_archives'))
+    except Exception as e:
+        flash(f'Erreur de format de période: {e}', 'error')
+        return redirect(url_for('data.log_archives'))
+
+    logs_data = Log.query.filter(
+        Log.created_at >= date_from,
+        Log.created_at <= date_to
+    ).order_by(Log.created_at.asc()).all()
+
+    archive_dir = _get_logs_archive_dir()
+    filepath = os.path.join(archive_dir, filename)
+
+    with open(filepath, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow([f'Archive logs MEC AUTO — {label}'])
+        writer.writerow([f'Généré le {datetime.now().strftime("%d/%m/%Y %H:%M")} par {current_user.prenom} {current_user.nom}'])
+        writer.writerow([])
+        writer.writerow(['Date/Heure', 'Utilisateur', 'Action', 'Détails', 'Cible type', 'Cible ID'])
+        for log in logs_data:
+            writer.writerow([
+                log.created_at.strftime('%d/%m/%Y %H:%M:%S') if log.created_at else '',
+                f"{log.user.prenom} {log.user.nom}" if log.user else 'System',
+                log.action,
+                log.details or '',
+                log.target_type or '',
+                log.target_id or ''
+            ])
+
+    Log.log(current_user, 'archive_logs', f'Archive créée: {filename} ({len(logs_data)} entrées)')
+    db.session.commit()
+    flash(f'Archive créée : {filename} ({len(logs_data)} entrées)', 'success')
+    return redirect(url_for('data.log_archives'))
+
+
+@data_bp.route('/logs/archives')
+@login_required
+def log_archives():
+    if not current_user.role == 'ddfpt':
+        flash('Accès réservé au DDFPT', 'error')
+        return redirect(url_for('main.index'))
+
+    archive_dir = _get_logs_archive_dir()
+    files = []
+    if os.path.exists(archive_dir):
+        for f in sorted(os.listdir(archive_dir), reverse=True):
+            if f.endswith('.csv') and f.startswith('logs_'):
+                fp = os.path.join(archive_dir, f)
+                size = os.path.getsize(fp)
+                mtime = datetime.fromtimestamp(os.path.getmtime(fp))
+                # Count lines (subtract 4 header lines)
+                with open(fp, 'r', encoding='utf-8') as fh:
+                    line_count = max(0, sum(1 for _ in fh) - 4)
+                files.append({
+                    'name': f,
+                    'label': _archive_label(f),
+                    'size': f'{size/1024:.1f} KB',
+                    'created': mtime.strftime('%d/%m/%Y %H:%M'),
+                    'entries': line_count
+                })
+
+    # Build list of available weeks and months for generation
+    import datetime as _dt
+    today = _dt.date.today()
+    weeks = []
+    months = []
+    for i in range(1, 13):
+        d = today - _dt.timedelta(weeks=i)
+        iso = d.isocalendar()
+        w_val = f'{iso[0]}-W{iso[1]}'
+        if not any(x['value'] == w_val for x in weeks):
+            weeks.append({'value': w_val, 'label': f'Semaine {iso[1]} ({iso[0]})'})
+    for i in range(0, 12):
+        m = today.month - i
+        y = today.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        mois_noms = ['Jan','Fév','Mar','Avr','Mai','Jun',
+                     'Jul','Aoû','Sep','Oct','Nov','Déc']
+        months.append({'value': f'{y}-{m:02d}', 'label': f'{mois_noms[m-1]} {y}'})
+
+    return render_template('data/log_archives.html',
+                           files=files, weeks=weeks, months=months)
+
+
+@data_bp.route('/logs/archives/<path:filename>')
+@login_required
+def log_archive_download(filename):
+    if not current_user.role == 'ddfpt':
+        flash('Accès réservé au DDFPT', 'error')
+        return redirect(url_for('main.index'))
+
+    archive_dir = _get_logs_archive_dir()
+    filepath = os.path.join(archive_dir, filename)
+    if not os.path.exists(filepath) or not filename.endswith('.csv'):
+        flash('Fichier non trouvé', 'error')
+        return redirect(url_for('data.log_archives'))
+
+    return send_file(filepath, as_attachment=True, download_name=filename)
+
+
+def _get_logs_archive_dir():
+    base = Parametre.get('backup_path', '')
+    if not base:
+        base = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backups')
+    archive_dir = os.path.join(base, 'logs')
+    os.makedirs(archive_dir, exist_ok=True)
+    return archive_dir
+
+
+def _archive_label(filename):
+    # logs_2026_W44.csv → Semaine 44 - 2026  |  logs_2026_11.csv → Novembre 2026
+    name = filename.replace('logs_', '').replace('.csv', '')
+    parts = name.split('_')
+    if len(parts) == 2:
+        year = parts[0]
+        second = parts[1]
+        if second.startswith('S'):
+            return f'Semaine {second[1:]} — {year}'
+        else:
+            mois_noms = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                         'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+            try:
+                return f'{mois_noms[int(second)-1]} {year}'
+            except: pass
+    return filename
+
 
 @data_bp.route('/logs')
 @login_required
