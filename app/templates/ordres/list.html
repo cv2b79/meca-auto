@@ -61,8 +61,21 @@
         <td><span class="badge {{ o.statut }}">{{ o.statut }}</span></td>
         <td>{% if o.montant %}{{ o.montant }}€{% else %}<span style="color: #999;">-</span>{% endif %}</td>
         <td>{{ o.created_at.strftime('%d/%m/%Y') if o.created_at else '-' }}</td>
-        <td>
+        <td style="white-space: nowrap; display: flex; gap: 0.3rem; flex-wrap: wrap;">
             <a href="{{ url_for('ordres.view', id=o.id) }}" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Voir</a>
+            {% if current_user.role == 'ddfpt' %}
+                {% if o.statut != 'cloture' %}
+                <form method="POST" action="{{ url_for('ordres.set_statut', id=o.id) }}" style="display:inline;">
+                    <input type="hidden" name="statut" value="cloture">
+                    <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
+                        onclick="return confirm('Clôturer l\'OR {{ o.numero }} ?')">🔒 Clôturer</button>
+                </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('ordres.delete', id=o.id) }}" style="display:inline;">
+                    <button type="submit" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background:#dc3545;"
+                        onclick="return confirm('Supprimer définitivement l\'OR {{ o.numero }} ? Cette action est irréversible.')">🗑️</button>
+                </form>
+            {% endif %}
         </td>
     </tr>
     {% else %}
