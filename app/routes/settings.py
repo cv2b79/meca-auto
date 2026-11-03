@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from app import db
 from app.models import Forfait, RecupSurcharge, Consumable, Parametre, Enseignant, Classe, User, Client, Vehicule, OrdreReparation, Log, Fourniture
+from app.version import version_status
 
 settings_bp = Blueprint('settings', __name__)
 
@@ -1495,7 +1496,8 @@ def admin():
                           backups_list=backups_list,
                           notif_incident=Parametre.get('notif_incident', 'non'),
                           notif_incident_email=Parametre.get('notif_incident_email', ''),
-                          cgv_texte=Parametre.get('cgv_texte', ''))
+                          cgv_texte=Parametre.get('cgv_texte', ''),
+                          version=version_status())
 
 @settings_bp.route('/permissions', methods=['GET', 'POST'])
 @login_required

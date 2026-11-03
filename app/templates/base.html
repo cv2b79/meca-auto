@@ -274,6 +274,9 @@
         {% if g.etab_adresse %}{{ g.etab_adresse }}<br>{% endif %}
         {% if g.etab_tel %}Tel: {{ g.etab_tel }}{% endif %}
         {% if g.etab_email %} | Email: {{ g.etab_email }}{% endif %}
+        <div style="margin-top: 0.4rem; font-size: 0.75rem; color: #999;" title="{{ app_version.subject }}">
+            MEC AUTO — version {{ app_version.short }}{% if app_version.date %} du {{ app_version.date }}{% endif %}
+        </div>
     </footer>
 </body>
 </html>

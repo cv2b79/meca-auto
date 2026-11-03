@@ -54,6 +54,11 @@ def create_app(config_class=Config):
         g.etab_siren   = Parametre.get('etab_siren', '')
         g.etab_logo    = Parametre.get('etab_logo', '')
 
+    @app.context_processor
+    def inject_version():
+        from app.version import local_version
+        return {'app_version': local_version()}
+
     # ── Headers de sécurité HTTP ─────────────────────────────
     @app.after_request
     def set_security_headers(response):
