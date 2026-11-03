@@ -1726,3 +1726,65 @@ def backup_log():
         except Exception as e:
             content = f'Erreur de lecture : {e}'
     return render_template('settings/backup_log.html', log_content=content)
+
+
+@settings_bp.route('/admin/test-smtp', methods=['POST'])
+@login_required
+def test_smtp():
+    if current_user.role != 'ddfpt':
+        flash('Accès réservé au DDFPT', 'error')
+        return redirect(url_for('main.index'))
+
+    test_email = (request.form.get('test_email') or '').strip()
+    if not test_email:
+        flash('Adresse email requise', 'error')
+        return redirect(url_for('settings.admin', tab='smtp'))
+
+    def _get(key, default=''):
+        p = Parametre.query.filter_by(cle=key).first()
+        return p.valeur if p else default
+
+    smtp_host = _get('smtp_host')
+    smtp_port_raw = _get('smtp_port', '587')
+    smtp_user = _get('smtp_user')
+    smtp_password = _decrypt_credential(_get('smtp_password')) or _get('smtp_password')
+    smtp_from = _get('smtp_from') or smtp_user
+
+    if not smtp_host or not smtp_user:
+        flash('⚠️ Configuration SMTP incomplète (hôte ou utilisateur manquant)', 'error')
+        return redirect(url_for('settings.admin', tab='smtp'))
+
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    try:
+        smtp_port = int(smtp_port_raw)
+        msg = MIMEMultipart()
+        msg['From'] = smtp_from
+        msg['To'] = test_email
+        msg['Subject'] = '[MEC AUTO] Test de configuration email'
+        msg.attach(MIMEText(
+            f"Bonjour,\n\nCet email confirme que la configuration SMTP de MEC AUTO fonctionne correctement.\n\n"
+            f"Serveur : {smtp_host}:{smtp_port}\n"
+            f"Expéditeur : {smtp_from}\n\n"
+            f"— MEC AUTO",
+            'plain'
+        ))
+        server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.send_message(msg)
+        server.quit()
+        Log.log(current_user, 'test_smtp', f'Email de test envoyé à {test_email}')
+        flash(f'✅ Email de test envoyé à {test_email}', 'success')
+    except smtplib.SMTPAuthenticationError:
+        flash('❌ Erreur d\'authentification SMTP — vérifiez le login et le mot de passe (App Password pour Gmail)', 'error')
+    except smtplib.SMTPConnectError:
+        flash(f'❌ Impossible de se connecter à {smtp_host}:{smtp_port_raw} — vérifiez l\'hôte et le port', 'error')
+    except TimeoutError:
+        flash(f'❌ Délai dépassé — le serveur {smtp_host} ne répond pas', 'error')
+    except Exception as e:
+        flash(f'❌ Erreur : {e}', 'error')
+
+    return redirect(url_for('settings.admin', tab='smtp'))

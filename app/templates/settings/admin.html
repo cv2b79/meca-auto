@@ -572,6 +572,20 @@
 
             <button type="submit" class="btn" style="padding:0.7rem 2rem;">💾 Enregistrer la configuration</button>
         </form>
+
+        {% if smtp_config.smtp_host %}
+        <div style="margin-top:1rem; padding:1rem; background:#f0f7ff; border-radius:8px; border:1px solid #cce0ff;">
+            <h4 style="margin:0 0 0.5rem 0;">🔬 Test de la configuration</h4>
+            <form method="POST" action="{{ url_for('settings.test_smtp') }}" style="display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
+                <div>
+                    <label style="font-size:0.85rem; display:block; margin-bottom:0.25rem;">Envoyer un email de test à</label>
+                    <input type="email" name="test_email" required placeholder="votre@email.fr"
+                           value="{{ current_user.email or '' }}" style="padding:0.5rem; width:220px;">
+                </div>
+                <button type="submit" class="btn btn-secondary" style="padding:0.5rem 1.2rem;">📨 Envoyer test</button>
+            </form>
+        </div>
+        {% endif %}
     </div>
 </div>
 
