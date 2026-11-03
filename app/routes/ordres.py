@@ -126,8 +126,11 @@ Cet email est envoyé automatiquement par MEC AUTO"""
             part.add_header('Content-Disposition', f'attachment; filename=OR_{or_obj.numero}.pdf')
             msg.attach(part)
         
-        server = smtplib.SMTP(smtp_host, smtp_port)
-        server.starttls()
+        if smtp_port == 465:
+            server = smtplib.SMTP_SSL(smtp_host, smtp_port)
+        else:
+            server = smtplib.SMTP(smtp_host, smtp_port)
+            server.starttls()
         server.login(smtp_user, smtp_password)
         server.send_message(msg)
         server.quit()
@@ -260,8 +263,11 @@ Cordialement,
             except Exception as e:
                 print(f"[CLIENT EMAIL] PDF facture failed: {e}")
 
-        server = smtplib.SMTP(smtp_host, smtp_port)
-        server.starttls()
+        if smtp_port == 465:
+            server = smtplib.SMTP_SSL(smtp_host, smtp_port)
+        else:
+            server = smtplib.SMTP(smtp_host, smtp_port)
+            server.starttls()
         server.login(smtp_user, smtp_password)
         server.send_message(msg)
         server.quit()
