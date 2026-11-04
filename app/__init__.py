@@ -54,10 +54,21 @@ def create_app(config_class=Config):
         g.etab_siren   = Parametre.get('etab_siren', '')
         g.etab_logo    = Parametre.get('etab_logo', '')
 
+    @app.template_filter('heure_locale')
+    def heure_locale(dt, fmt='%d/%m/%Y à %H:%M'):
+        """Les dates sont stockées en UTC (datetime.utcnow) : affichage à l'heure du serveur."""
+        if not dt:
+            return '-'
+        from datetime import timezone
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone().strftime(fmt)
+
     @app.context_processor
     def inject_version():
         from app.version import local_version
-        return {'app_version': local_version()}
+        from datetime import date
+        return {'app_version': local_version(), 'aujourdhui': date.today()}
 
     # ── Headers de sécurité HTTP ─────────────────────────────
     @app.after_request
@@ -95,6 +106,7 @@ def create_app(config_class=Config):
             _migrations = {
                 'ordres_reparation': [
                     ("depollution_offerte", "BOOLEAN DEFAULT FALSE"),
+                    ("date_sortie_prevue", "DATE"),
                 ],
                 'factures': [
                     ("statut_paiement", "VARCHAR(20) DEFAULT 'en_attente'"),

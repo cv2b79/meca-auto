@@ -7,6 +7,16 @@
     <div class="card">
         <p><strong>Statut:</strong> <span class="badge {{ or_obj.statut }}">{{ or_obj.statut }}</span></p>
         <p><strong>Enseignant responsable:</strong> {% if or_obj.created_by_user %}{{ or_obj.created_by_user.prenom }} {{ or_obj.created_by_user.nom }}{% else %}-{% endif %}</p>
+        <p><strong>Créé le:</strong> {{ (or_obj.date_ouverture or or_obj.created_at)|heure_locale }}
+            {% if or_obj.date_cloture %}<br><strong>Clôturé le:</strong> {{ or_obj.date_cloture|heure_locale }}{% endif %}</p>
+        {% if or_obj.date_sortie_prevue %}
+        {% set en_retard = or_obj.date_sortie_prevue < aujourdhui and or_obj.statut in ('ouvert', 'en_cours') %}
+        <p style="padding: 0.4rem 0.5rem; border-radius: 4px; background: {% if en_retard %}#fee2e2{% elif or_obj.date_sortie_prevue == aujourdhui %}#fef3c7{% else %}#e8f5e9{% endif %};">
+            🚗 <strong>Sortie prévue:</strong> {{ or_obj.date_sortie_prevue.strftime('%d/%m/%Y') }}
+            {% if en_retard %}— <strong style="color:#b91c1c;">en retard de {{ (aujourdhui - or_obj.date_sortie_prevue).days }} jour(s)</strong>
+            {% elif or_obj.date_sortie_prevue == aujourdhui %}— <strong>aujourd'hui</strong>{% endif %}
+        </p>
+        {% endif %}
         <p><strong>Véhicule:</strong> {{ or_obj.vehicule.immatriculation }} - {{ or_obj.vehicule.marque }} {{ or_obj.vehicule.modele }}</p>
         {% if current_user.role != 'eleve' %}
         <p><strong>Client:</strong> {% if client %}{{ client.prenom }} {{ client.nom }} - {{ client.telephone }}{% else %}Inconnu{% endif %}</p>

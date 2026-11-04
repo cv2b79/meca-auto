@@ -8,6 +8,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
 
+def _heure_locale(dt, fmt='%d/%m/%Y à %H:%M'):
+    """Dates stockées en UTC → heure du serveur (même règle que le filtre Jinja heure_locale)."""
+    from datetime import timezone
+    return dt.replace(tzinfo=timezone.utc).astimezone().strftime(fmt)
+
+
 def send_notification_email(or_obj, client, vehicule):
     """Envoyer notification au magasinier + DDFPT lors de création d'OR avec PDF joint"""
     from app.models import etat_lieu
@@ -56,7 +62,7 @@ def send_notification_email(or_obj, client, vehicule):
 
 Numéro OR: {or_obj.numero}
 Statut: {or_obj.statut}
-Date de création: {or_obj.date_ouverture.strftime('%d/%m/%Y à %H:%M') if or_obj.date_ouverture else 'N/A'}
+Date de création: {_heure_locale(or_obj.date_ouverture) if or_obj.date_ouverture else 'N/A'}
 
 Véhicule:
 - Immatriculation: {vehicule.immatriculation}
@@ -165,8 +171,8 @@ def send_client_email(or_obj, client, vehicule, event_type, facture=None):
         'facture':  f'Votre facture – {facture.numero if facture else or_obj.numero}',
     }
 
-    date_ouverture = or_obj.date_ouverture.strftime('%d/%m/%Y à %H:%M') if or_obj.date_ouverture else 'N/A'
-    date_cloture = or_obj.date_cloture.strftime('%d/%m/%Y') if or_obj.date_cloture else 'N/A'
+    date_ouverture = _heure_locale(or_obj.date_ouverture) if or_obj.date_ouverture else 'N/A'
+    date_cloture = _heure_locale(or_obj.date_cloture, '%d/%m/%Y') if or_obj.date_cloture else 'N/A'
 
     bodies = {
         'cree': f"""Bonjour {client.prenom} {client.nom},
@@ -264,6 +270,14 @@ Cordialement,
 
 
 ordres_bp = Blueprint('ordres', __name__)
+
+
+def _parse_date(value):
+    """'AAAA-MM-JJ' d'un <input type="date"> → date, ou None si vide/invalide."""
+    try:
+        return datetime.strptime(value, '%Y-%m-%d').date() if value else None
+    except ValueError:
+        return None
 
 @ordres_bp.route('/')
 @login_required
@@ -448,7 +462,8 @@ def new():
             rdv_titre = request.form.get('rdv_titre') or None,
             rdv_date_heure = None,
             ct_valide = request.form.get('ct_valide') == 'on',
-            assurance_valide = request.form.get('assurance_valide') == 'on'
+            assurance_valide = request.form.get('assurance_valide') == 'on',
+            date_sortie_prevue = _parse_date(request.form.get('date_sortie_prevue'))
         )
         
         # Handle planned RDV - create proper RendezVous record
@@ -607,6 +622,8 @@ def edit(id):
         or_obj.attente_pieces = attente_now
         or_obj.remarque_attente = request.form.get('remarque_attente') or None
         
+        or_obj.date_sortie_prevue = _parse_date(request.form.get('date_sortie_prevue'))
+
         # Pas de facturation
         or_obj.pas_de_facturation = request.form.get('pas_de_facturation') == 'on'
         # Note : les champs dépollution sont gérés via la route /depollution (vue OR)

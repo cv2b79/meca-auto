@@ -71,7 +71,7 @@
                 {% else %}{{ or_obj.statut }}{% endif %}
             </div><br/>
             <span style="font-size:8pt; color:#666;">
-                Créé le {{ or_obj.date_ouverture.strftime('%d/%m/%Y à %H:%M') if or_obj.date_ouverture else '-' }}
+                Créé le {{ or_obj.date_ouverture|heure_locale }}
             </span>
         </td>
     </tr>
@@ -135,6 +135,10 @@
         <td>{% if or_obj.created_by_user %}{{ or_obj.created_by_user.prenom }} {{ or_obj.created_by_user.nom }}{% else %}-{% endif %}</td>
         <td class="label">RDV planifié</td>
         <td>{% if or_obj.rdv_date_heure %}{{ or_obj.rdv_date_heure.strftime('%d/%m/%Y %H:%M') }}{% else %}-{% endif %}</td>
+    </tr>
+    <tr>
+        <td class="label">Sortie prévue</td>
+        <td colspan="3">{{ or_obj.date_sortie_prevue.strftime('%d/%m/%Y') if or_obj.date_sortie_prevue else '-' }}</td>
     </tr>
 </table>
 

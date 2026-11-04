@@ -191,7 +191,10 @@ class OrdreReparation(db.Model):
     # Rendez-vous planifié
     rdv_date_heure = db.Column(db.DateTime)
     rdv_titre = db.Column(db.String(100))
-    
+
+    # Restitution du véhicule prévue (date seule)
+    date_sortie_prevue = db.Column(db.Date)
+
     # Contrôles CT et assurance
     ct_valide = db.Column(db.Boolean, default=False)
     assurance_valide = db.Column(db.Boolean, default=False)

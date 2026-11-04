@@ -60,7 +60,12 @@
         <td>{{ o.client.prenom }} {{ o.client.nom }}</td>
         <td><span class="badge {{ o.statut }}">{{ o.statut }}</span></td>
         <td>{% if o.montant %}{{ o.montant }}€{% else %}<span style="color: #999;">-</span>{% endif %}</td>
-        <td>{{ o.created_at.strftime('%d/%m/%Y') if o.created_at else '-' }}</td>
+        <td>{{ o.created_at|heure_locale('%d/%m/%Y') }}
+            {% if o.date_sortie_prevue and o.statut != 'cloture' %}
+            {% set en_retard = o.date_sortie_prevue < aujourdhui and o.statut in ('ouvert', 'en_cours') %}
+            <br><small style="color: {% if en_retard %}#b91c1c{% else %}#666{% endif %};" title="Sortie prévue">🚗 {{ o.date_sortie_prevue.strftime('%d/%m') }}{% if en_retard %} ⚠️{% endif %}</small>
+            {% endif %}
+        </td>
         <td style="white-space: nowrap; display: flex; gap: 0.3rem; flex-wrap: wrap;">
             <a href="{{ url_for('ordres.view', id=o.id) }}" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Voir</a>
             {% if current_user.role == 'ddfpt' %}

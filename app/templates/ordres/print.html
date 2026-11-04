@@ -50,7 +50,8 @@
         <h3>Informations générales</h3>
         <div class="two-col">
             <div><p><strong>N° OR:</strong> {{ or_obj.numero }}</p></div>
-            <div><p><strong>Date:</strong> {{ or_obj.created_at.strftime('%d/%m/%Y') if or_obj.created_at else '' }}</p></div>
+            <div><p><strong>Date:</strong> {{ or_obj.created_at|heure_locale('%d/%m/%Y') }}</p>
+                {% if or_obj.date_sortie_prevue %}<p><strong>Sortie prévue:</strong> {{ or_obj.date_sortie_prevue.strftime('%d/%m/%Y') }}</p>{% endif %}</div>
             <div><p><strong>Statut:</strong> {{ or_obj.statut }}</p></div>
             <div><p><strong>Classe:</strong> {{ or_obj.classe_nom or '-' }}</p></div>
             <div><p><strong>Enseignant:</strong> {% if or_obj.created_by_user %}{{ or_obj.created_by_user.prenom }} {{ or_obj.created_by_user.nom }}{% else %}-{% endif %}</p></div>

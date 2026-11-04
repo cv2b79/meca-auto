@@ -82,6 +82,27 @@ def index():
                 'or': or_obj
             })
     
+    # Sorties de véhicules prévues : aujourd'hui, ou dépassées alors que les travaux ne sont pas finis
+    for or_obj in ordres_atelier:
+        prevue = or_obj.date_sortie_prevue
+        if not prevue:
+            continue
+        retard = (today.date() - prevue).days
+        if retard > 0 and or_obj.statut in ('ouvert', 'en_cours'):
+            alertes.append({
+                'type': 'sortie_retard',
+                'niveau': 'danger',
+                'message': f"Sortie prévue le {prevue.strftime('%d/%m')} — en retard de {retard} jour(s)",
+                'or': or_obj
+            })
+        elif retard == 0:
+            alertes.append({
+                'type': 'sortie_jour',
+                'niveau': 'warning',
+                'message': "Sortie du véhicule prévue aujourd'hui",
+                'or': or_obj
+            })
+
     stats = {
         'or_ouvert': OrdreReparation.query.filter_by(statut='ouvert').count(),
         'or_encours': OrdreReparation.query.filter_by(statut='en_cours').count(),
