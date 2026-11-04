@@ -1771,18 +1771,14 @@ def test_smtp():
             f"— MEC AUTO",
             'plain'
         ))
-        if smtp_port == 465:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
-        else:
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
-            server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
-        server.quit()
+        from app.smtp_utils import smtp_send
+        smtp_send(msg, smtp_host, smtp_port, smtp_user, smtp_password)
         Log.log(current_user, 'test_smtp', f'Email de test envoyé à {test_email}')
         flash(f'✅ Email de test envoyé à {test_email}', 'success')
     except smtplib.SMTPAuthenticationError:
         flash('❌ Erreur d\'authentification SMTP — vérifiez le login et le mot de passe (App Password pour Gmail)', 'error')
+    except smtplib.SMTPServerDisconnected:
+        flash(f'❌ Le serveur {smtp_host} a coupé la connexion — vérifiez le port (465 = SSL, 587 = STARTTLS)', 'error')
     except smtplib.SMTPConnectError:
         flash(f'❌ Impossible de se connecter à {smtp_host}:{smtp_port_raw} — vérifiez l\'hôte et le port', 'error')
     except TimeoutError:

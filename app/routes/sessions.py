@@ -19,7 +19,7 @@ def _send_incident_alert(incident_id):
     if not email_dest:
         return
 
-    import smtplib
+    from app.smtp_utils import smtp_send
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
 
@@ -63,13 +63,9 @@ def _send_incident_alert(incident_id):
             msg['Subject'] = subject
             msg.attach(MIMEText(body, 'plain', 'utf-8'))
             try:
-                srv = smtplib.SMTP(smtp_host, smtp_port)
-                srv.starttls()
-                srv.login(smtp_user, smtp_pass)
-                srv.send_message(msg)
-                srv.quit()
-            except Exception:
-                pass
+                smtp_send(msg, smtp_host, smtp_port, smtp_user, smtp_pass)
+            except Exception as e:
+                print(f"[INCIDENT EMAIL] Erreur: {type(e).__name__}: {e}")
 
     threading.Thread(target=_send, daemon=True).start()
 

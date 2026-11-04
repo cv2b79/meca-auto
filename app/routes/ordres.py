@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import OrdreReparation, Client, Vehicule, EleveIntervention, User, Forfait, Parametre, RecupSurcharge, Classe, RendezVous, Log, Fourniture, etat_lieu
 from datetime import datetime
-import smtplib
+from app.smtp_utils import smtp_send
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
@@ -126,16 +126,10 @@ Cet email est envoyé automatiquement par MEC AUTO"""
             part.add_header('Content-Disposition', f'attachment; filename=OR_{or_obj.numero}.pdf')
             msg.attach(part)
         
-        if smtp_port == 465:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port)
-        else:
-            server = smtplib.SMTP(smtp_host, smtp_port)
-            server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
-        server.quit()
+        smtp_send(msg, smtp_host, smtp_port, smtp_user, smtp_password)
+        print(f"[NOTIF EMAIL] Envoyé à {emails}")
     except Exception as e:
-        print(f"Erreur envoi notification: {e}")
+        print(f"[NOTIF EMAIL] Erreur envoi notification: {type(e).__name__}: {e}")
 
 
 def send_client_email(or_obj, client, vehicule, event_type, facture=None):
@@ -263,17 +257,10 @@ Cordialement,
             except Exception as e:
                 print(f"[CLIENT EMAIL] PDF facture failed: {e}")
 
-        if smtp_port == 465:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port)
-        else:
-            server = smtplib.SMTP(smtp_host, smtp_port)
-            server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
-        server.quit()
+        smtp_send(msg, smtp_host, smtp_port, smtp_user, smtp_password)
         print(f"[CLIENT EMAIL] '{event_type}' envoyé à {client.email}")
     except Exception as e:
-        print(f"[CLIENT EMAIL] Erreur: {e}")
+        print(f"[CLIENT EMAIL] Erreur: {type(e).__name__}: {e}")
 
 
 ordres_bp = Blueprint('ordres', __name__)

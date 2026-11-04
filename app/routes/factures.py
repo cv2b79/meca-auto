@@ -4,7 +4,7 @@ from app import db
 from app.models import Facture, OrdreReparation, EleveIntervention, Log
 from datetime import datetime
 import io
-import smtplib
+from app.smtp_utils import smtp_send
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -299,11 +299,7 @@ def send(id):
         msg.attach(part)
 
     try:
-        server = smtplib.SMTP(smtp_host, smtp_port)
-        server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
-        server.quit()
+        smtp_send(msg, smtp_host, smtp_port, smtp_user, smtp_password)
 
         facture.send_by_email = True
         db.session.commit()
