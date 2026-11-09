@@ -63,6 +63,12 @@ def view(id):
     vehicules = client.vehicules.all()
     return render_template('clients/view.html', client=client, vehicules=vehicules)
 
+def _retour_ou(defaut):
+    """Page de retour passée en ?retour=/ordres/12 (chemin interne uniquement), sinon `defaut`."""
+    retour = request.args.get('retour', '')
+    return retour if retour.startswith('/') and not retour.startswith(('//', '/\\')) else defaut
+
+
 @clients_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit(id):
@@ -80,8 +86,8 @@ def edit(id):
         db.session.commit()
         Log.log(current_user, 'edit_client', f'Client modifié: {client.nom} {client.prenom} (id: {client.id})', 'Client', client.id)
         flash('Client modifié', 'success')
-        return redirect(url_for('clients.view', id=client.id))
-    return render_template('clients/edit.html', client=client)
+        return redirect(_retour_ou(url_for('clients.view', id=client.id)))
+    return render_template('clients/edit.html', client=client, retour=_retour_ou(None))
 
 @clients_bp.route('/<int:id>/delete', methods=['POST'])
 @login_required

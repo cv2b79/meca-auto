@@ -36,6 +36,6 @@
     <div class="form-group"><label>Email</label><input type="email" name="proprio_email"></div>
     {% endif %}
     <button type="submit" class="btn">Enregistrer</button>
-    <a href="{{ url_for('vehicules.list') }}" class="btn btn-secondary">Annuler</a>
+    <a href="{{ retour or url_for('vehicules.list') }}" class="btn btn-secondary">Annuler</a>
 </form>
 {% endblock %}

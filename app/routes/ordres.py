@@ -654,10 +654,13 @@ def set_statut(id):
     etat_entree = or_obj.etats_lieux.filter_by(type='entree').first()
     etat_sortie = or_obj.etats_lieux.filter_by(type='sortie').first()
 
-    if new_statut == 'cloture' and not etat_sortie and current_user.role == 'ddfpt':
+    # Sans état des lieux de sortie : on propose de le faire, sauf si le DDFPT a confirmé
+    # la clôture sans (ex. véhicule déjà reparti)
+    sans_edl = new_statut == 'cloture' and not etat_sortie
+    if sans_edl and not (current_user.role == 'ddfpt' and request.form.get('sans_edl') == '1'):
         flash('État des lieux de SORTIE requis avant de cloturer', 'warning')
         return redirect(url_for('ordres.etat_lieu_form', or_id=id, type='sortie'))
-    
+
     if new_statut == 'cloture':
         or_obj.date_cloture = datetime.utcnow()
 
@@ -665,7 +668,8 @@ def set_statut(id):
     or_obj.statut = new_statut
     or_obj.updated_at = datetime.utcnow()
     db.session.commit()
-    Log.log(current_user, 'change_statut', f'OR {or_obj.numero} - Statut: {old_statut} → {new_statut}', 'OrdreReparation', or_obj.id)
+    Log.log(current_user, 'change_statut', f'OR {or_obj.numero} - Statut: {old_statut} → {new_statut}'
+            + (' (sans état des lieux de sortie)' if sans_edl else ''), 'OrdreReparation', or_obj.id)
     db.session.commit()
 
     if new_statut in ('en_cours', 'cloture'):
@@ -941,9 +945,9 @@ def etat_lieu_form():
 @ordres_bp.route('/etat-lieu-save', methods=['POST'])
 @login_required
 def etat_lieu_save():
-    # Only eleve and enseignant can create/edit etat des lieux
-    if current_user.role not in ['eleve', 'enseignant']:
-        flash('Seuls les élèves et enseignants peuvent modifier les états des lieux', 'error')
+    # Élèves, enseignants, magasinier et DDFPT (permission edit_etat_lieu)
+    if not current_user.can_edit_etat_lieu():
+        flash('Vous n\'avez pas le droit de modifier les états des lieux', 'error')
         return redirect(url_for('ordres.liste'))
     
     from app.models import etat_lieu

@@ -6,6 +6,12 @@ from datetime import datetime
 
 vehicules_bp = Blueprint('vehicules', __name__)
 
+def _retour_ou(defaut):
+    """Page de retour passée en ?retour=/ordres/12 (chemin interne uniquement), sinon `defaut`."""
+    retour = request.args.get('retour', '')
+    return retour if retour.startswith('/') and not retour.startswith(('//', '/\\')) else defaut
+
+
 @vehicules_bp.route('/')
 @login_required
 def list():
@@ -174,8 +180,8 @@ def edit(id):
         db.session.commit()
         Log.log(current_user, 'edit_vehicule', f'Véhicule modifié: {vehicule.immatriculation} ({vehicule.id})', 'Vehicule', vehicule.id)
         flash('Véhicule modifié', 'success')
-        return redirect(url_for('vehicules.view', id=vehicule.id))
-    return render_template('vehicules/edit.html', vehicule=vehicule)
+        return redirect(_retour_ou(url_for('vehicules.view', id=vehicule.id)))
+    return render_template('vehicules/edit.html', vehicule=vehicule, retour=_retour_ou(None))
 
 
 @vehicules_bp.route('/<int:id>/delete', methods=['POST'])

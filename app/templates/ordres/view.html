@@ -17,9 +17,11 @@
             {% elif or_obj.date_sortie_prevue == aujourdhui %}— <strong>aujourd'hui</strong>{% endif %}
         </p>
         {% endif %}
-        <p><strong>Véhicule:</strong> {{ or_obj.vehicule.immatriculation }} - {{ or_obj.vehicule.marque }} {{ or_obj.vehicule.modele }}</p>
+        <p><strong>Véhicule:</strong> {{ or_obj.vehicule.immatriculation }} - {{ or_obj.vehicule.marque }} {{ or_obj.vehicule.modele }}
+            {% if current_user.can_manage_vehicules() %}<a href="{{ url_for('vehicules.edit', id=or_obj.vehicule.id, retour=request.path) }}" title="Corriger les informations du véhicule" style="text-decoration:none; margin-left:0.3rem;">✏️</a>{% endif %}</p>
         {% if current_user.role != 'eleve' %}
-        <p><strong>Client:</strong> {% if client %}{{ client.prenom }} {{ client.nom }} - {{ client.telephone }}{% else %}Inconnu{% endif %}</p>
+        <p><strong>Client:</strong> {% if client %}{{ client.prenom }} {{ client.nom }} - {{ client.telephone }}
+            {% if current_user.can_manage_clients() %}<a href="{{ url_for('clients.edit', id=client.id, retour=request.path) }}" title="Corriger les informations du client" style="text-decoration:none; margin-left:0.3rem;">✏️</a>{% endif %}{% else %}Inconnu{% endif %}</p>
         {% else %}
         <p><strong>Client:</strong> - (masqué pour les élèves)</p>
         {% endif %}
@@ -112,7 +114,9 @@
 {% if or_obj.statut != 'cloture' or current_user.role == 'ddfpt' %}
 <div class="card" style="margin-top: 1rem;">
     <h4>Modifier le statut</h4>
-    <form method="POST" action="{{ url_for('ordres.set_statut', id=or_obj.id) }}" style="display: flex; gap: 0.5rem; align-items: center;">
+    <form method="POST" action="{{ url_for('ordres.set_statut', id=or_obj.id) }}" style="display: flex; gap: 0.5rem; align-items: center;"
+          {% if current_user.role == 'ddfpt' and not etat_sortie %}onsubmit="return confirmerClotureSansEdl(this);"{% endif %}>
+        <input type="hidden" name="sans_edl" value="0">
         <select name="statut">
             <option value="ouvert" {% if or_obj.statut=='ouvert' %}selected{% endif %}>Ouvert</option>
             <option value="en_cours" {% if or_obj.statut=='en_cours' %}selected{% endif %}>En cours</option>
@@ -127,6 +131,17 @@
     <p style="color: red; margin-top: 0.5rem;">⚠️ État des lieux de SORTIE requis pour cloturer</p>
     {% endif %}
 </div>
+{% if current_user.role == 'ddfpt' and not etat_sortie %}
+<script>
+function confirmerClotureSansEdl(form) {
+    if (form.statut.value !== 'cloture') return true;
+    if (confirm("Aucun état des lieux de sortie n'a été fait.\n\nOK : clôturer quand même (véhicule déjà reparti…)\nAnnuler : remplir l'état des lieux de sortie maintenant")) {
+        form.sans_edl.value = '1';
+    }
+    return true;
+}
+</script>
+{% endif %}
 {% endif %}
 
 <div class="card" style="margin-top: 1rem;">
