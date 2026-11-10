@@ -937,10 +937,29 @@ def etat_lieu_form():
                 km_entree = etat_entree.kilometrage
 
     etat_existant = etat_lieu.query.filter_by(or_id=or_obj.id, type=type_etat).first() if or_obj else None
+
+    # Qui a fait l'état des lieux : déjà saisi, sinon la personne connectée (sauf DDFPT)
+    if etat_existant and etat_existant.responsable:
+        responsable_defaut = etat_existant.responsable
+    elif current_user.role != 'ddfpt':
+        responsable_defaut = f'{current_user.prenom} {current_user.nom}'
+    else:
+        responsable_defaut = ''
+    # Suggestions : élève responsable de l'OR + élèves ayant une intervention dessus
+    suggestions = []
+    if or_obj:
+        if or_obj.eleve_nom:
+            suggestions.append(or_obj.eleve_nom)
+        for i in or_obj.interventions_eleves:
+            if i.eleve:
+                suggestions.append(f'{i.eleve.prenom} {i.eleve.nom}')
+    suggestions = list(dict.fromkeys(suggestions))
+
     return render_template('ordres/etat_lieu_form.html', vehicule=vehicule, or_obj=or_obj,
                            type_etat=type_etat, checklist_items=checklist_items,
                            existing_verifs=existing_verifs, km_entree=km_entree,
-                           etat=etat_existant)
+                           etat=etat_existant, responsable_defaut=responsable_defaut,
+                           suggestions=suggestions)
 
 @ordres_bp.route('/etat-lieu-save', methods=['POST'])
 @login_required

@@ -71,13 +71,13 @@
         </div>
 
         <div class="form-group">
-            <label>Responsable *</label>
-            {% if or_obj and or_obj.eleve_nom %}
-            <input type="text" name="responsable" value="{{ or_obj.eleve_nom }}" readonly style="background: #e9ecef;">
-            <small style="color: #666;">Élève désigné lors de la création de l'OR</small>
-            {% else %}
-            <input type="text" name="responsable" required placeholder="Nom du responsable">
-            {% endif %}
+            <label>{% if type_etat == 'sortie' %}Vérifications avant départ effectuées par{% else %}État des lieux d'entrée effectué par{% endif %}</label>
+            <input type="text" name="responsable" value="{{ responsable_defaut }}" list="responsables_suggeres"
+                   placeholder="Nom de l'élève (facultatif)" autocomplete="off">
+            <datalist id="responsables_suggeres">
+                {% for s in suggestions %}<option value="{{ s }}">{% endfor %}
+            </datalist>
+            <small style="color: #666;">Facultatif — modifiable{% if suggestions %} ; suggestions : élèves de l'OR{% endif %}</small>
         </div>
 
         {% if type_etat == 'entree' %}
