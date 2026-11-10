@@ -13,9 +13,15 @@ Accéder à l'application via le navigateur (URL fournie par l'établissement).
 | Login | Fourni par l'administrateur |
 | Mot de passe | Fourni à la création du compte |
 
-> À la première connexion, vous serez invité à changer votre mot de passe.
+> À la première connexion, vous serez invité à changer votre mot de passe (8 caractères minimum)
+> et à définir une **question de sécurité** (menu Mon compte).
 
-En cas d'oubli, contacter le DDFPT.
+**Mot de passe oublié** : lien « Mot de passe oublié » de la page de connexion, si une question de sécurité
+est définie. Sinon, le DDFPT réinitialise le mot de passe (voir ci-dessous) ; un mot de passe provisoire est
+alors à changer à la connexion suivante.
+
+La version installée du logiciel est indiquée en bas de chaque page. Les nouveautés sont décrites dans
+`CHANGELOG.md`.
 
 ---
 
@@ -42,14 +48,18 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 #### Ordres de réparation
 - **Créer un OR** : Menu OR → Nouveau → choisir client, véhicule, élève
 - **Modifier** : cliquer sur l'OR → Modifier
-- **Changer le statut** : Ouvert → En cours → Terminé → Clôturé
+- **Changer le statut** : Ouvert → En cours → Terminé → Clôturé (voir « Workflow d'un OR »)
+- **Clôturer** : choisir « Clôturé » dans *Modifier le statut*. Un état des lieux de sortie est proposé ;
+  s'il n'a pas été fait (véhicule déjà reparti…), une confirmation permet de clôturer quand même.
 - **Supprimer un OR** (même avec facture) : bouton 🗑️ sur la fiche OR
-- **Générer une facture** : OR clôturé → bouton Facturer
+- **Générer une facture** : OR terminé → bouton « Créer la Facture » (la facture clôture l'OR)
 
 #### Administration (`/settings/admin`)
 
 **Onglet 👥 Utilisateurs**
 - Créer / modifier / désactiver / supprimer des comptes
+- **Réinitialiser un mot de passe** : ✏️ → champ jaune « 🔑 Réinitialiser le mot de passe »
+  (mot de passe provisoire, à changer à la prochaine connexion ; le compte est aussi déverrouillé)
 - Assigner un rôle et une classe aux élèves
 - Importer des élèves via CSV (format Pronote compatible)
 
@@ -62,7 +72,9 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 - Utilisées lors de la facturation des OR
 
 **Onglet 📧 Email**
-- Configurer le serveur SMTP pour les notifications
+- Configurer le serveur SMTP pour les notifications, puis **Tester l'envoi**
+- Gmail : `smtp.gmail.com`, port 587 (ou 465), adresse Gmail complète et **mot de passe d'application**
+  (https://myaccount.google.com/apppasswords — validation en 2 étapes requise), expéditeur = même adresse
 - Activer/désactiver les notifications automatiques aux clients :
   - OR créé, OR en cours, OR clôturé, facture émise
 
@@ -88,8 +100,12 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 ### 👨‍🏫 Enseignant
 
 #### Ordres de réparation
-- Créer et modifier des OR
+- Créer et modifier des OR (une confirmation est demandée si le CT ou l'assurance ne sont pas cochés)
 - Affecter un élève à un OR
+- Renseigner la **date de sortie prévue** du véhicule (alerte au tableau de bord le jour J et en cas de retard)
+- Corriger le **véhicule** ou le **client** avec les boutons ✏️ de la fiche OR
+- Saisir les interventions des élèves (heures pleines) et le **temps passé sur le véhicule** (Modifier)
+- Faire les états des lieux d'entrée et de sortie (kilométrage facultatif)
 - Suivre l'avancement des travaux
 
 #### Gestion des élèves (`/settings/eleves`)
@@ -112,9 +128,15 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 ### 🔧 Magasinier
 
 #### Facturation
-- Accéder aux OR terminés
-- Créer des factures (main d'œuvre + fournitures + consommables)
-- Générer le PDF facture
+- Accéder aux OR terminés → « Créer la Facture »
+- **Mode horaire** : vérifier ou saisir le **temps passé sur le véhicule** (heures pleines) puis
+  « 🔄 Mettre à jour le calcul ». Seul ce temps est facturé, pas la somme des heures des élèves.
+- **Mode forfait** : le montant du forfait de l'OR est facturé.
+- Total = main-d'œuvre + fournitures + frais de dépollution (0 € pour les travaux internes).
+- Le taux horaire est figé dans la facture à sa création.
+- Si une facture affiche **« ⚠️ Montant à vérifier »**, compléter le temps véhicule et cliquer sur
+  **Mettre à jour le montant** : l'écran, l'impression et le PDF affichent alors le même total.
+- Imprimer la facture (« Aperçu / Imprimer »), marquer soldée, envoyer par mail
 
 #### Fournitures
 - Consulter le stock
@@ -126,10 +148,11 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 
 #### Mes interventions
 - Accéder aux OR sur lesquels vous êtes affecté
-- Saisir le détail des interventions réalisées :
+- Saisir le détail des interventions réalisées (fiche OR → « Ajouter une intervention ») :
   - Description du travail
-  - Durée
-  - Observations
+  - Durée en **heures pleines** (1, 2, 3…)
+  - Fourniture utilisée éventuelle
+- Remplir l'état des lieux de sortie : votre nom est prérempli dans « Vérifications avant départ effectuées par »
 
 #### Checklist
 - Remplir la checklist de contrôle visuel pour un OR
@@ -143,23 +166,24 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 ```
 1. CRÉATION
    Enseignant/DDFPT crée l'OR
-   → Client + Véhicule + Élève assigné
+   → Client + Véhicule + Élève assigné, date de sortie prévue (facultatif)
+   → État des lieux d'entrée (+ inventaire signé avec le client)
    → Statut : Ouvert
 
 2. TRAVAUX
-   Élève saisit ses interventions
+   Élèves saisissent leurs interventions (heures pleines)
    → Statut : En cours
 
-3. CONTRÔLE
-   Enseignant vérifie et valide
-   → Checklist de contrôle visuel
-   → Statut : Terminé
+3. FIN DES TRAVAUX
+   Enseignant vérifie, renseigne le temps passé sur le véhicule
+   → Checklist de contrôle visuel, état des lieux de sortie (non bloquant)
+   → Statut : Terminé            (= travaux finis, véhicule en attente du client)
 
-4. FACTURATION
-   Magasinier/DDFPT facture
-   → PDF généré
+4. FACTURATION / CLÔTURE
+   Magasinier/DDFPT crée la facture  → l'OR passe automatiquement en Clôturé
+   ou le DDFPT clôture à la main     (sans facture, ex. travaux internes)
    → Email envoyé au client (si configuré)
-   → Statut : Clôturé
+   → Statut : Clôturé            (= dossier fermé ; seuls DDFPT et magasinier peuvent encore le corriger)
 ```
 
 ---
@@ -235,7 +259,21 @@ Si un serveur SMTP est configuré, les notifications suivantes peuvent être act
 → Vérifier que l'élève est bien assigné à l'OR (champ "Élève" dans la fiche OR).
 
 **Le mot de passe d'un élève est perdu.**  
-→ L'enseignant ou le DDFPT peut le réinitialiser dans Administration → Utilisateurs → ✏️.
+→ L'enseignant ou le DDFPT peut le réinitialiser (page Élèves ✏️, ou Administration → Utilisateurs → ✏️).
+
+**Un enseignant a oublié son mot de passe et n'a pas de question de sécurité.**  
+→ Le DDFPT le réinitialise : Administration → Utilisateurs → ✏️ → champ « 🔑 Réinitialiser le mot de passe ».
+
+**La facture affiche 0 € alors que le véhicule a été réparé (mode horaire).**  
+→ Le temps passé sur le véhicule n'est pas renseigné : le saisir sur la page de la facture
+(« Montant à vérifier ») ou dans Modifier l'OR.
+
+**Je ne peux pas clôturer l'OR.**  
+→ Le logiciel propose l'état des lieux de sortie ; le kilométrage et le nom sont facultatifs.
+Le DDFPT peut aussi confirmer la clôture sans état des lieux.
+
+**Les emails ne partent pas (Gmail).**  
+→ Utiliser un mot de passe d'application Google, puis Administration → Email → Tester l'envoi.
 
 **L'import CSV ne fonctionne pas.**  
 → Vérifier que le fichier est en UTF-8, avec les colonnes `nom` et `prénom` obligatoires.  
