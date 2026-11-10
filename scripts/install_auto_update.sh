@@ -12,7 +12,7 @@ APP_DIR="/opt/meca-auto"
 
 tee /etc/systemd/system/mecaauto-update.service > /dev/null << EOF
 [Unit]
-Description=MEC AUTO Mise à jour automatique depuis GitHub
+Description=MECA AUTO Mise à jour automatique depuis GitHub
 After=network-online.target
 Wants=network-online.target
 
@@ -23,7 +23,7 @@ EOF
 
 tee /etc/systemd/system/mecaauto-update.timer > /dev/null << EOF
 [Unit]
-Description=MEC AUTO Mise à jour automatique — toutes les 15 minutes
+Description=MECA AUTO Mise à jour automatique — toutes les 15 minutes
 
 [Timer]
 OnBootSec=5min

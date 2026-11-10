@@ -103,6 +103,22 @@ def index():
                 'or': or_obj
             })
 
+    # OR clôturés par un enseignant, pas encore facturés : à traiter par le magasinier
+    if current_user.role in ('magasinier', 'ddfpt'):
+        a_facturer = OrdreReparation.query.filter(
+            OrdreReparation.statut == 'cloture',
+            ~OrdreReparation.facture.has(),
+            db.or_(OrdreReparation.pas_de_facturation.is_(None), OrdreReparation.pas_de_facturation.is_(False)),
+        ).order_by(OrdreReparation.date_cloture).all()
+        for or_obj in a_facturer:
+            depuis = f" le {or_obj.date_cloture.strftime('%d/%m')}" if or_obj.date_cloture else ''
+            alertes.append({
+                'type': 'a_facturer',
+                'niveau': 'warning',
+                'message': f"🧾 Clôturé{depuis} — à facturer",
+                'or': or_obj
+            })
+
     stats = {
         'or_ouvert': OrdreReparation.query.filter_by(statut='ouvert').count(),
         'or_encours': OrdreReparation.query.filter_by(statut='en_cours').count(),

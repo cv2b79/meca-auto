@@ -81,7 +81,7 @@ Informations complémentaires:
 
 ---
 Document PDF en pièce jointe.
-Cet email est envoyé automatiquement par MEC AUTO"""
+Cet email est envoyé automatiquement par MECA AUTO"""
 
     try:
         # Generate PDF (OR recap + état des lieux d'entrée si disponible)
@@ -89,7 +89,7 @@ Cet email est envoyé automatiquement par MEC AUTO"""
             import io
             from xhtml2pdf import pisa
 
-            etab_nom = Parametre.get('etab_nom', 'MEC AUTO')
+            etab_nom = Parametre.get('etab_nom', 'MECA AUTO')
             interventions = list(or_obj.interventions_eleves) if or_obj.interventions_eleves else []
 
             combined_html = render_template('ordres/email_or_pdf.html',
@@ -136,6 +136,43 @@ Cet email est envoyé automatiquement par MEC AUTO"""
         print(f"[NOTIF EMAIL] Envoyé à {emails}")
     except Exception as e:
         print(f"[NOTIF EMAIL] Erreur envoi notification: {type(e).__name__}: {e}")
+
+
+def send_a_facturer_email(or_obj, auteur):
+    """Prévient le magasinier (adresses « Notifications OR » d'Administration → Email) qu'un OR clôturé est à facturer."""
+    emails = [e.strip() for e in (Parametre.get('email_notifications', '') or '').split(',') if e.strip()]
+    smtp_host, smtp_user = Parametre.get('smtp_host', ''), Parametre.get('smtp_user', '')
+    if not emails or not smtp_host or not smtp_user:
+        print(f"[A FACTURER] Pas d'envoi (destinataire ou SMTP non configuré) : OR {or_obj.numero}")
+        return
+    v = or_obj.vehicule
+    if or_obj.mode_tarif == 'forfait':
+        tarif = f"forfait{(' « ' + or_obj.forfait.nom + ' »') if or_obj.forfait else ''}"
+    else:
+        tarif = (f"taux horaire — temps véhicule : {or_obj.heures_vehicule} h" if or_obj.heures_vehicule is not None
+                 else "taux horaire — temps véhicule NON renseigné")
+    msg = MIMEMultipart()
+    msg['From'] = Parametre.get('smtp_from', '') or smtp_user
+    msg['To'] = ', '.join(emails)
+    msg['Subject'] = f"[MECA AUTO] OR {or_obj.numero} clôturé — à facturer"
+    client = f"{or_obj.client.prenom} {or_obj.client.nom}" if or_obj.client else '-'
+    corps = "\n".join([
+        f"L'ordre de réparation {or_obj.numero} a été clôturé par {auteur}.",
+        "",
+        f"Véhicule : {v.immatriculation} {v.marque or ''} {v.modele or ''}",
+        f"Client : {client}",
+        f"Tarification : {tarif}",
+        "",
+        "La facture peut être créée depuis la fiche de l'OR (bouton « Créer la Facture »).",
+        "",
+        "— MECA AUTO",
+    ])
+    msg.attach(MIMEText(corps, 'plain', 'utf-8'))
+    try:
+        smtp_send(msg, smtp_host, Parametre.get('smtp_port', '587'), smtp_user, Parametre.get('smtp_password', ''))
+        print(f"[A FACTURER] Envoyé à {emails} : OR {or_obj.numero}")
+    except Exception as e:
+        print(f"[A FACTURER] Erreur: {type(e).__name__}: {e}")
 
 
 def send_client_email(or_obj, client, vehicule, event_type, facture=None):
@@ -679,8 +716,11 @@ def set_statut(id):
 
     # Sans état des lieux de sortie : on propose de le faire, sauf si le DDFPT a confirmé
     # la clôture sans (ex. véhicule déjà reparti)
+    if new_statut == 'cloture' and not current_user.can_cloturer():
+        flash('Seuls les enseignants et le DDFPT clôturent un OR (le magasinier le clôture en créant la facture)', 'error')
+        return redirect(url_for('ordres.view', id=id))
     sans_edl = new_statut == 'cloture' and not etat_sortie
-    if sans_edl and not (current_user.role == 'ddfpt' and request.form.get('sans_edl') == '1'):
+    if sans_edl and request.form.get('sans_edl') != '1':
         flash('État des lieux de SORTIE requis avant de cloturer', 'warning')
         return redirect(url_for('ordres.etat_lieu_form', or_id=id, type='sortie'))
 
@@ -709,7 +749,19 @@ def set_statut(id):
                     send_client_email(_or, _client, _or.vehicule, event)
         threading.Thread(target=_send_statut_bg, daemon=True).start()
 
-    flash(f'Statut mis à jour: {new_statut}', 'success')
+    a_facturer = new_statut == 'cloture' and old_statut != 'cloture' and not or_obj.facture and not or_obj.pas_de_facturation
+    if a_facturer:
+        import threading
+        app = current_app._get_current_object()
+        or_id, auteur = or_obj.id, f'{current_user.prenom} {current_user.nom}'
+        def _prevenir_magasinier():
+            with app.app_context():
+                _or = OrdreReparation.query.get(or_id)
+                if _or:
+                    send_a_facturer_email(_or, auteur)
+        threading.Thread(target=_prevenir_magasinier, daemon=True).start()
+
+    flash(f'Statut mis à jour: {new_statut}' + (' — le magasinier est prévenu pour la facturation' if a_facturer else ''), 'success')
     return redirect(url_for('ordres.view', id=id))
 
 @ordres_bp.route('/<int:id>/intervention', methods=['POST'])
@@ -1111,7 +1163,7 @@ def print_pare_brise(id):
     return render_template('ordres/pare_brise.html', 
         or_obj=or_obj, 
         vehicule=vehicule,
-        etab_nom=Parametre.get('etab_nom', 'MEC AUTO'),
+        etab_nom=Parametre.get('etab_nom', 'MECA AUTO'),
         print_date=datetime.now().strftime('%d/%m/%Y à %H:%M'),
         etat_entree=etat_entree,
         etat_sortie=etat_sortie,

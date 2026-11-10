@@ -123,7 +123,7 @@ ok "Tables créées"
 section "7/8 — Service systemd"
 sudo tee /etc/systemd/system/mecaauto.service > /dev/null << EOF
 [Unit]
-Description=MEC AUTO Flask App
+Description=MECA AUTO Flask App
 After=network.target
 
 [Service]
@@ -144,7 +144,7 @@ EOF
 # Watchdog
 sudo tee /etc/systemd/system/mecaauto-watchdog.service > /dev/null << EOF
 [Unit]
-Description=MEC AUTO Watchdog
+Description=MECA AUTO Watchdog
 After=mecaauto.service
 
 [Service]
@@ -154,7 +154,7 @@ EOF
 
 sudo tee /etc/systemd/system/mecaauto-watchdog.timer > /dev/null << EOF
 [Unit]
-Description=MEC AUTO Watchdog — toutes les 5 minutes
+Description=MECA AUTO Watchdog — toutes les 5 minutes
 Requires=mecaauto.service
 
 [Timer]

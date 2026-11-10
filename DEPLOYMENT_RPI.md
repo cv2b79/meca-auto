@@ -117,7 +117,7 @@ sudo nano /etc/systemd/system/mecaauto.service
 
 ```ini
 [Unit]
-Description=MEC AUTO Flask App
+Description=MECA AUTO Flask App
 After=network.target
 
 [Service]
@@ -151,7 +151,7 @@ sudo nano /etc/systemd/system/mecaauto-watchdog.service
 ```
 ```ini
 [Unit]
-Description=MEC AUTO Watchdog
+Description=MECA AUTO Watchdog
 After=mecaauto.service
 
 [Service]
@@ -164,7 +164,7 @@ sudo nano /etc/systemd/system/mecaauto-watchdog.timer
 ```
 ```ini
 [Unit]
-Description=MEC AUTO Watchdog — toutes les 5 minutes
+Description=MECA AUTO Watchdog — toutes les 5 minutes
 Requires=mecaauto.service
 
 [Timer]

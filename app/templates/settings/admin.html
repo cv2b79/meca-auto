@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Administration - MEC AUTO{% endblock %}
+{% block title %}Administration - MECA AUTO{% endblock %}
 {% block content %}
 <h2>⚙️ Administration</h2>
 
@@ -248,6 +248,24 @@
                 <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.5rem;">
                     <button type="submit" class="btn">💾 Enregistrer</button>
                     <span style="font-size:0.82rem; color:#888;">Le texte apparaîtra sur tous les PDF de factures.</span>
+                </div>
+            </form>
+        </div>
+
+        <!-- Modalités de règlement -->
+        <div class="full-card" style="margin-top:1rem;">
+            <h3 style="margin:0 0 0.75rem 0;">💶 Modalités de règlement</h3>
+            <p style="color:#666; font-size:0.88rem; margin-bottom:0.75rem;">
+                Mention affichée sous le total de chaque facture (impression et PDF). Laisser vide pour ne rien afficher.
+                Non affichée pour les travaux internes.
+            </p>
+            <form method="POST">
+                <input type="hidden" name="action" value="save_reglement">
+                <textarea name="mention_reglement" rows="4"
+                    placeholder="Ex : Règlement à réception de la facture, par chèque à l'ordre de l'Agent comptable du lycée, ou auprès du service d'intendance. Merci de rappeler le numéro de facture."
+                    style="width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; font-size:0.9rem; line-height:1.5; resize:vertical;">{{ mention_reglement or '' }}</textarea>
+                <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.5rem;">
+                    <button type="submit" class="btn">💾 Enregistrer</button>
                 </div>
             </form>
         </div>

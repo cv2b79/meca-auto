@@ -1,4 +1,4 @@
-# Déploiement léger MEC AUTO sur Proxmox (LXC)
+# Déploiement léger MECA AUTO sur Proxmox (LXC)
 
 ## Prérequis LXC
 - **Modèle**: Debian 12 (ID 100)
@@ -38,7 +38,7 @@ python run.py &
 Créer `/etc/systemd/system/mecaauto.service`:
 ```ini
 [Unit]
-Description=MEC AUTO
+Description=MECA AUTO
 After=network.target
 
 [Service]

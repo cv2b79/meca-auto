@@ -1,8 +1,8 @@
-# MEC AUTO - Documentation pour agents IA
+# MECA AUTO - Documentation pour agents IA
 
 ## Présentation
 
-**MEC AUTO** est un logiciel de gestion d'atelier automobile pour lycée professionnel.
+**MECA AUTO** est un logiciel de gestion d'atelier automobile pour lycée professionnel.
 Stack technique : Flask + PostgreSQL + HTMX (pas de framework JS lourd).
 
 ## Structure du projet

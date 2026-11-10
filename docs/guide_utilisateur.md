@@ -66,6 +66,8 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 **Onglet 🏫 Établissement**
 - Nom, adresse, téléphone, email, SIRET/UAI
 - Ces informations apparaissent sur les factures PDF
+- **Conditions de service** (pied de facture) et **💶 Modalités de règlement** (sous le total de la facture,
+  ex. « Règlement par chèque à l'ordre de l'Agent comptable du lycée »)
 
 **Onglet 💰 Tarification**
 - Taux horaire (utilisé en mode horaire) et catalogue des **forfaits** proposés à la création des OR
@@ -111,6 +113,8 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 - Corriger le **véhicule** ou le **client** avec les boutons ✏️ de la fiche OR
 - Saisir les interventions des élèves (heures pleines) et le **temps passé sur le véhicule** (Modifier)
 - Faire les états des lieux d'entrée et de sortie (kilométrage facultatif)
+- **Clôturer l'OR** en fin de travaux (« Modifier le statut » → Clôturé, ou 🔒 dans la liste) :
+  le magasinier est prévenu par mail et sur son tableau de bord pour faire la facture
 - Suivre l'avancement des travaux
 
 #### Gestion des élèves (`/settings/eleves`)
@@ -133,7 +137,9 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 ### 🔧 Magasinier
 
 #### Facturation
-- Accéder aux OR terminés → « Créer la Facture »
+- Les OR **clôturés par un enseignant** et pas encore facturés apparaissent dans les alertes du tableau de bord
+  (« 🧾 Clôturé le … — à facturer ») et font l'objet d'un mail (adresses « Notifications » d'Administration → Email)
+- Accéder aux OR terminés ou clôturés → « Créer la Facture »
 - **Mode horaire** : vérifier ou saisir le **temps passé sur le véhicule** (heures pleines) puis
   « 🔄 Mettre à jour le calcul ». Seul ce temps est facturé, pas la somme des heures des élèves.
 - **Mode forfait** : le prix du forfait choisi sur l'OR (catalogue Administration → Tarification) est facturé.
@@ -186,8 +192,8 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
    → Statut : Terminé            (= travaux finis, véhicule en attente du client)
 
 4. FACTURATION / CLÔTURE
-   Magasinier/DDFPT crée la facture  → l'OR passe automatiquement en Clôturé
-   ou le DDFPT clôture à la main     (sans facture, ex. travaux internes)
+   Enseignant/DDFPT clôture l'OR     → le magasinier est prévenu (mail + tableau de bord) → il crée la facture
+   ou le magasinier crée directement la facture d'un OR terminé → l'OR passe automatiquement en Clôturé
    → Email envoyé au client (si configuré)
    → Statut : Clôturé            (= dossier fermé ; seuls DDFPT et magasinier peuvent encore le corriger)
 ```

@@ -443,6 +443,14 @@
     </table>
 </div>
 
+<!-- ── MODALITÉS DE RÈGLEMENT (Administration → Établissement) ── -->
+{% if mention_reglement and not (or_obj and or_obj.pas_de_facturation) %}
+<div style="margin-top:0.6rem; padding:0.5rem 0.8rem; border-left:3px solid #1E3A5F; background:#f3f6fb;">
+    <div style="font-size:7.5pt; font-weight:bold; color:#1E3A5F; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px;">Modalités de règlement</div>
+    <div style="font-size:8pt; color:#333; line-height:1.5; white-space:pre-wrap;">{{ mention_reglement }}</div>
+</div>
+{% endif %}
+
 <!-- ── SIGNATURES ────────────────────────────────────── -->
 <div class="signatures">
     <div class="sig-box">

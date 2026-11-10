@@ -123,13 +123,13 @@
 <div class="card" style="margin-top: 1rem;">
     <h4>Modifier le statut</h4>
     <form method="POST" action="{{ url_for('ordres.set_statut', id=or_obj.id) }}" style="display: flex; gap: 0.5rem; align-items: center;"
-          {% if current_user.role == 'ddfpt' and not etat_sortie %}onsubmit="return confirmerClotureSansEdl(this);"{% endif %}>
+          {% if current_user.can_cloturer() and not etat_sortie %}onsubmit="return confirmerClotureSansEdl(this);"{% endif %}>
         <input type="hidden" name="sans_edl" value="0">
         <select name="statut">
             <option value="ouvert" {% if or_obj.statut=='ouvert' %}selected{% endif %}>Ouvert</option>
             <option value="en_cours" {% if or_obj.statut=='en_cours' %}selected{% endif %}>En cours</option>
             <option value="termine" {% if or_obj.statut=='termine' %}selected{% endif %}>Terminé</option>
-            {% if current_user.role == 'ddfpt' %}
+            {% if current_user.can_cloturer() %}
             <option value="cloture" {% if or_obj.statut=='cloture' %}selected{% endif %}>Clôturé</option>
             {% endif %}
         </select>
@@ -139,7 +139,7 @@
     <p style="color: red; margin-top: 0.5rem;">⚠️ État des lieux de SORTIE requis pour cloturer</p>
     {% endif %}
 </div>
-{% if current_user.role == 'ddfpt' and not etat_sortie %}
+{% if current_user.can_cloturer() and not etat_sortie %}
 <script>
 function confirmerClotureSansEdl(form) {
     if (form.statut.value !== 'cloture') return true;

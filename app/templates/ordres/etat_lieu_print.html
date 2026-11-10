@@ -56,7 +56,7 @@
 <body>
     <div class="header">
         <h1>État des lieux - {{ 'ENTRÉE' if type_etat == 'entree' else 'SORTIE' }}</h1>
-        <div class="subtitle">{{ etab_nom or 'MEC AUTO' }} - Ordre de réparation n° {{ or_obj.numero if or_obj else '' }}</div>
+        <div class="subtitle">{{ etab_nom or 'MECA AUTO' }} - Ordre de réparation n° {{ or_obj.numero if or_obj else '' }}</div>
     </div>
 
     <div class="two-col">

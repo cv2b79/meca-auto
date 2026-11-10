@@ -194,7 +194,7 @@ def stats_export():
     output = io.StringIO()
     writer = csv.writer(output)
     
-    writer.writerow(['Statistiques MEC AUTO'])
+    writer.writerow(['Statistiques MECA AUTO'])
     writer.writerow(['Date export', datetime.now().strftime('%Y-%m-%d %H:%M')])
     writer.writerow([])
     
@@ -305,7 +305,7 @@ def log_archive_create():
 
     with open(filepath, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
-        writer.writerow([f'Archive logs MEC AUTO — {label}'])
+        writer.writerow([f'Archive logs MECA AUTO — {label}'])
         writer.writerow([f'Généré le {datetime.now().strftime("%d/%m/%Y %H:%M")} par {current_user.prenom} {current_user.nom}'])
         writer.writerow([])
         writer.writerow(['Date/Heure', 'Utilisateur', 'Action', 'Détails', 'Cible type', 'Cible ID'])

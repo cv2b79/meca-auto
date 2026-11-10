@@ -1086,6 +1086,13 @@ def admin():
             flash('CGV enregistrées', 'success')
             return redirect(url_for('settings.admin', tab='etablissement'))
 
+        # Mention de règlement (factures)
+        if action == 'save_reglement':
+            Parametre.set('mention_reglement', request.form.get('mention_reglement', '').strip())
+            db.session.commit()
+            flash('Modalités de règlement enregistrées', 'success')
+            return redirect(url_for('settings.admin', tab='etablissement'))
+
         # Save etablissement info
         if action == 'save_etablissement':
             for key in ['etab_nom', 'etab_adresse', 'etab_tel', 'etab_email', 'etab_siren']:
@@ -1497,6 +1504,7 @@ def admin():
                           notif_incident=Parametre.get('notif_incident', 'non'),
                           notif_incident_email=Parametre.get('notif_incident_email', ''),
                           cgv_texte=Parametre.get('cgv_texte', ''),
+                          mention_reglement=Parametre.get('mention_reglement', ''),
                           version=version_status())
 
 @settings_bp.route('/permissions', methods=['GET', 'POST'])
@@ -1763,12 +1771,12 @@ def test_smtp():
         msg = MIMEMultipart()
         msg['From'] = smtp_from
         msg['To'] = test_email
-        msg['Subject'] = '[MEC AUTO] Test de configuration email'
+        msg['Subject'] = '[MECA AUTO] Test de configuration email'
         msg.attach(MIMEText(
-            f"Bonjour,\n\nCet email confirme que la configuration SMTP de MEC AUTO fonctionne correctement.\n\n"
+            f"Bonjour,\n\nCet email confirme que la configuration SMTP de MECA AUTO fonctionne correctement.\n\n"
             f"Serveur : {smtp_host}:{smtp_port}\n"
             f"Expéditeur : {smtp_from}\n\n"
-            f"— MEC AUTO",
+            f"— MECA AUTO",
             'plain'
         ))
         from app.smtp_utils import smtp_send

@@ -1,4 +1,4 @@
-# MEC AUTO - Manuel d'utilisation
+# MECA AUTO - Manuel d'utilisation
 
 ## Logiciel de gestion d'atelier automobile pour lycée professionnel
 

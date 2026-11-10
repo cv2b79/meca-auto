@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{% block title %}MEC AUTO{% endblock %}</title>
+    <title>{% block title %}MECA AUTO{% endblock %}</title>
     <style>
         :root {
             --bg: #f5f5f5; --bg-card: white; --text: #333; --text-muted: #666;
@@ -210,7 +210,7 @@
 <body>
     {% if current_user.is_authenticated %}
     <div class="header">
-        <h1>MEC AUTO - Gestion Atelier</h1>
+        <h1>MECA AUTO - Gestion Atelier</h1>
         <div class="header-right">
             <button class="theme-toggle" onclick="toggleTheme()">🌙 <span class="toggle-label">Mode sombre</span></button>
             <span class="user">{{ current_user.prenom }} {{ current_user.nom }}{% if current_user.role == 'ddfpt' %}, DDFPT{% elif current_user.role == 'magasinier' %}, Magasinier{% elif current_user.role == 'enseignant' %}, Enseignant{% elif current_user.role == 'eleve' %}, Élève{% endif %}</span>
@@ -275,7 +275,7 @@
         {% if g.etab_tel %}Tel: {{ g.etab_tel }}{% endif %}
         {% if g.etab_email %} | Email: {{ g.etab_email }}{% endif %}
         <div style="margin-top: 0.4rem; font-size: 0.75rem; color: #999;" title="{{ app_version.subject }}">
-            MEC AUTO — version {{ app_version.short }}{% if app_version.date %} du {{ app_version.date }}{% endif %}
+            MECA AUTO — version {{ app_version.short }}{% if app_version.date %} du {{ app_version.date }}{% endif %}
         </div>
     </footer>
 </body>

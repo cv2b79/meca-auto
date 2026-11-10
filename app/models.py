@@ -84,6 +84,10 @@ class User(UserMixin, db.Model):
     def can_delete(self):
         return self.role == 'ddfpt'
 
+    def can_cloturer(self):
+        """Clôture manuelle d'un OR (le magasinier, lui, clôture en créant la facture)."""
+        return self.role in ('ddfpt', 'enseignant')
+
     def __repr__(self):
         return f'{self.prenom} {self.nom} ({self.role})'
 

@@ -1,7 +1,24 @@
-# Journal des modifications — MEC AUTO
+# Journal des modifications — MECA AUTO
 
 La version installée s'affiche en bas de chaque page (ex. « version d4257a5 ») et dans le bandeau
 de la page **Administration**, qui la compare à GitHub.
+
+---
+
+## 10 novembre 2026 — Clôture par l'enseignant, mention de règlement, nouveau nom
+
+- **Le logiciel s'appelle désormais MECA AUTO** (en-tête, onglets, mails, PDF, exports, documentation).
+- **L'enseignant peut clôturer un OR** (comme le DDFPT) : « Modifier le statut » → Clôturé, ou bouton 🔒 dans la
+  liste des OR. Sans état des lieux de sortie, une confirmation permet de clôturer quand même.
+- **Le magasinier est prévenu** quand un OR est clôturé sans facture :
+  - mail « [MECA AUTO] OR … clôturé — à facturer » aux adresses « Notifications » d'Administration → Email,
+    avec le véhicule, le client et la tarification (temps véhicule renseigné ou non) ;
+  - alerte « 🧾 Clôturé le … — à facturer » sur le tableau de bord du magasinier et du DDFPT,
+    qui disparaît une fois la facture créée.
+  Rien n'est envoyé pour les travaux internes (« pas de facturation »).
+- Le magasinier ne clôture pas à la main : il clôture en créant la facture.
+- **Mention de règlement paramétrable** (Administration → Établissement → « 💶 Modalités de règlement ») :
+  affichée sous le total de chaque facture, à l'impression et en PDF (pas pour les travaux internes).
 
 ---
 

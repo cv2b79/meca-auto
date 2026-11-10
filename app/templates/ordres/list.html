@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ordres de réparation - MEC AUTO{% endblock %}
+{% block title %}Ordres de réparation - MECA AUTO{% endblock %}
 {% block content %}
 <h2>Ordres de réparation {% if current_user.can_create_or() %}<a href="{{ url_for('ordres.new') }}" class="btn" style="float: right;">+ Nouveau OR</a>{% endif %}</h2>
 
@@ -68,14 +68,14 @@
         </td>
         <td style="white-space: nowrap; display: flex; gap: 0.3rem; flex-wrap: wrap;">
             <a href="{{ url_for('ordres.view', id=o.id) }}" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Voir</a>
-            {% if current_user.role == 'ddfpt' %}
-                {% if o.statut != 'cloture' %}
+            {% if current_user.can_cloturer() and o.statut != 'cloture' %}
                 <form method="POST" action="{{ url_for('ordres.set_statut', id=o.id) }}" style="display:inline;">
                     <input type="hidden" name="statut" value="cloture">
                     <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
                         onclick="return confirm('Clôturer l\'OR {{ o.numero }} ?')">🔒 Clôturer</button>
                 </form>
-                {% endif %}
+            {% endif %}
+            {% if current_user.role == 'ddfpt' %}
                 <form method="POST" action="{{ url_for('ordres.delete', id=o.id) }}" style="display:inline;">
                     <button type="submit" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background:#dc3545;"
                         onclick="return confirm('Supprimer définitivement l\'OR {{ o.numero }} ? Cette action est irréversible.')">🗑️</button>

@@ -96,6 +96,7 @@ def _build_facture_context(facture):
         vehicule=or_obj.vehicule,
         surcharge_lines=surcharge_lines,
         cgv_texte=Parametre.get('cgv_texte', ''),
+        mention_reglement=Parametre.get('mention_reglement', ''),
         **calcul_montants(or_obj, facture.taux_horaire),
     )
 
