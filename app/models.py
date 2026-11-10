@@ -199,6 +199,10 @@ class OrdreReparation(db.Model):
     # (les heures des interventions élèves servent au suivi pédagogique)
     heures_vehicule = db.Column(db.Integer)
 
+    # Mode forfait : forfait du catalogue (Administration → Tarification) ; son prix est copié dans `montant`
+    forfait_id = db.Column(db.Integer, db.ForeignKey('forfaits.id'))
+    forfait = db.relationship('Forfait')
+
     # Contrôles CT et assurance
     ct_valide = db.Column(db.Boolean, default=False)
     assurance_valide = db.Column(db.Boolean, default=False)

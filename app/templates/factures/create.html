@@ -38,7 +38,8 @@
     {% elif not est_forfait and not heures_vehicule %}
     <p style="color:#b91c1c; font-weight:bold;">⚠️ Le temps passé sur le véhicule n'est pas renseigné : la main-d'œuvre est à 0 €.</p>
     {% elif total_ttc == 0 %}
-    <p style="color:#b91c1c; font-weight:bold;">⚠️ Le total est de 0 € : aucun montant de forfait n'est défini sur l'OR (bouton Modifier).</p>
+    <p style="color:#b91c1c; font-weight:bold;">⚠️ Le total est de 0 € : aucun forfait n'est choisi sur l'OR —
+        <a href="{{ url_for('ordres.edit', id=or_obj.id) }}">Modifier l'OR</a> pour choisir un forfait ou passer au taux horaire.</p>
     {% endif %}
 
     <p>Confirmer la création de la facture ?</p>

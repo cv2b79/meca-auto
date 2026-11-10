@@ -1,0 +1,40 @@
+{# Bloc « Tarification » commun à la création et à la modification d'un OR.
+   Aucun montant saisi à la main : forfait → prix du catalogue ; horaire → temps véhicule × taux des paramètres. #}
+{% set mode = or_obj.mode_tarif if or_obj and or_obj.mode_tarif else 'horaire' %}
+<div class="form-group" style="background:#f3f6fb; padding:0.75rem; border-radius:4px; margin-top:1rem;">
+    <label style="font-weight:600;">💶 Tarification</label>
+    <div style="display:flex; gap:1.5rem; flex-wrap:wrap; margin:0.3rem 0 0.5rem;">
+        <label style="font-weight:normal; cursor:pointer;">
+            <input type="radio" name="mode_tarif" value="horaire" {% if mode != 'forfait' %}checked{% endif %}
+                   onchange="basculerTarif(this.form)"> Taux horaire
+        </label>
+        <label style="font-weight:normal; cursor:pointer;">
+            <input type="radio" name="mode_tarif" value="forfait" {% if mode == 'forfait' %}checked{% endif %}
+                   onchange="basculerTarif(this.form)"> Forfait
+        </label>
+    </div>
+    <div class="bloc-horaire" {% if mode == 'forfait' %}style="display:none;"{% endif %}>
+        <small style="color:#555;">Main-d'œuvre = temps passé sur le véhicule × <strong>{{ taux_horaire }} €/h</strong>
+            (taux des paramètres). Seul le temps véhicule est à renseigner{% if not or_obj %}, en fin de travaux{% endif %}.</small>
+    </div>
+    <div class="bloc-forfait" {% if mode != 'forfait' %}style="display:none;"{% endif %}>
+        <select name="forfait_id" style="width:100%; max-width:420px;">
+            {% if or_obj and or_obj.mode_tarif == 'forfait' and not or_obj.forfait_id and or_obj.montant %}
+            <option value="">Montant actuel conservé : {{ "%.2f"|format(or_obj.montant|float) }} €</option>
+            {% else %}
+            <option value="">— Choisir un forfait —</option>
+            {% endif %}
+            {% for f in forfaits %}
+            <option value="{{ f.id }}" {% if or_obj and or_obj.forfait_id == f.id %}selected{% endif %}>{{ f.nom }} — {{ "%.2f"|format(f.montant|float) }} €</option>
+            {% endfor %}
+        </select>
+        <small style="color:#555; display:block;">Prix fixé par le catalogue (Administration → Tarification).</small>
+    </div>
+</div>
+<script>
+function basculerTarif(form) {
+    var forfait = form.querySelector('input[name="mode_tarif"]:checked').value === 'forfait';
+    form.querySelector('.bloc-forfait').style.display = forfait ? '' : 'none';
+    form.querySelector('.bloc-horaire').style.display = forfait ? 'none' : '';
+}
+</script>

@@ -5,6 +5,19 @@ de la page **Administration**, qui la compare à GitHub.
 
 ---
 
+## 10 novembre 2026 — Mode tarifaire à la création de l'OR
+
+- **Choix du mode dès la création de l'OR** (bloc « 💶 Tarification », aussi dans Modifier) :
+  - **Taux horaire** (par défaut) : main-d'œuvre = temps passé sur le véhicule × taux horaire des paramètres ;
+  - **Forfait** : choix d'un forfait du catalogue (Administration → Tarification), son prix est repris automatiquement.
+- **Plus aucun montant saisi à la main** : le champ « Montant » a disparu de la création et de la modification.
+- **Bug corrigé** : tous les OR étaient créés en « forfait » sans prix (le formulaire n'avait pas de choix de mode),
+  ce qui donnait des factures à 0 €.
+- Anciens OR au forfait avec un montant tapé à la main : le montant est conservé tant qu'aucun forfait n'est choisi.
+- Fiche OR : « Tarification : forfait « Vidange » — 80,00 € » ou « taux horaire — temps véhicule facturé : 3 h ».
+
+---
+
 ## 10 novembre 2026 — Facturation et états des lieux
 
 ### Facturation au temps véhicule (`d4257a5`)

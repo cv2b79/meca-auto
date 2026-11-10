@@ -119,6 +119,9 @@
             </div>
             <input type="hidden" name="eleve_nom" id="eleve_nom">
 
+            {% set or_obj = none %}
+            {% include 'ordres/_tarif.html' %}
+
             <div class="form-group" style="margin-top: 1rem;">
                 <label style="font-weight: 500;">🚗 Date de sortie prévue du véhicule</label>
                 <input type="date" name="date_sortie_prevue" style="width: 100%; max-width: 250px; padding: 0.5rem;">
@@ -252,6 +255,15 @@ document.querySelector('form').addEventListener('submit', function(e) {
         document.getElementById('tel_error').style.display = 'block';
         tel.focus();
         tel.scrollIntoView({behavior: 'smooth', block: 'center'});
+        return;
+    }
+    // Mode forfait : un forfait du catalogue doit être choisi (sinon le prix serait vide)
+    var modeForfait = this.querySelector('input[name="mode_tarif"][value="forfait"]');
+    var choixForfait = this.querySelector('select[name="forfait_id"]');
+    if (modeForfait && modeForfait.checked && !choixForfait.value) {
+        e.preventDefault();
+        alert('Choisissez un forfait dans la liste, ou sélectionnez « Taux horaire ».');
+        choixForfait.focus();
         return;
     }
     // Rappel non bloquant : CT et assurance

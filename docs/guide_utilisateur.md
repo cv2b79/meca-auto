@@ -67,6 +67,9 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 - Nom, adresse, téléphone, email, SIRET/UAI
 - Ces informations apparaissent sur les factures PDF
 
+**Onglet 💰 Tarification**
+- Taux horaire (utilisé en mode horaire) et catalogue des **forfaits** proposés à la création des OR
+
 **Onglet 🧴 Fournitures**
 - Gérer le catalogue de fournitures avec prix unitaires
 - Utilisées lors de la facturation des OR
@@ -101,6 +104,8 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 
 #### Ordres de réparation
 - Créer et modifier des OR (une confirmation est demandée si le CT ou l'assurance ne sont pas cochés)
+- Choisir la **tarification** à la création : **Taux horaire** (temps véhicule × taux des paramètres) ou
+  **Forfait** (forfait du catalogue, prix automatique). Aucun montant n'est saisi à la main.
 - Affecter un élève à un OR
 - Renseigner la **date de sortie prévue** du véhicule (alerte au tableau de bord le jour J et en cas de retard)
 - Corriger le **véhicule** ou le **client** avec les boutons ✏️ de la fiche OR
@@ -131,7 +136,8 @@ Vue d'ensemble : OR en cours, statistiques, alertes.
 - Accéder aux OR terminés → « Créer la Facture »
 - **Mode horaire** : vérifier ou saisir le **temps passé sur le véhicule** (heures pleines) puis
   « 🔄 Mettre à jour le calcul ». Seul ce temps est facturé, pas la somme des heures des élèves.
-- **Mode forfait** : le montant du forfait de l'OR est facturé.
+- **Mode forfait** : le prix du forfait choisi sur l'OR (catalogue Administration → Tarification) est facturé.
+  Si aucun forfait n'est choisi, la page de création de facture le signale (lien « Modifier l'OR »).
 - Total = main-d'œuvre + fournitures + frais de dépollution (0 € pour les travaux internes).
 - Le taux horaire est figé dans la facture à sa création.
 - Si une facture affiche **« ⚠️ Montant à vérifier »**, compléter le temps véhicule et cliquer sur

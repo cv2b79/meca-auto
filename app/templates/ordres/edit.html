@@ -7,20 +7,7 @@
 </div>
 <form method="POST" class="card">
     <div class="form-group"><label>Description</label><textarea name="description" rows="3">{{ or_obj.description }}</textarea></div>
-    <div class="form-group">
-        <label>Mode tarif</label>
-        <select name="mode_tarif">
-            <option value="forfait" {% if or_obj.mode_tarif=='forfait' %}selected{% endif %}>Forfait</option>
-            <option value="horaire" {% if or_obj.mode_tarif=='horaire' %}selected{% endif %}>Taux horaire</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label>Forfait</label>
-        <select name="forfait_id">
-            {% for f in forfaits %}<option value="{{ f.id }}" {% if or_obj.forfait_id==f.id %}selected{% endif %}>{{ f.nom }} - {{ f.montant }}€</option>{% endfor %}
-        </select>
-    </div>
-    <div class="form-group"><label>Montant</label><input type="number" step="0.01" name="montant" value="{{ or_obj.montant }}"></div>
+    {% include 'ordres/_tarif.html' %}
     <div class="form-group">
         <label>⏱️ Temps passé sur le véhicule (heures pleines, facturé en mode horaire)</label>
         <input type="number" name="heures_vehicule" step="1" min="0" style="max-width: 120px;"

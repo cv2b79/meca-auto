@@ -37,7 +37,11 @@ def calcul_montants(or_obj, taux_horaire=None):
     est_forfait = or_obj.mode_tarif == 'forfait'
     heures_vehicule = or_obj.heures_vehicule or 0
 
-    total_mo = float(or_obj.montant or 0) if est_forfait else heures_vehicule * taux_horaire
+    if est_forfait:
+        prix = or_obj.montant if or_obj.montant is not None else (or_obj.forfait.montant if or_obj.forfait else 0)
+        total_mo = float(prix or 0)
+    else:
+        total_mo = heures_vehicule * taux_horaire
 
     # Fournitures regroupées par article
     fournitures_map = {}

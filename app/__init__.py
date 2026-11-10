@@ -108,6 +108,7 @@ def create_app(config_class=Config):
                     ("depollution_offerte", "BOOLEAN DEFAULT FALSE"),
                     ("date_sortie_prevue", "DATE"),
                     ("heures_vehicule", "INTEGER"),
+                    ("forfait_id", "INTEGER"),
                 ],
                 'factures': [
                     ("statut_paiement", "VARCHAR(20) DEFAULT 'en_attente'"),

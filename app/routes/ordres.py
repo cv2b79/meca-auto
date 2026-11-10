@@ -272,6 +272,24 @@ Cordialement,
 ordres_bp = Blueprint('ordres', __name__)
 
 
+def _appliquer_tarif(or_obj, form):
+    """Mode tarifaire choisi à la création/modification ; aucun montant n'est saisi à la main.
+    Forfait → forfait du catalogue, son prix est copié dans `montant` ;
+    horaire → temps véhicule × taux horaire des paramètres (calculé à la facturation)."""
+    if form.get('mode_tarif') == 'forfait':
+        forfait = Forfait.query.get(form.get('forfait_id')) if form.get('forfait_id') else None
+        ancien_sans_forfait = or_obj.mode_tarif == 'forfait' and not or_obj.forfait_id and or_obj.montant
+        or_obj.mode_tarif = 'forfait'
+        if forfait:
+            or_obj.forfait_id, or_obj.montant = forfait.id, forfait.montant
+        elif not ancien_sans_forfait:  # OR créé avant le lien au catalogue : on garde son montant
+            or_obj.forfait_id, or_obj.montant = None, None
+    else:
+        or_obj.mode_tarif = 'horaire'
+        or_obj.forfait_id = None
+        or_obj.montant = None
+
+
 def _heures_pleines(value):
     """Heures travaillées en heures pleines : les demi-heures sont retirées (2,5 → 2)."""
     try:
@@ -462,7 +480,6 @@ def new():
             client_id=client_id,
             description=request.form.get('description'),
             statut='ouvert',
-            mode_tarif=request.form.get('mode_tarif') or 'forfait',
             created_by=current_user.id,
             classe_nom = request.form.get('classe_nom') or None,
             eleve_nom = request.form.get('eleve_nom') or None,
@@ -473,6 +490,7 @@ def new():
             assurance_valide = request.form.get('assurance_valide') == 'on',
             date_sortie_prevue = _parse_date(request.form.get('date_sortie_prevue'))
         )
+        _appliquer_tarif(or_obj, request.form)
         
         # Handle planned RDV - create proper RendezVous record
         rdv_date = request.form.get('rdv_date')
@@ -550,7 +568,8 @@ def new():
     surcharges_list = [{'id': s.id, 'nom': s.nom, 'montant': float(s.montant)} for s in surcharges]
     classes = Classe.query.filter_by(actif=True).order_by(Classe.nom).all()
     eleves = User.query.filter_by(role='eleve', actif=True).order_by(User.nom).all()
-    return render_template('ordres/new.html', forfaits=forfaits, surcharges=surcharges, surcharges_list=surcharges_list, classes=classes, eleves=eleves)
+    return render_template('ordres/new.html', forfaits=forfaits, surcharges=surcharges, surcharges_list=surcharges_list, classes=classes, eleves=eleves,
+                           taux_horaire=Parametre.get('taux_horaire', '50'))
 
 @ordres_bp.route('/<int:id>')
 @login_required
@@ -585,6 +604,7 @@ def view(id):
     surcharges_json = [{'id': s.id, 'nom': s.nom, 'montant': float(s.montant)} for s in surcharges]
 
     return render_template('ordres/view.html',
+        taux_horaire=Parametre.get('taux_horaire', '50'),
         or_obj=or_obj, client=client, interventions=interventions,
         etats=etats, etat_entree=etat_entree, etat_sortie=etat_sortie,
         rdv_list=rdv_list, eleves=eleves, fournitures=fournitures,
@@ -609,15 +629,7 @@ def edit(id):
 
     if request.method == 'POST':
         or_obj.description = request.form.get('description')
-        or_obj.mode_tarif = request.form.get('mode_tarif')
-
-        if request.form.get('mode_tarif') == 'forfait':
-            forfait_id = request.form.get('forfait_id')
-            if forfait_id:
-                forfait = Forfait.query.get(forfait_id)
-                or_obj.montant = forfait.montant
-        else:
-            or_obj.montant = request.form.get('montant')
+        _appliquer_tarif(or_obj, request.form)
 
         or_obj.updated_at = datetime.utcnow()
         
@@ -644,7 +656,8 @@ def edit(id):
         return redirect(url_for('ordres.view', id=id))
 
     forfaits = Forfait.query.filter_by(actif=True).all()
-    return render_template('ordres/edit.html', or_obj=or_obj, forfaits=forfaits)
+    return render_template('ordres/edit.html', or_obj=or_obj, forfaits=forfaits,
+                           taux_horaire=Parametre.get('taux_horaire', '50'))
 
 @ordres_bp.route('/<int:id>/statut', methods=['POST'])
 @login_required
