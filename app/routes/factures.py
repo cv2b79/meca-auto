@@ -13,70 +13,73 @@ from email import encoders
 factures_bp = Blueprint('factures', __name__)
 
 
+def calcul_montants(or_obj):
+    """Montants d'un OR, seule source de vérité pour la facture (montant enregistré ET PDF).
+
+    Main-d'œuvre : forfait → montant du forfait de l'OR ; horaire → heures des interventions × taux horaire.
+    Total = main-d'œuvre + fournitures + frais de dépollution (0 si « pas de facturation »)."""
+    from app.models import Parametre
+    interventions = EleveIntervention.query.filter_by(or_id=or_obj.id).all()
+    total_heures = sum(float(i.heures or 0) for i in interventions)
+    try:
+        taux_horaire = float(str(Parametre.get('taux_horaire', '50') or 50).replace(',', '.'))
+    except ValueError:
+        taux_horaire = 50.0
+    est_forfait = or_obj.mode_tarif == 'forfait'
+
+    total_mo = float(or_obj.montant or 0) if est_forfait else total_heures * taux_horaire
+
+    # Fournitures regroupées par article
+    fournitures_map = {}
+    for i in interventions:
+        if i.fourniture_id and i.fourniture:
+            f = fournitures_map.setdefault(i.fourniture_id, {
+                'nom': i.fourniture.nom, 'qte': 0,
+                'pu': float(i.fourniture.prix_unitaire or 0), 'total': 0.0,
+            })
+            f['qte'] += int(i.quantite or 1)
+            f['total'] += f['pu'] * int(i.quantite or 1)
+    fournitures_lines = list(fournitures_map.values())
+    total_fournitures = sum(f['total'] for f in fournitures_lines)
+
+    total_surcharge = float(or_obj.montant_surcharge or 0)
+    total_ttc = 0.0 if or_obj.pas_de_facturation else total_mo + total_fournitures + total_surcharge
+
+    return dict(
+        interventions=interventions,
+        mo_lines=[i for i in interventions if not i.fourniture_id],
+        total_heures=total_heures,
+        taux_horaire=taux_horaire,
+        est_forfait=est_forfait,
+        total_mo=total_mo,
+        fournitures_lines=fournitures_lines,
+        total_fournitures=total_fournitures,
+        total_surcharge=total_surcharge,
+        total_ttc=total_ttc,
+    )
+
+
 def _build_facture_context(facture):
     """Construit le contexte commun pour les templates de facture (print + pdf)."""
     from app.models import Parametre, RecupSurcharge
     or_obj = facture.ordre
-    client = or_obj.client
-    vehicule = or_obj.vehicule
-
-    interventions = EleveIntervention.query.filter_by(or_id=or_obj.id).all()
-    total_heures = sum(float(i.heures or 0) for i in interventions)
-
-    taux = Parametre.query.filter_by(cle='taux_horaire').first()
-    taux_horaire = float(taux.valeur) if taux else 50.0
-
-    # Lignes main-d'œuvre (sans fourniture)
-    mo_lines = [i for i in interventions if not i.fourniture_id]
-
-    # Lignes fournitures regroupées
-    fournitures_map = {}
-    for i in interventions:
-        if i.fourniture_id and i.fourniture:
-            key = i.fourniture_id
-            if key not in fournitures_map:
-                fournitures_map[key] = {
-                    'nom': i.fourniture.nom,
-                    'qte': 0,
-                    'pu': float(i.fourniture.prix_unitaire or 0),
-                    'total': 0.0,
-                }
-            fournitures_map[key]['qte'] += int(i.quantite or 1)
-            fournitures_map[key]['total'] += float(i.fourniture.prix_unitaire or 0) * int(i.quantite or 1)
-    fournitures_lines = list(fournitures_map.values())
-    total_fournitures = sum(f['total'] for f in fournitures_lines)
 
     surcharge_lines = []
     if not or_obj.client_recup_pieces or not or_obj.client_recup_fluides:
-        surcharges = RecupSurcharge.query.filter_by(actif=True).all()
-        for s in surcharges:
+        for s in RecupSurcharge.query.filter_by(actif=True).all():
             if 'pieces' in s.nom.lower() and not or_obj.client_recup_pieces:
                 surcharge_lines.append(s)
             if ('huile' in s.nom.lower() or 'fluide' in s.nom.lower()) and not or_obj.client_recup_fluides:
                 surcharge_lines.append(s)
 
-    total_mo = total_heures * taux_horaire
-    total_surcharge = float(or_obj.montant_surcharge or 0)
-    total_ttc = total_mo + total_fournitures + total_surcharge
-
-    cgv_texte = Parametre.get('cgv_texte', '')
-
     return dict(
         facture=facture,
         or_obj=or_obj,
-        client=client,
-        vehicule=vehicule,
-        interventions=interventions,
-        mo_lines=mo_lines,
-        total_heures=total_heures,
-        taux_horaire=taux_horaire,
-        fournitures_lines=fournitures_lines,
-        total_fournitures=total_fournitures,
+        client=or_obj.client,
+        vehicule=or_obj.vehicule,
         surcharge_lines=surcharge_lines,
-        total_surcharge=total_surcharge,
-        total_mo=total_mo,
-        total_ttc=total_ttc,
-        cgv_texte=cgv_texte,
+        cgv_texte=Parametre.get('cgv_texte', ''),
+        **calcul_montants(or_obj),
     )
 
 @factures_bp.route('/')
@@ -114,40 +117,30 @@ def create(or_id):
         flash('Facture déjà existante', 'info')
         return redirect(url_for('factures.view', id=or_obj.facture.id))
 
+    m = calcul_montants(or_obj)
+
     if request.method == 'POST':
-        total = float(or_obj.montant or 0) + float(or_obj.montant_surcharge or 0)
-        
-        intervention_details = or_obj.interventions_eleves.all()
-        
-        total_fournitures = 0
-        details = f"Travaux sur {or_obj.vehicule.immatriculation} - {or_obj.vehicule.marque} {or_obj.vehicule.modele}\n"
-        details += f"Mode: {'Forfait' if or_obj.mode_tarif == 'forfait' else 'Taux horaire'}\n"
-        details += f"Montant travaux: {or_obj.montant}€\n"
-        
-        if intervention_details:
-            total_heures = sum(float(i.heures or 0) for i in intervention_details)
-            details += f"Temps total: {total_heures} heures\n"
-            
-            for inter in intervention_details:
-                if inter.fourniture_id:
-                    qte = inter.quantite or 1
-                    prix = float(inter.fourniture.prix_unitaire or 0)
-                    total_fournitures += prix * qte
-                    details += f"  - {inter.fourniture.nom} x{qte} = {prix * qte}€\n"
-        
-        if total_fournitures > 0:
-            details += f"Fournitures: {total_fournitures}€\n"
-            total += total_fournitures
-        
-        if or_obj.montant_surcharge > 0:
-            details += f"Frais dépollution: {or_obj.montant_surcharge}€\n"
+        total = round(m['total_ttc'], 2)
+        lignes = [f"Travaux sur {or_obj.vehicule.immatriculation} - {or_obj.vehicule.marque} {or_obj.vehicule.modele}"]
+        if m['est_forfait']:
+            lignes += ["Mode: Forfait", f"Main-d'œuvre (forfait): {m['total_mo']:.2f}€"]
+        else:
+            lignes += ["Mode: Taux horaire",
+                       f"Main-d'œuvre: {m['total_heures']:g} h × {m['taux_horaire']:.2f}€ = {m['total_mo']:.2f}€"]
+        lignes += [f"  - {f['nom']} x{f['qte']} = {f['total']:.2f}€" for f in m['fournitures_lines']]
+        if m['total_fournitures'] > 0:
+            lignes.append(f"Fournitures: {m['total_fournitures']:.2f}€")
+        if m['total_surcharge'] > 0:
+            lignes.append(f"Frais dépollution: {m['total_surcharge']:.2f}€")
             if not or_obj.client_recup_pieces:
-                details += "  - Pièces non récupérées\n"
+                lignes.append("  - Pièces non récupérées")
             if not or_obj.client_recup_fluides:
-                details += "  - Fluides non récupérés\n"
-        
-        details += f"\nTotal: {total}€"
-        
+                lignes.append("  - Fluides non récupérés")
+        if or_obj.pas_de_facturation:
+            lignes.append("Travaux internes — pas de facturation")
+        lignes += ["", f"Total: {total:.2f}€"]
+        details = "\n".join(lignes)
+
         facture = Facture(
             numero=Facture.generer_numero(or_obj),
             or_id=or_id,
@@ -183,7 +176,7 @@ def create(or_id):
         flash(f'Facture {facture.numero} créée', 'success')
         return redirect(url_for('factures.view', id=facture.id))
 
-    return render_template('factures/create.html', or_obj=or_obj)
+    return render_template('factures/create.html', or_obj=or_obj, **m)
 
 @factures_bp.route('/<int:id>/view')
 @login_required

@@ -346,7 +346,7 @@
             <b>Professeur :</b> {{ or_obj.created_by_user.nom if or_obj and or_obj.created_by_user else '' }}<br>
             {% if or_obj and or_obj.classe_nom %}<b>Classe :</b> {{ or_obj.classe_nom }}<br>{% endif %}
             {% if or_obj and or_obj.eleve_nom %}<b>Élève :</b> {{ or_obj.eleve_nom }}<br>{% endif %}
-            <b>Taux horaire :</b> {{ "%.2f"|format(taux_horaire) }} €/h
+            {% if est_forfait %}<b>Tarification :</b> forfait{% else %}<b>Taux horaire :</b> {{ "%.2f"|format(taux_horaire) }} €/h{% endif %}
         </div>
     </div>
 </div>
@@ -367,7 +367,7 @@
             <tr>
                 <td>{{ i.description or '' }}</td>
                 <td class="right">{{ "%.2f"|format(i.heures) if i.heures else '0.00' }} h</td>
-                <td class="right">{{ "%.2f"|format((i.heures or 0) * taux_horaire) }} €</td>
+                <td class="right">{% if est_forfait %}—{% else %}{{ "%.2f"|format((i.heures or 0)|float * taux_horaire) }} €{% endif %}</td>
             </tr>
             {% endfor %}
         {% elif interventions %}
@@ -376,7 +376,7 @@
             <tr>
                 <td>{{ i.description or '' }}</td>
                 <td class="right">{{ "%.2f"|format(i.heures) if i.heures else '0.00' }} h</td>
-                <td class="right">{{ "%.2f"|format((i.heures or 0) * taux_horaire) }} €</td>
+                <td class="right">{% if est_forfait %}—{% else %}{{ "%.2f"|format((i.heures or 0)|float * taux_horaire) }} €{% endif %}</td>
             </tr>
             {% endif %}
             {% endfor %}
@@ -388,7 +388,7 @@
     </tbody>
     <tfoot>
         <tr>
-            <td><strong>Total main-d'œuvre</strong></td>
+            <td><strong>Total main-d'œuvre{% if est_forfait %} (forfait){% endif %}</strong></td>
             <td class="right"><strong>{{ "%.2f"|format(total_heures) }} h</strong></td>
             <td class="right"><strong>{{ "%.2f"|format(total_mo) }} €</strong></td>
         </tr>
@@ -430,7 +430,7 @@
 <div class="total-wrapper">
     <table class="total-table">
         <tr>
-            <td>Main-d'œuvre ({{ "%.2f"|format(total_heures) }} h)</td>
+            <td>Main-d'œuvre ({% if est_forfait %}forfait{% else %}{{ "%.2f"|format(total_heures) }} h × {{ "%.2f"|format(taux_horaire) }} €{% endif %})</td>
             <td>{{ "%.2f"|format(total_mo) }} €</td>
         </tr>
         {% if fournitures_lines %}
