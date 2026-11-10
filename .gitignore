@@ -12,3 +12,16 @@ instance/
 .DS_Store
 .claude/
 scripts/backup.conf
+
+# Données réelles : ne jamais versionner
+backups/
+app/backups/
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+*.csv
+!exemple_eleves.csv
+*.7z
+*.gz
+*.enc
+*.dump
+*.bak
