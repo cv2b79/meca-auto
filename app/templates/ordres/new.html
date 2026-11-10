@@ -252,6 +252,16 @@ document.querySelector('form').addEventListener('submit', function(e) {
         document.getElementById('tel_error').style.display = 'block';
         tel.focus();
         tel.scrollIntoView({behavior: 'smooth', block: 'center'});
+        return;
+    }
+    // Rappel non bloquant : CT et assurance
+    var manquants = [];
+    if (!this.querySelector('input[name="ct_valide"]').checked) manquants.push('le contrôle technique (CT)');
+    if (!this.querySelector('input[name="assurance_valide"]').checked) manquants.push("l'assurance");
+    if (manquants.length && !confirm('Vous n\'avez pas vérifié ' + manquants.join(' ni ') + '.\n\n'
+            + 'OK : créer l\'OR quand même\nAnnuler : revenir pour vérifier')) {
+        e.preventDefault();
+        this.querySelector('input[name="ct_valide"]').closest('div').scrollIntoView({behavior: 'smooth', block: 'center'});
     }
 });
 
