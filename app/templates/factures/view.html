@@ -63,6 +63,31 @@
     </div>
 </div>
 
+{% if ecart %}
+<div class="card" style="margin-top:0; border-left:4px solid #e65100; background:#fff8e1;">
+    <h3 style="margin-top:0; color:#e65100;">⚠️ Montant à vérifier</h3>
+    <p>Le montant enregistré (<strong>{{ "%.2f"|format(facture.montant|float) }} €</strong>) ne correspond pas
+       au calcul utilisé pour l'impression et le PDF (<strong>{{ "%.2f"|format(m.total_ttc) }} €</strong>).</p>
+    {% if current_user.can_facturer() %}
+    <form method="POST" action="{{ url_for('factures.recalcul', id=facture.id) }}"
+          style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;"
+          onsubmit="return confirm('Mettre à jour le montant de la facture {{ facture.numero }} ?')">
+        {% if not m.est_forfait and not facture.ordre.pas_de_facturation %}
+        <label>🚗 Temps passé sur le véhicule :</label>
+        <input type="number" name="heures_vehicule" step="1" min="0" style="width:90px;"
+               value="{{ facture.ordre.heures_vehicule if facture.ordre.heures_vehicule is not none else '' }}">
+        <span>h × {{ "%.2f"|format(m.taux_horaire) }} €/h</span>
+        {% endif %}
+        <button type="submit" class="btn" style="background:#e65100; color:white;">Mettre à jour le montant</button>
+    </form>
+    {% if not m.est_forfait and m.nb_eleves %}
+    <small style="color:#555;">Pour information : {{ m.nb_eleves }} élève(s), {{ "%g"|format(m.total_heures) }} h cumulées,
+        {{ "%g"|format(m.heures_max_eleve) }} h au maximum pour un même élève.</small>
+    {% endif %}
+    {% endif %}
+</div>
+{% endif %}
+
 <div class="card" style="margin-top:0;">
     <h3>Détails de facturation</h3>
     <pre style="background:var(--stat-box); padding:1rem; white-space:pre-wrap; border-radius:4px; font-size:0.85rem; line-height:1.6;">{{ facture.details }}</pre>

@@ -13,21 +13,31 @@ from email import encoders
 factures_bp = Blueprint('factures', __name__)
 
 
-def calcul_montants(or_obj):
+def calcul_montants(or_obj, taux_horaire=None):
     """Montants d'un OR, seule source de vérité pour la facture (montant enregistré ET PDF).
 
-    Main-d'œuvre : forfait → montant du forfait de l'OR ; horaire → heures des interventions × taux horaire.
+    Main-d'œuvre : forfait → montant du forfait de l'OR ;
+    horaire → temps passé sur le véhicule (heures pleines, champ de l'OR) × taux horaire.
+    Les heures des interventions élèves ne sont pas facturées : elles servent au suivi
+    pédagogique et à suggérer le temps véhicule.
     Total = main-d'œuvre + fournitures + frais de dépollution (0 si « pas de facturation »)."""
     from app.models import Parametre
     interventions = EleveIntervention.query.filter_by(or_id=or_obj.id).all()
     total_heures = sum(float(i.heures or 0) for i in interventions)
-    try:
-        taux_horaire = float(str(Parametre.get('taux_horaire', '50') or 50).replace(',', '.'))
-    except ValueError:
-        taux_horaire = 50.0
+    heures_par_eleve = {}
+    for i in interventions:
+        heures_par_eleve[i.eleve_id] = heures_par_eleve.get(i.eleve_id, 0) + float(i.heures or 0)
+    if taux_horaire is not None:
+        taux_horaire = float(taux_horaire)  # taux figé dans la facture
+    else:
+        try:
+            taux_horaire = float(str(Parametre.get('taux_horaire', '50') or 50).replace(',', '.'))
+        except ValueError:
+            taux_horaire = 50.0
     est_forfait = or_obj.mode_tarif == 'forfait'
+    heures_vehicule = or_obj.heures_vehicule or 0
 
-    total_mo = float(or_obj.montant or 0) if est_forfait else total_heures * taux_horaire
+    total_mo = float(or_obj.montant or 0) if est_forfait else heures_vehicule * taux_horaire
 
     # Fournitures regroupées par article
     fournitures_map = {}
@@ -49,6 +59,9 @@ def calcul_montants(or_obj):
         interventions=interventions,
         mo_lines=[i for i in interventions if not i.fourniture_id],
         total_heures=total_heures,
+        heures_vehicule=heures_vehicule,
+        nb_eleves=len([e for e, h in heures_par_eleve.items() if h]),
+        heures_max_eleve=max(heures_par_eleve.values(), default=0),
         taux_horaire=taux_horaire,
         est_forfait=est_forfait,
         total_mo=total_mo,
@@ -79,7 +92,7 @@ def _build_facture_context(facture):
         vehicule=or_obj.vehicule,
         surcharge_lines=surcharge_lines,
         cgv_texte=Parametre.get('cgv_texte', ''),
-        **calcul_montants(or_obj),
+        **calcul_montants(or_obj, facture.taux_horaire),
     )
 
 @factures_bp.route('/')
@@ -98,7 +111,41 @@ def liste():
 @login_required
 def view(id):
     facture = Facture.query.get_or_404(id)
-    return render_template('factures/view.html', facture=facture)
+    m = calcul_montants(facture.ordre, facture.taux_horaire) if facture.ordre else None
+    ecart = m is not None and abs(round(m['total_ttc'], 2) - float(facture.montant or 0)) >= 0.01
+    return render_template('factures/view.html', facture=facture, m=m, ecart=ecart)
+
+
+@factures_bp.route('/<int:id>/recalcul', methods=['POST'])
+@login_required
+def recalcul(id):
+    """Aligne le montant enregistré sur le calcul (celui de l'impression/PDF), après saisie éventuelle
+    du temps véhicule. Le taux horaire est figé à cette occasion pour les anciennes factures."""
+    if not current_user.can_facturer():
+        flash('Accès refusé', 'error')
+        return redirect(url_for('factures.view', id=id))
+    facture = Facture.query.get_or_404(id)
+    or_obj = facture.ordre
+    if 'heures_vehicule' in request.form:
+        from app.routes.ordres import _heures_pleines
+        saisie = request.form.get('heures_vehicule', '').strip()
+        or_obj.heures_vehicule = _heures_pleines(saisie) if saisie else None
+    m = calcul_montants(or_obj, facture.taux_horaire)
+    ancien = float(facture.montant or 0)
+    nouveau = round(m['total_ttc'], 2)
+    facture.taux_horaire = m['taux_horaire']
+    if abs(nouveau - ancien) >= 0.01:
+        facture.montant = nouveau
+        facture.details = (facture.details or '') + (
+            f"\n\nMontant mis à jour le {datetime.now():%d/%m/%Y} par {current_user.prenom} {current_user.nom} : "
+            f"{ancien:.2f}€ → {nouveau:.2f}€")
+        Log.log(current_user, 'recalcul_facture', f'Facture {facture.numero} : {ancien:.2f}€ → {nouveau:.2f}€',
+                'Facture', facture.id)
+        flash(f'Montant mis à jour : {ancien:.2f} € → {nouveau:.2f} €', 'success')
+    else:
+        flash('Le montant était déjà à jour', 'info')
+    db.session.commit()
+    return redirect(url_for('factures.view', id=id))
 
 @factures_bp.route('/create/<int:or_id>', methods=['GET', 'POST'])
 @login_required
@@ -117,6 +164,14 @@ def create(or_id):
         flash('Facture déjà existante', 'info')
         return redirect(url_for('factures.view', id=or_obj.facture.id))
 
+    if request.method == 'POST' and 'heures_vehicule' in request.form:
+        from app.routes.ordres import _heures_pleines
+        saisie = request.form.get('heures_vehicule', '').strip()
+        or_obj.heures_vehicule = _heures_pleines(saisie) if saisie else None
+        db.session.commit()
+        if request.form.get('action') == 'apercu':
+            return redirect(url_for('factures.create', or_id=or_id))
+
     m = calcul_montants(or_obj)
 
     if request.method == 'POST':
@@ -126,7 +181,7 @@ def create(or_id):
             lignes += ["Mode: Forfait", f"Main-d'œuvre (forfait): {m['total_mo']:.2f}€"]
         else:
             lignes += ["Mode: Taux horaire",
-                       f"Main-d'œuvre: {m['total_heures']:g} h × {m['taux_horaire']:.2f}€ = {m['total_mo']:.2f}€"]
+                       f"Main-d'œuvre (temps véhicule): {m['heures_vehicule']} h × {m['taux_horaire']:.2f}€ = {m['total_mo']:.2f}€"]
         lignes += [f"  - {f['nom']} x{f['qte']} = {f['total']:.2f}€" for f in m['fournitures_lines']]
         if m['total_fournitures'] > 0:
             lignes.append(f"Fournitures: {m['total_fournitures']:.2f}€")
@@ -146,7 +201,8 @@ def create(or_id):
             or_id=or_id,
             montant=total,
             mode_tarif=or_obj.mode_tarif,
-            details=details
+            details=details,
+            taux_horaire=m['taux_horaire'],
         )
 
         or_obj.statut = 'cloture'

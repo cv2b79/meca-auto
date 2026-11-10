@@ -29,7 +29,7 @@ with app.app_context():
         if not or_obj:
             continue
         ancien = round(float(f.montant or 0), 2)
-        nouveau = round(calcul_montants(or_obj)['total_ttc'], 2)
+        nouveau = round(calcul_montants(or_obj, f.taux_horaire)['total_ttc'], 2)
         if abs(ancien - nouveau) >= 0.01:
             ecarts.append((f, or_obj, ancien, nouveau))
 

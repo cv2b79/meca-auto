@@ -6,8 +6,28 @@
     <p><strong>OR:</strong> {{ or_obj.numero }}</p>
     <p><strong>Véhicule:</strong> {{ or_obj.vehicule.immatriculation }}</p>
     <p><strong>Client:</strong> {% if or_obj.client %}{{ or_obj.client.prenom }} {{ or_obj.client.nom }}{% else %}(non renseigné){% endif %}</p>
-    <table style="margin-top: 0.5rem;">
-        <tr><td>Main-d'œuvre {% if est_forfait %}(forfait){% else %}({{ "%g"|format(total_heures) }} h × {{ "%.2f"|format(taux_horaire) }} €){% endif %}</td>
+</div>
+<form method="POST" class="card">
+    {% if not est_forfait and not or_obj.pas_de_facturation %}
+    <div class="form-group" style="background:#e3f2fd; padding:0.75rem; border-radius:4px;">
+        <label style="font-weight:bold;">🚗 Temps passé sur le véhicule (heures pleines, facturé)</label>
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+            <input type="number" name="heures_vehicule" step="1" min="0" style="width:110px;"
+                   value="{{ or_obj.heures_vehicule if or_obj.heures_vehicule is not none else '' }}"
+                   placeholder="{{ heures_max_eleve|int if heures_max_eleve else '' }}">
+            <span>h × {{ "%.2f"|format(taux_horaire) }} €/h</span>
+            <button type="submit" name="action" value="apercu" class="btn btn-secondary" style="padding:0.3rem 0.8rem;">🔄 Mettre à jour le calcul</button>
+        </div>
+        <small style="color:#555;">
+            {% if nb_eleves %}Pour information : {{ nb_eleves }} élève(s), {{ "%g"|format(total_heures) }} h cumulées,
+            {{ "%g"|format(heures_max_eleve) }} h au maximum pour un même élève.{% else %}Aucune heure saisie par les élèves.{% endif %}
+            Les heures élèves ne sont pas facturées : seul ce temps véhicule l'est.
+        </small>
+    </div>
+    {% endif %}
+
+    <table style="margin: 0.5rem 0;">
+        <tr><td>Main-d'œuvre {% if est_forfait %}(forfait){% else %}({{ heures_vehicule }} h × {{ "%.2f"|format(taux_horaire) }} €){% endif %}</td>
             <td style="text-align:right; padding-left:1rem;">{{ "%.2f"|format(total_mo) }} €</td></tr>
         {% if total_fournitures %}<tr><td>Fournitures</td><td style="text-align:right;">{{ "%.2f"|format(total_fournitures) }} €</td></tr>{% endif %}
         {% if total_surcharge %}<tr><td>Frais de dépollution</td><td style="text-align:right;">{{ "%.2f"|format(total_surcharge) }} €</td></tr>{% endif %}
@@ -15,14 +35,13 @@
     </table>
     {% if or_obj.pas_de_facturation %}
     <p style="color:#2e7d32; font-weight:bold;">✅ Travaux internes — pas de facturation (montant 0 €)</p>
+    {% elif not est_forfait and not heures_vehicule %}
+    <p style="color:#b91c1c; font-weight:bold;">⚠️ Le temps passé sur le véhicule n'est pas renseigné : la main-d'œuvre est à 0 €.</p>
     {% elif total_ttc == 0 %}
-    <p style="color:#b91c1c; font-weight:bold;">⚠️ Le total est de 0 € :
-        {% if est_forfait %}aucun montant de forfait n'est défini sur l'OR (bouton Modifier).
-        {% else %}aucune heure n'est saisie dans les interventions.{% endif %}</p>
+    <p style="color:#b91c1c; font-weight:bold;">⚠️ Le total est de 0 € : aucun montant de forfait n'est défini sur l'OR (bouton Modifier).</p>
     {% endif %}
-</div>
-<form method="POST" class="card">
-    <p>Confirmer la création de la facture?</p>
+
+    <p>Confirmer la création de la facture ?</p>
     <button type="submit" class="btn btn-success">Créer la facture</button>
     <a href="{{ url_for('ordres.view', id=or_obj.id) }}" class="btn btn-secondary">Annuler</a>
 </form>

@@ -22,6 +22,12 @@
     </div>
     <div class="form-group"><label>Montant</label><input type="number" step="0.01" name="montant" value="{{ or_obj.montant }}"></div>
     <div class="form-group">
+        <label>⏱️ Temps passé sur le véhicule (heures pleines, facturé en mode horaire)</label>
+        <input type="number" name="heures_vehicule" step="1" min="0" style="max-width: 120px;"
+               value="{{ or_obj.heures_vehicule if or_obj.heures_vehicule is not none else '' }}">
+        <small style="color:#666; display:block;">Les heures saisies par les élèves servent au suivi pédagogique ; seul ce temps est facturé.</small>
+    </div>
+    <div class="form-group">
         <label>🚗 Date de sortie prévue du véhicule</label>
         <input type="date" name="date_sortie_prevue" value="{{ or_obj.date_sortie_prevue.isoformat() if or_obj.date_sortie_prevue else '' }}" style="max-width: 250px;">
     </div>

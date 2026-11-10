@@ -107,9 +107,11 @@ def create_app(config_class=Config):
                 'ordres_reparation': [
                     ("depollution_offerte", "BOOLEAN DEFAULT FALSE"),
                     ("date_sortie_prevue", "DATE"),
+                    ("heures_vehicule", "INTEGER"),
                 ],
                 'factures': [
                     ("statut_paiement", "VARCHAR(20) DEFAULT 'en_attente'"),
+                    ("taux_horaire", "NUMERIC(10,2)"),
                 ],
             }
             with db.engine.connect() as _conn:

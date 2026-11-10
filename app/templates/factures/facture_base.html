@@ -357,39 +357,24 @@
     <thead>
         <tr>
             <th>Description de l'opération</th>
-            <th class="right" style="width:110px;">Heures (centièmes)</th>
-            <th class="right" style="width:90px;">Montant MO</th>
+            <th class="right" style="width:160px;">Montant MO</th>
         </tr>
     </thead>
     <tbody>
-        {% if mo_lines %}
-            {% for i in mo_lines %}
-            <tr>
-                <td>{{ i.description or '' }}</td>
-                <td class="right">{{ "%.2f"|format(i.heures) if i.heures else '0.00' }} h</td>
-                <td class="right">{% if est_forfait %}—{% else %}{{ "%.2f"|format((i.heures or 0)|float * taux_horaire) }} €{% endif %}</td>
-            </tr>
-            {% endfor %}
-        {% elif interventions %}
-            {% for i in interventions %}
-            {% if not i.fourniture_id %}
-            <tr>
-                <td>{{ i.description or '' }}</td>
-                <td class="right">{{ "%.2f"|format(i.heures) if i.heures else '0.00' }} h</td>
-                <td class="right">{% if est_forfait %}—{% else %}{{ "%.2f"|format((i.heures or 0)|float * taux_horaire) }} €{% endif %}</td>
-            </tr>
-            {% endif %}
+        {% set ops = mo_lines|selectattr('description')|list %}
+        {% if ops %}
+            {% for i in ops %}
+            <tr><td colspan="2">{{ i.description }}</td></tr>
             {% endfor %}
         {% else %}
             <tr>
-                <td colspan="3" style="color:#888; font-style:italic;">{{ or_obj.description or 'Travaux sur le véhicule' }}</td>
+                <td colspan="2" style="color:#888; font-style:italic;">{{ or_obj.description or 'Travaux sur le véhicule' }}</td>
             </tr>
         {% endif %}
     </tbody>
     <tfoot>
         <tr>
-            <td><strong>Total main-d'œuvre{% if est_forfait %} (forfait){% endif %}</strong></td>
-            <td class="right"><strong>{{ "%.2f"|format(total_heures) }} h</strong></td>
+            <td><strong>Main-d'œuvre — {% if est_forfait %}forfait{% else %}temps passé sur le véhicule : {{ heures_vehicule }} h × {{ "%.2f"|format(taux_horaire) }} €/h{% endif %}</strong></td>
             <td class="right"><strong>{{ "%.2f"|format(total_mo) }} €</strong></td>
         </tr>
     </tfoot>
@@ -430,7 +415,7 @@
 <div class="total-wrapper">
     <table class="total-table">
         <tr>
-            <td>Main-d'œuvre ({% if est_forfait %}forfait{% else %}{{ "%.2f"|format(total_heures) }} h × {{ "%.2f"|format(taux_horaire) }} €{% endif %})</td>
+            <td>Main-d'œuvre ({% if est_forfait %}forfait{% else %}{{ heures_vehicule }} h × {{ "%.2f"|format(taux_horaire) }} €{% endif %})</td>
             <td>{{ "%.2f"|format(total_mo) }} €</td>
         </tr>
         {% if fournitures_lines %}

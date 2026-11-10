@@ -195,6 +195,10 @@ class OrdreReparation(db.Model):
     # Restitution du véhicule prévue (date seule)
     date_sortie_prevue = db.Column(db.Date)
 
+    # Temps passé sur le véhicule, en heures pleines : c'est lui qui est facturé en mode horaire
+    # (les heures des interventions élèves servent au suivi pédagogique)
+    heures_vehicule = db.Column(db.Integer)
+
     # Contrôles CT et assurance
     ct_valide = db.Column(db.Boolean, default=False)
     assurance_valide = db.Column(db.Boolean, default=False)
@@ -263,6 +267,7 @@ class Facture(db.Model):
     emitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     send_by_email = db.Column(db.Boolean, default=False)
     statut_paiement = db.Column(db.String(20), default='en_attente')  # 'en_attente' / 'soldee'
+    taux_horaire = db.Column(db.Numeric(10, 2))  # taux figé à l'émission (null : anciennes factures)
 
     @staticmethod
     def generer_numero(or_obj):

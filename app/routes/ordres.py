@@ -272,6 +272,14 @@ Cordialement,
 ordres_bp = Blueprint('ordres', __name__)
 
 
+def _heures_pleines(value):
+    """Heures travaillées en heures pleines : les demi-heures sont retirées (2,5 → 2)."""
+    try:
+        return max(0, int(float(str(value).replace(',', '.'))))
+    except (TypeError, ValueError):
+        return 0
+
+
 def _parse_date(value):
     """'AAAA-MM-JJ' d'un <input type="date"> → date, ou None si vide/invalide."""
     try:
@@ -623,6 +631,8 @@ def edit(id):
         or_obj.remarque_attente = request.form.get('remarque_attente') or None
         
         or_obj.date_sortie_prevue = _parse_date(request.form.get('date_sortie_prevue'))
+        _hv = (request.form.get('heures_vehicule') or '').strip()
+        or_obj.heures_vehicule = _heures_pleines(_hv) if _hv else None
 
         # Pas de facturation
         or_obj.pas_de_facturation = request.form.get('pas_de_facturation') == 'on'
@@ -713,7 +723,7 @@ def add_intervention(id):
         or_id=id,
         eleve_id=eleve_id,
         description=request.form.get('description'),
-        heures=request.form.get('heures') or 0,
+        heures=_heures_pleines(request.form.get('heures')),
         fourniture_id=request.form.get('fourniture_id') or None,
         quantite=request.form.get('quantite') or 1
     )
@@ -739,7 +749,7 @@ def edit_intervention(interv_id):
 
     if request.method == 'POST':
         interv.description = request.form.get('description')
-        interv.heures = request.form.get('heures') or 0
+        interv.heures = _heures_pleines(request.form.get('heures'))
         interv.fourniture_id = request.form.get('fourniture_id') or None
         interv.quantite = request.form.get('quantite') or 1
         if current_user.role != 'eleve':
