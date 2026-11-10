@@ -40,10 +40,10 @@
         </div>
 
         <div class="form-group">
-            <label>Kilométrage *</label>
-            <input type="number" name="kilometrage" required placeholder="Ex: 50000"
-                   value="{{ km_entree if km_entree else '' }}">
-            {% if type_etat == 'sortie' and km_entree %}
+            <label>Kilométrage</label>
+            <input type="number" name="kilometrage" placeholder="Ex: 50000 (facultatif si illisible)"
+                   value="{{ etat.kilometrage if etat and etat.kilometrage else (km_entree or '') }}">
+            {% if type_etat == 'sortie' and km_entree and not (etat and etat.kilometrage) %}
             <small style="color: #1976d2;">📥 Pré-rempli avec le km d'entrée ({{ km_entree }} km) — modifiez si nécessaire</small>
             {% endif %}
         </div>
@@ -52,22 +52,22 @@
             <label>Niveau carburant</label>
             <select name="niveau_carburant">
                 <option value="">Sélectionner...</option>
-                <option value="vide">Vide</option>
-                <option value="1/4">1/4</option>
-                <option value="1/2">1/2</option>
-                <option value="3/4">3/4</option>
-                <option value="plein">Plein</option>
+                <option value="vide" {% if etat and etat.niveau_carburant == 'vide' %}selected{% endif %}>Vide</option>
+                <option value="1/4" {% if etat and etat.niveau_carburant == '1/4' %}selected{% endif %}>1/4</option>
+                <option value="1/2" {% if etat and etat.niveau_carburant == '1/2' %}selected{% endif %}>1/2</option>
+                <option value="3/4" {% if etat and etat.niveau_carburant == '3/4' %}selected{% endif %}>3/4</option>
+                <option value="plein" {% if etat and etat.niveau_carburant == 'plein' %}selected{% endif %}>Plein</option>
             </select>
         </div>
 
         <div class="form-group">
             <label>Dommages existants (carrosserie, vitres, intérieur...)</label>
-            <textarea name="dommages" placeholder="Décrire les dommages constatés..."></textarea>
+            <textarea name="dommages" placeholder="Décrire les dommages constatés...">{{ etat.dommages if etat and etat.dommages else '' }}</textarea>
         </div>
 
         <div class="form-group">
             <label>Observations</label>
-            <textarea name="observations" placeholder="Observations diverses..."></textarea>
+            <textarea name="observations" placeholder="Observations diverses...">{{ etat.observations if etat and etat.observations else '' }}</textarea>
         </div>
 
         <div class="form-group">

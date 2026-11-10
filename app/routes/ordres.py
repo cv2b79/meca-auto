@@ -986,6 +986,9 @@ def etat_lieu_save():
             existing.dommages = request.form.get('dommages')
             existing.observations = request.form.get('observations')
             existing.responsable = request.form.get('responsable')
+            if type_etat == 'entree':
+                existing.inventaire_objets = request.form.get('inventaire_objets', '').strip() or None
+                existing.inventaire_signe = request.form.get('inventaire_signe') == '1'
         else:
             _km2 = request.form.get('kilometrage', '').strip()
             etat = etat_lieu(
@@ -997,6 +1000,9 @@ def etat_lieu_save():
                 observations=request.form.get('observations'),
                 responsable=request.form.get('responsable')
             )
+            if type_etat == 'entree':
+                etat.inventaire_objets = request.form.get('inventaire_objets', '').strip() or None
+                etat.inventaire_signe = request.form.get('inventaire_signe') == '1'
             db.session.add(etat)
         
         db.session.commit()
